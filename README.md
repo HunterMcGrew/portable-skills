@@ -30,19 +30,20 @@ penny (recruiting), lex (legal — never legal advice).
 **Utilities (no persona):** handoff (compact a session into a resumable
 document), review-loop (the briar → clove → eric gauntlet).
 
-## Install (once)
+## Install
 
-Copy — or better, symlink — the skill folders into your work profile's
-user-level skills directory:
+This folder (`~/Documents/portable-skills`) is the canonical copy — the only
+place to edit, kept under git. `sync.sh` pushes real copies of every skill
+folder to both Claude profiles (`~/.claude/skills`, `~/.claude-work/skills`)
+and a backup at `~/Downloads/portable-skills-backup/`:
 
 ```bash
-# symlink (edits to this folder are live everywhere immediately)
-# glob picks up every skill folder plus _shared — re-run after adding personas
-mkdir -p ~/.claude-work/skills
-for s in ~/Downloads/portable-skills/skills/*/; do
-  ln -sfn "${s%/}" ~/.claude-work/skills/"$(basename "$s")"
-done
+~/Documents/portable-skills/sync.sh
 ```
+
+No symlinks anywhere — copies don't propagate on their own, so re-run
+`sync.sh` after any edit. Profile-only skills (folders with no counterpart
+here) are never touched by the sync.
 
 The `_shared/core.md` file is the roster's shared operating system — repo map,
 plan files, orientation batteries, re-anchors, context budget, house rules.
@@ -108,9 +109,8 @@ the repo.
   `_shared/core.md`). Excluded on purpose: onboarding/install personas
   (Atlas, skill-forge) — they configure a specific toolkit repo and have no
   meaning as portable skills.
-- Re-run the install glob after pulling new personas so the symlinks exist.
-- Move this folder to a permanent home when ready; the install glob and
-  `_shared` reference survive the move (symlinks re-point on re-run).
+- Re-run `sync.sh` after adding or editing personas — copies don't
+  self-propagate.
 - If long sessions still drift despite the re-anchors, a user-level
   PostToolUse hook is the mechanical backstop — layer it on, don't replace
   the skill-level instructions.

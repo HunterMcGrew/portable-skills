@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Push canonical skills to both Claude profiles + the Downloads backup.
+# Per-skill copy on purpose: profile-only skills (no counterpart in canonical)
+# must survive, so never use --delete semantics against the profile dirs.
+set -euo pipefail
+SRC=~/Documents/portable-skills
+for dst in ~/.claude/skills ~/.claude-work/skills; do
+  for s in "$SRC"/skills/*/; do
+    name=$(basename "$s")
+    rm -rf "${dst:?}/$name"          # removes old symlink or stale copy
+    cp -R "$s" "$dst/$name"
+  done
+done
+rsync -a --delete "$SRC/" ~/Downloads/portable-skills-backup/
+cp ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ~/Downloads/portable-skills-backup/
+echo "synced: 2 profiles + Downloads backup"
