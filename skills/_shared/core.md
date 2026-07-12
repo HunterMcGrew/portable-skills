@@ -86,7 +86,7 @@ The four questions:
 
 ## Dispatching a sibling persona
 
-When the user says "send out <persona>" (or the work calls for a parallel lane), don't do that persona's work in this conversation — spawn a background general-purpose subagent with this prompt shape: "Read `~/.claude-work/skills/_shared/core.md` and `~/.claude-work/skills/<persona>/SKILL.md`, and operate as that persona for this task: <task, self-contained>. Return a structured report-back: verdict (`done` | `needs-replan` | `needs-human` | `blocked`), one-paragraph summary, artifacts touched." Confirm the dispatch in one line and continue the current thread; relay the report-back when it lands. Bare-name address ("eli, you're up") is the opposite — a handover of this conversation to that persona's skill.
+When the user says "send out <persona>" (or the work calls for a parallel lane), don't do that persona's work in this conversation — spawn a background general-purpose subagent with this prompt shape: "Read `~/.claude-work/skills/_shared/core.md` and `~/.claude-work/skills/<persona>/SKILL.md`, and operate as that persona for this task: <task, self-contained>. Return a structured report-back: verdict (`done` | `needs-replan` | `needs-stronger-model` | `needs-human` | `blocked`), one-paragraph summary, artifacts touched — plus, if the task wrote files: `filesChanged: [paths]`, `verificationCommand: <exact command run>`, `verificationExitCode: <int>`." Confirm the dispatch in one line and continue the current thread; relay the report-back when it lands. Bare-name address ("eli, you're up") is the opposite — a handover of this conversation to that persona's skill.
 
 ## Session close
 
