@@ -1,0 +1,180 @@
+---
+name: review-loop
+description: >
+  Orchestrate the review gauntlet on a PR — self-review loops with
+  fixes until a zero-findings pass, then PR review the same way; cleaner-path
+  findings route by certainty (clear-cut → implement, uncertain → architect,
+  architect-uncertain → pause for user). Pass budget, three-strike survival rule
+  with mandatory diagnosis, scoreboard TLDR; PR stays draft. Explicit
+  invocation; no persona. Triggers: review loop, gauntlet, full review cycle,
+  review until clean.
+argument-hint: "[PR number or branch — e.g. '#76' or 'current branch']"
+---
+
+Orchestrate the full review gauntlet on the target PR. This is a utility, not a
+persona — no greeting, no character; it runs in the current conversation's
+voice. It sequences the roster personas and never reviews, fixes, or writes
+findings itself. The personas keep their own plan hygiene (`## Review Issues`
+entries, `## History` appends, batteries) exactly as if invoked by hand.
+
+## Shared core
+
+If it isn't already loaded in this conversation, read `_shared/core.md` from
+the same skills root as this skill (installed:
+`~/.claude-work/skills/_shared/core.md`). The loop leans on it for the repo
+map, the plan file shape, and the dispatch idiom. The orientation batteries
+belong to the personas this utility invokes, not to the utility itself.
+
+## Lifecycle
+
+1. Resolve the target — PR (or branch), plan file, repo map.
+2. **briar loop** — self-review → clove fixes → re-review, until zero findings.
+3. **eric loop** — PR review → clove fixes → re-review, until zero new
+   findings and zero unresolved fixed threads.
+4. Scoreboard TLDR. The PR stays draft throughout.
+
+## Resolve the target
+
+- Identify the PR from `$ARGUMENTS`, the current branch, or `gh pr view`. No
+  PR yet? The briar loop can start on the branch; clove ships the PR before
+  the eric loop (authors ship — see the shared core's house rules).
+- Resolve the repo map per the shared core; find or create the plan file at
+  `<plans>/<ticket-id>.md`. The plan is the content bus: briar writes
+  `## Review Issues`, clove reads and fixes there.
+- Verification commands (type-check, tests, build) come from the repo map's
+  `verification` role — the personas run them; the loop just confirms the
+  role resolves before starting.
+- Confirm the PR is (or stays) draft. The loop never flips ready-for-review
+  and never merges — both are the human's call.
+
+## How personas are invoked
+
+A review loop is inherently serial — each pass depends on the last — so
+invoke each persona in-conversation by its lowercase skill name for each
+iteration: briar for a self-review pass, clove for a fix pass, eric for a PR
+review pass, winston for an architecture call. Let the persona run its full
+startup and rules, then resume orchestration when it finishes. Don't spawn
+parallel lanes here; there is nothing to parallelize.
+
+If this loop is itself running inside a dispatched lane (no user available),
+the "pause for the user" steps below become typed report-back verdicts
+instead: emit `needs-human` or `blocked` with the details named, per the
+shared core's dispatch idiom — never a question into the void.
+
+## The ladder
+
+1. **briar loop (self-review).** Invoke briar on the branch. Every finding,
+   any severity (critical, major, minor, nit, cleanup), goes to clove to fix —
+   review-fix commits stay separate commits, never amends, so the reviewer can
+   diff what changed since her last pass. Re-invoke briar. Repeat until a pass
+   returns zero findings.
+2. **eric loop (PR review).** Same shape on the PR: eric reviews and posts
+   findings, clove fixes, eric re-reviews. This phase is not done until a pass
+   returns **zero new findings AND zero fixed-but-unresolved review threads** —
+   when a fix lands a finding, the thread that flagged it is only closed by
+   eric's next pass (the reviewer is the sole actor that resolves threads). If
+   fixed threads remain unresolved when findings hit zero, run one final eric
+   pass to resolve them before closing the phase.
+3. **Cleaner paths.** Reviewer suggestions of a better shape — non-blocking by
+   design; they never gate the zero-findings exit, but each must reach a
+   terminal state before the loop closes: implemented, rejected with a
+   one-line reason, or parked by the user. Route by certainty (Procedure C).
+4. **Closing ceremony (winston).** When the eric phase exits clean, run
+   winston's closing ceremony as the loop's final phase — automatic here, no
+   nudge needed: promotion-verdict sub-bullets on every `## Decisions` entry
+   (promotions written into the architect docs on the same branch), lessons
+   check, loose-thread check, History ceremony line. Notes only — the plan is
+   never deleted or archived (archive is zoe's lane), and the ceremony always
+   lands pre-merge as the branch's final commit. The scoreboard TLDR reports
+   it as its last line.
+
+## Guardrails
+
+- **Pass budget: 20 review/fix passes.** Before every pass, run Procedure B.
+  Winston consultations and user pauses don't count — they're escalations,
+  already bounded. Exhaustion triggers Procedure D — stop, report, hand back.
+- **Three-strike survival rule.** An issue a reviewer re-raises after a fix
+  pass has survived a strike. Strike 1: run Procedure A. Strike 2: continue,
+  marked in the scoreboard. Strike 3: Procedure E — pause the loop on that
+  issue and bring the user in with the full survival history. When reviewer
+  and fixer run on the same model, their strike votes are correlated — a
+  blind spot one misses, the other likely misses too — so the mandatory
+  one-sentence diagnosis (Procedure A) is the arbiter of whether a re-raise
+  is real progress, not the strike count alone.
+- **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
+  clove believes the finding is wrong — skip the strike counter and run
+  Procedure F immediately. Disagreement ping-pong would measure stubbornness,
+  not progress.
+- **Phase boundary.** At the briar → eric handover, a cold context makes eric
+  a more independent second opinion. Offer the user a fresh session for the
+  eric loop (carrying the gauntlet state below) or continue in-conversation;
+  default to continuing if the user doesn't care.
+- **Thread-clean exit.** The eric phase never closes with
+  fixed-but-unresolved threads outstanding. If any remain after the final
+  reviewer pass, run Procedure H.
+- **Gauntlet state travels.** Any mid-gauntlet handoff carries the loop's
+  live state — pass count, strike table, scoreboard, current phase — in a
+  `## Gauntlet state` section so a fresh session resumes without replaying.
+
+## Procedures
+
+**Procedure A — fix pass after a strike.** Before clove writes any code:
+write a one-sentence diagnosis naming the failure mode — misread finding,
+partial fix, or disagreement. Disagreement → Procedure F immediately. Misread
+or partial → continue with the fix. Record the diagnosis and strike count in
+the scoreboard.
+
+**Procedure B — budget check.** Count passes taken so far. At 20: stop all
+loops, write the scoreboard TLDR with current state (pass count, open
+findings by severity, strike table, cleaner-path states), and hand back to
+the user (or emit `blocked` in a dispatched lane — pass count, open issues,
+most promising next step).
+
+**Procedure C — route a cleaner path.** Can the correct fix be determined
+from the diff and the existing codebase alone?
+
+- **Yes (clear-cut):** clove implements now.
+- **No (uncertain about the right approach):** invoke winston in-conversation
+  with the finding and the relevant diff context. If his recommendation
+  resolves the uncertainty, clove implements.
+- **winston says it needs user input:** pause the loop. Present the finding,
+  winston's analysis, and the specific question; wait for the answer (or emit
+  `needs-human` in a dispatched lane).
+
+**Procedure D — budget exhausted.** Stop all loops. Produce the scoreboard
+TLDR, state that the budget is exhausted, list what remains open. The PR
+stays draft. Hand back to the user with the scoreboard.
+
+**Procedure E — third strike on a single issue.** Stop loop passes on that
+issue. Collect the full survival history: the finding as originally stated,
+each fix attempt and what it changed, each re-raise and what the reviewer
+said. Present it with a clear question: accept the finding as-is, reject it
+with a written reason, or direct a new approach. Don't continue on this
+issue until the user responds.
+
+**Procedure F — disagreement fast-path.** Invoke winston with the original
+finding, clove's counter-argument, and the relevant diff. His verdict routes
+it: finding correct → implement; finding incorrect → close with a written
+reason; needs user input → pause and present both positions plus winston's
+assessment. No more fix passes on this issue until the verdict is in.
+
+**Procedure H — thread-clean exit blocked.** If a final eric pass still
+leaves unresolved threads, stop the phase. List the unresolved threads, the
+findings they covered, and the fix commits that addressed them. The user can
+resolve threads manually in GitHub or request another reviewer pass. Do not
+declare the phase clean.
+
+## Closing — the scoreboard TLDR
+
+Produce the scoreboard: a per-persona table of passes and what each found or
+fixed, plus totals —
+
+- review passes / fix passes
+- issues found and fixed, by severity
+- strike table (any issue that survived a strike, with its diagnosis)
+- cleaner paths: implemented / rejected / parked
+
+The PR stays draft; tell the user it's ready for human testing and review.
+Flipping ready-for-review and merging remain the human's call — the shared
+core's house rules say the same to every persona, and this utility is no
+exception.
