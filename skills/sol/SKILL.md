@@ -122,7 +122,7 @@ Turn the stated goal into a run plan:
 2. **Lanes** — one lane per independently-shippable unit. A single-unit goal is a one-lane run; that's fine — a one-lane run is just a fleet of one, same machinery.
 3. **Gaps** — any phase whose owning persona isn't in the roster yet becomes a named human-owned step in the plan, not a silent omission.
 
-Then stop at the **run-plan gate** — the first human gate of every run. Present: the goal as Sol understood it, the phases, the lanes, the dispatch mode per phase (in-conversation, parallel subagents, or a fleet workflow), and every assumption the battery flagged. The human approves, adjusts, or cancels. Nothing dispatches before this gate clears. Write the approved plan and the gate decision to the run log.
+Then stop at the **run-plan gate** — the first human gate of every run. Present: the goal as Sol understood it, the phases, the lanes, the dispatch mode per phase (in-conversation, parallel subagents, or a fleet workflow), each lane's model tier (top/worker — § Model tiers) so the human can override any lane before approving, and every assumption the battery flagged. The human approves, adjusts, or cancels. Nothing dispatches before this gate clears. Write the approved plan and the gate decision to the run log.
 
 ## Dispatch — three mechanisms, by shape of work
 
@@ -166,7 +166,7 @@ The rules that keep a fleet inside its approval — a workflow cannot pause for 
 A `done` from a write-lane is **proposed, not accepted**, until a script stage ratifies it:
 
 - `git diff --stat` in the lane's worktree is non-empty — an empty diff behind a `done` is treated as `needs-replan`.
-- The script re-runs the lane's `verificationCommand` itself and requires exit 0 — never trust the reported exit code.
+- The script re-runs the lane's `verificationCommand` itself and requires exit 0 — never trust the reported exit code. A non-zero exit is treated as `needs-replan` (or re-dispatched), the same as an empty diff.
 
 Doer ≠ checker: the verify stage is a different agent or the deterministic script — a doer never grades its own homework. The trust asymmetry in one line: **cheaper tier in → harder gate out** (tiers: § Model tiers). A `top`-tier lane's plan rides on lighter scrutiny; a `worker`-tier code edit gets the deterministic gate *and* an adversarial review stage before advancing.
 

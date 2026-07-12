@@ -12,6 +12,7 @@ for dst in ~/.claude/skills ~/.claude-work/skills; do
     cp -R "$s" "$dst/$name"
   done
 done
+mkdir -p ~/Downloads/portable-skills-backup
 rsync -a --delete "$SRC/" ~/Downloads/portable-skills-backup/
 cp ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ~/Downloads/portable-skills-backup/
 echo "synced: 2 profiles + Downloads backup"
