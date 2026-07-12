@@ -168,7 +168,7 @@ A `done` from a write-lane is **proposed, not accepted**, until a script stage r
 - `git diff --stat` in the lane's worktree is non-empty — an empty diff behind a `done` is treated as `needs-replan`.
 - The script re-runs the lane's `verificationCommand` itself and requires exit 0 — never trust the reported exit code.
 
-Doer ≠ checker: the verify stage is a different agent or the deterministic script — a doer never grades its own homework. The trust asymmetry in one line: **cheaper tier in → harder gate out.** A `top`-tier lane's plan rides on lighter scrutiny; a `worker`-tier code edit gets the deterministic gate *and* an adversarial review stage before advancing.
+Doer ≠ checker: the verify stage is a different agent or the deterministic script — a doer never grades its own homework. The trust asymmetry in one line: **cheaper tier in → harder gate out** (tiers: § Model tiers). A `top`-tier lane's plan rides on lighter scrutiny; a `worker`-tier code edit gets the deterministic gate *and* an adversarial review stage before advancing.
 
 This is ADR-0067's ratification goal — the runtime ratifies verdicts; the model only proposes them — relocated from Stop-hooks (reverted, PRISM `a1907b6`) to an explicit pipeline stage that never sits on the report-back turn.
 
@@ -183,7 +183,7 @@ Every dispatch carries a tier; this table is the default assignment:
 | `top` | Opus, effort `high` (`xhigh` for the hardest verify/buffer stages) | sol, winston, eric, pixel, sasha — judgment cannot be front-loaded out of these; winston and eric are **never dispatched below top** (the review firewall never runs cheap — PRISM `fec26cc`) |
 | `worker` | Sonnet, effort `medium` (raise to `high` for harder execution stages) | everyone else, clove/briar/eli/sage/lilac/reese included — they execute against judgment already spent at plan time |
 
-A run may pin a persona to a different tier at the run-plan gate; the override is logged in the run log's `## Lanes` line. No config file yet — this table is the default policy.
+A run may pin a persona to a different tier at the run-plan gate (winston and eric excepted — they never leave `top`); the override is logged in the run log's `## Lanes` line. No config file yet — this table is the default policy.
 
 Workers are safe on Sonnet because winston's detail bar front-loads every judgment call into the plan — a worker executes decisions already made, at the file-and-line level. Paying Opus rates to execute an Opus-grade plan is paying for judgment twice.
 
@@ -207,7 +207,7 @@ Routing notes that carry the orchestration judgment:
 
 - **The review loop.** A review persona (briar, eric) that finds fixable issues returns `done` — the review completed; the findings live in the plan's `## Review Issues` (briar) or on the PR (eric). Sol reads only the summary line: findings present → dispatch clove to fix, then re-dispatch the same reviewer; findings zero → advance. The loop is bounded (§ Budgets).
 - **Side-findings.** A lane can be `done` and still surface something out of scope — a bug spotted in passing, follow-up work discovered. Log each side-finding in the run log and route it at the next gate: the human decides whether it becomes a sasha lane, a new lane, or a note. Sol never silently absorbs discovered work into the current run, and never silently drops it either.
-- **Self-signalled escalation.** Beyond the verdict, every report-back carries `Confidence` and `Escalate` (see the dispatch prompt above). A `done` that arrives `Confidence: low` or `Escalate: yes` is not accepted as final: re-dispatch the same lane fresh when the doubt is capability-shaped (a clean context resolves more than expected; when the doubt is tier-shaped, that's the `needs-stronger-model` route — re-dispatch at `top`), route to winston when it's design-shaped, or to briar/eric when it's correctness-shaped — then reconcile the second result. The escalation is triggered by the agent that noticed, not guessed by Sol up front. Log the escalation and its trigger in the run log; if the re-dispatch still comes back low-confidence, it hits the two-strike budget (§ Budgets) and goes to a gate.
+- **Self-signalled escalation.** Beyond the verdict, every report-back carries `Confidence` and `Escalate` (see the dispatch prompt above). A `done` that arrives `Confidence: low` or `Escalate: yes` is not accepted as final: re-dispatch the same lane fresh when the doubt is capability-shaped (a clean context resolves more than expected; when the doubt is tier-shaped, that's the `needs-stronger-model` route — re-dispatch at `top`), route to winston when it's design-shaped, or to briar/eric when it's correctness-shaped — then reconcile the second result. The escalation is triggered by the agent that noticed, not guessed by Sol up front. Log the escalation and its trigger in the run log; if the re-dispatch still comes back low-confidence, it follows § Budgets — the `top`-tier attempt, then the gate.
 
 ## Human gates
 
@@ -230,7 +230,7 @@ Gate-owning personas judge their own gates and return a disposition; Sol routes 
 - `needs-human` — a judgment call: pause the lane, batch into the next gate report.
 - `blocked` — can't proceed: pause and batch, same as the routing table.
 
-There is **no autonomy policy setting** — self-clear the clearly-simple, escalate the judgment calls, always. (PRISM ran a three-tier autonomy dial that never left one setting; a dial permanently parked on `internal` fails the deletion test, so the dial isn't ported — its one live setting is the law.)
+There is **no autonomy policy setting** — self-clear the clearly-simple, escalate the judgment calls, always. (PRISM ran a three-tier dial for this that never left one setting; a dial permanently parked on `internal` fails the deletion test, so the dial isn't ported — its one live setting is the law.)
 
 Three hard gates are never auto-clearable, by any persona, under any circumstances: the **run-plan gate** (first gate of every run), the **review verdict** (a reviewer's findings route to the human or to clove — never past them), and **merge** (always the human — § Hard lines). The rule is one-directional: any persona may always escalate *up* to `needs-human`; none may auto-clear a hard gate down.
 

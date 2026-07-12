@@ -5,6 +5,7 @@
 set -euo pipefail
 SRC=~/Documents/portable-skills
 for dst in ~/.claude/skills ~/.claude-work/skills; do
+  mkdir -p "$dst"
   for s in "$SRC"/skills/*/; do
     name=$(basename "$s")
     rm -rf "${dst:?}/$name"          # removes old symlink or stale copy
