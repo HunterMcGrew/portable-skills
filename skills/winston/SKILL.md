@@ -149,6 +149,7 @@ $ARGUMENTS
 - **Evaluate** — architecture questions, design decisions, "does this fit our patterns"
 - **Plan** — task decomposition, "plan this out", "build the plan", "create implementation tasks"
 - **Both** — run evaluate first, then roll directly into plan mode when done
+- **Closing ceremony** — "run the closing ceremony", "close the plan", "sweep the decisions", eric's clean-verdict handoff, or review-loop/sol's closing phase (§ Closing Ceremony Mode)
 
 > If `$ARGUMENTS` is empty and mode is unclear, ask: "Do you want me to evaluate the approach, build out the implementation plan, or both?"
 
@@ -320,6 +321,23 @@ Before overwriting a plan's `## Implementation Tasks`, check whether implementat
 
 Close with the propagation report — what was synced, what needs the user's attention.
 
+## Closing Ceremony Mode
+
+Runs once per ticket, after the final reviewer pass comes back clean and **before the human merges** — as the last commit(s) on the branch, so the close ships inside the ticket's own PR and never costs a post-merge chore PR. Invoked by the user ("run the closing ceremony", often off eric's clean-verdict nudge), as review-loop's final phase, or as the pre-merge step in sol's lifecycle chain.
+
+Plans are the living memory of a ticket. The ceremony writes notes; it never moves anything: **never delete the plan, never archive it** — moving finished plans to `<plans>/archive/` is zoe's lane, on her own cadence — and never run this after merge.
+
+Steps:
+
+1. **Promotion sweep.** Walk `## Decisions` line by line; every entry gets an explicit verdict sub-bullet — `→ promoted to <doc> § <section>` (write the promotion into the repo's architect docs on the same branch, so the durable record ships in the same PR as the code it describes) or `→ no promotion needed (<reason>)`. Decisions still flagged as open questions get the exit-condition variant: `→ no promotion needed (open question — exit condition: <the future signal that reopens it>)`.
+2. **Lessons check.** Anything corrected, surprising, or assumption-breaking during the ticket → one-line entries in the repo's lessons file (check for an existing entry first — update rather than duplicate).
+3. **Loose-thread check.** Every `open` entry in `## Debugged Issues` / `## Review Issues` is either resolved or explicitly carried to a named follow-up.
+4. **History close.** Append: `YYYY-MM-DD [<branch>]: Closing ceremony — decisions swept (<n> promoted), lessons <captured|none>, threads clear.`
+
+If iris has written a retro for this plan, read it before the sweep — her divergence verdicts and promotion cautions are inputs to the promotion decisions.
+
+Commits landing after the ceremony but before merge (human review feedback) don't reopen it — append History as normal; re-run the sweep only if new `## Decisions` entries were added.
+
 ## Evaluate-mode conditional checks
 
 **Design-aware flag** — when evaluating a feature with UI implications, check whether a mock, wireframe, or design reference exists in the ticket, plan, or user input. No mock: flag it — suggest the user get a design pass covering states, hierarchy, and interaction patterns before planning, and include concrete suggestions from your own assessment (existing components to reuse, layout and interaction patterns to match). Mock with gaps (missing empty/error/loading states): name the specific missing states. Not a blocker — proceed with the evaluation — but make it visible.
@@ -361,6 +379,14 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] No implementation code written
 - [ ] Flagged or recommended updates to the repo's rules or architecture docs where gaps were discovered
 - [ ] Closing Re-Orientation Battery answered before stopping
+
+**Closing ceremony mode:**
+- [ ] Ran pre-merge, on the ticket's own branch — never after merge
+- [ ] Every `## Decisions` entry carries a promotion verdict sub-bullet; promotions written to the architect docs on the same branch
+- [ ] Lessons check done (dedup-first)
+- [ ] No `open` Debugged/Review Issues left without a named follow-up
+- [ ] Plan file untouched in place — not deleted, not archived (zoe's lane)
+- [ ] `## History` ceremony line appended
 
 **Plan mode:**
 - [ ] Opening Orientation Battery answered before any plan work
