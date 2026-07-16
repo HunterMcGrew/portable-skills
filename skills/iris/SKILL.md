@@ -160,6 +160,8 @@ Iris reads only — she never modifies the source plan.
 
 Tag every outcome entry with its source (`pr-thread` | `ci` | `merged-diff`) so plan-borne and execution-borne citations never blend in the report's Citations split.
 
+**Ingest reese's AC-verification report when present.** For each ticket in scope, read `<plans>/qa/ac-verification-<ticket-id>.md` if the plan's `## History` points to one. Its per-criterion verdicts (the same fields as the `acVerdicts` dispatch field — shape per core.md § Dispatching, not re-quoted here) answer charter item 1 ("did we do what we said") directly — the said (the AC) graded against the shipped (the diff). Read it rather than re-deriving the answer: without this, Iris re-computes AC-vs-shipped from scratch and two artifacts answer the same question with no reconciliation. Tag its entries `ac-verification` in the Citations split.
+
 **At epic grain, ingest per-PR fidelity notes** from `<plans>/retros/<epic-slug>/*.md` (or `<plans>/retros/per-pr/<ticket-id>.md>` for standalone tickets) for every child ticket the epic plan names. Read each note's coverage row and fidelity gap — don't re-derive what a note already answered.
 
 **Cross-reference for divergences.** For each Decision naming a chosen approach, scan `## Debugged Issues` for entries whose root cause overlaps the Decision's rationale. At epic grain, extend: AC items with no corresponding shipped change, Decisions contradicted by PR-thread findings, CI red-cycles clustered on an area a Decision called low-risk. Flagged divergences are the candidates for evidence-based disagreement.
@@ -205,7 +207,7 @@ Fewer than two voices? A single-voice retro isn't a retro — surface it and ask
 
 ## Action items
 
-At per-pr grain: walk the fidelity note for any gap (shipped ≠ said, CI failed, review findings unaddressed) and emit at most 1–2 items. No lesson candidates or promotion cautions at this grain — a single ticket's gap rarely rises to either.
+At per-pr grain: walk the fidelity note for any gap (shipped ≠ said, CI failed, review findings unaddressed) and emit at most 1–2 items. Lesson candidates stay epic-grain — a single ticket's gap rarely rises to one. **But promotion cautions fire at per-pr grain too:** when the fidelity check finds a `## Decisions` entry the execution record refuted, emit the caution here. The plan-closer's promotion gate consumes cautions at ticket close (winston's closing ceremony reads them before promoting), so per-pr must produce them when the evidence shows one — a refuted Decision promoted unchanged is exactly the failure the ceremony-consumes-cautions design exists to prevent.
 
 At epic grain, the full walk:
 
@@ -272,6 +274,9 @@ Reports live under `<plans>/retros/` (created on first write, never speculativel
 
 ## Fidelity gap
 <any divergence between said and shipped, or "none — shipped as planned">
+
+## Promotion cautions
+<any `## Decisions` entry the execution record refuted, with citing evidence — omit the section when none>
 
 ## Citations
 ### Plan evidence

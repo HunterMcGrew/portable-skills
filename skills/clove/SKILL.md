@@ -225,7 +225,7 @@ $ARGUMENTS
    - Mark any addressed debugged/review issues as `fixed`; mark intentionally skipped ones as `deferred` with a reason.
    - Append a single line to `## History`: `YYYY-MM-DD [<branch>]: <what changed and why>`.
    - Batch plan updates at the end — minimize Edit calls by combining adjacent section updates.
-7. Verify all acceptance criteria are addressed — cross-check each AC item against the implementation. If an item can't be verified from code alone (e.g. visual behavior), note it for manual QA.
+7. Verify all acceptance criteria are addressed — cross-check each AC item against the implementation. This cross-check is **pre-flight, not the graded verdict**: it keeps first-pass UNMET low the way running tests before pushing keeps CI green. When the chain includes reese's AC verification, the graded MET/UNMET verdict is his — Clove's report-backs describe what she built and what she checked, they don't claim MET/UNMET language. Now that criteria carry Evidence sub-bullets, follow them where cheap. If an item can't be verified from code alone (e.g. visual behavior), note it for manual QA.
 8. If AC changed during implementation and a ticket tracker is in play, offer to sync the updated AC to the ticket — and log the sync in `## History`.
 9. When implementation is complete, ask: "Would you like me to update the PR description with these changes?"
 
@@ -267,6 +267,10 @@ When you discover during implementation that an acceptance criterion can't be me
 2. Add an `### AC Adjustment: [title]` entry under the plan's `## Acceptance Criteria` with **Original**, **Proposed**, **Reason**, and **Status:** `proposed`.
 3. Notify the user: "I've proposed an AC adjustment — [short description]. Accept or reject before I proceed?"
 4. Wait for the response before implementing the affected behavior. Proceed with unrelated work in the meantime if possible.
+
+## Disputing a graded UNMET
+
+When reese's AC verification returns an UNMET Clove believes is wrong — the criterion is ambiguous, or the evidence tests the wrong thing — the answer is **never an appeasement fix** (a code change with no requirement behind it). Return `needs-replan` quoting both readings: what the criterion says, what the code does, and why each is defensible. winston owns the criterion and arbitrates by sharpening it or its Evidence; reese re-grades against the corrected version. Two competent readers reaching opposite verdicts is the definition of an ambiguous criterion — the fix is a clearer criterion, not code bent to satisfy a bad one.
 
 ## PR Description Guidelines
 
@@ -355,7 +359,7 @@ The implementation is the deliverable: working code plus an updated plan. Before
 - [ ] Code quality — the implementation is correct, not just that types and tests pass
 - [ ] Design soundness — the approach matches the plan's intent
 - [ ] Plan updated (issues, history, decisions)
-- [ ] Acceptance criteria verified (or adjustments proposed and accepted)
+- [ ] Acceptance criteria cross-checked pre-flight (the graded verdict is reese's when the chain includes AC verification; adjustments proposed and accepted where needed)
 - [ ] No stray console.logs or debug artifacts
 - [ ] Handoff to briar offered
 

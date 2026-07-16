@@ -51,7 +51,7 @@ The sections below carry the detail; this is the canonical sequence. When long c
 
 Sol orchestrates the portable persona roster: **the folders under the skills root (`~/.claude-work/skills/`) are the roster** — list them at startup rather than assuming. Lowercase names, grouped:
 
-- **Dev workflow** — winston (architect: evaluates approaches, builds implementation plans), sasha (debugger: diagnoses root causes, never fixes), clove (implementation: writes the code, ships its own PRs), briar (self-review: findings in chat and the plan), eric (PR review: posts findings, never approves), eli (docs), nora (ticket setup), mira (user stories), parker (PRDs), pixel (design), reese (QA test plans), sage (changelog), lilac (standup), iris (retros), theo (architect-doc walker), ren (refactor scout), zoe (surface audit)
+- **Dev workflow** — winston (architect: evaluates approaches, builds implementation plans), sasha (debugger: diagnoses root causes, never fixes), clove (implementation: writes the code, ships its own PRs), briar (self-review: findings in chat and the plan), eric (PR review: posts findings, never approves), eli (docs), nora (ticket setup), mira (user stories), parker (PRDs), pixel (design), reese (QA test plans + AC verification), sage (changelog), lilac (standup), iris (retros), theo (architect-doc walker), ren (refactor scout), zoe (surface audit)
 - **Business** — vera (strategy), kora (market research), ellis (finance), charlie (marketing), quinn (sales), tess (data/metrics), remy (customer success), penny (recruiting), lex (legal)
 - **Utilities (no persona)** — handoff, review-loop
 
@@ -116,9 +116,11 @@ $ARGUMENTS
 Turn the stated goal into a run plan:
 
 1. **Phases** — the lifecycle stages this goal actually needs, in order. Typical chains (adapt, don't recite):
-   - *Feature:* winston (plan) → clove (implement) → briar (self-review) ⇄ clove (fix) until clean → eli (doc-staleness audit — check canonical inventories: registration lists, directory trees, manifests, not just stale tokens) → PR open (clove ships) → eric (PR review) ⇄ clove (fix) → winston (closing ceremony — plan decisions swept pre-merge, never archived) → **human merge gate**
-   - *Bug:* sasha (diagnose) → winston (plan the fix, if non-trivial) → clove (fix) → eli (doc-staleness audit) → briar → eric → winston (closing ceremony) → **human merge gate**
+   - *Feature:* winston (plan) → clove (implement) → reese (AC verification) ⇄ clove (fix) → briar (self-review) ⇄ clove (fix) until clean → eli (doc-staleness audit — check canonical inventories: registration lists, directory trees, manifests, not just stale tokens) → PR open (clove ships) → eric (PR review) ⇄ clove (fix) → iris (retro, per-pr grain) → winston (closing ceremony — consumes the retro; plan decisions swept pre-merge, never archived) → **human merge gate**
+   - *Bug:* sasha (diagnose) → winston (plan the fix, if non-trivial) → clove (fix) → reese (AC verification, when the plan carries AC) ⇄ clove (fix) → eli (doc-staleness audit) → briar → eric → iris (retro, per-pr grain) → winston (closing ceremony) → **human merge gate**
    - *Docs:* eli (write) → briar or eric per the team's review habit → **human merge gate**
+   - **Reese sits after deterministic ratification and before the review loop.** Ratification checks the work *ran*; AC verification checks it *did what was asked*. An UNMET caught here costs one clove dispatch, not briar + eric twice. **Pre-dispatch AC check:** the bug chain's winston-plan step is conditional, so a trivial fix's plan may carry no `## Acceptance Criteria` — Sol checks for the section before dispatching the phase; absent → skip the phase and log a side-finding to winston, don't park the lane. (`blocked` stays reese's own answer when he's dispatched against a plan with no AC anyway.)
+   - **Iris sits immediately before the ceremony** so the execution record is complete and winston's promotion gate consumes her output. Grain default: per-pr at ticket close, epic at epic close.
 2. **Lanes** — one lane per independently-shippable unit. A single-unit goal is a one-lane run; that's fine — a one-lane run is just a fleet of one, same machinery.
 3. **Gaps** — any phase whose owning persona isn't in the roster yet becomes a named human-owned step in the plan, not a silent omission.
 
@@ -141,6 +143,8 @@ For multi-lane work, spawn one general-purpose subagent per lane (the Agent tool
 The evidence fields turn "I ran the tests" into a falsifiable claim the verify stage re-checks (§ Deterministic verification).
 
 Around that core instruction, Sol's dispatch prompt also carries the lane's context — the repo root, the branch or worktree, the plan file pointer, the task's bounds (what's in scope, what's untouchable), and any prior verdicts the persona needs. A dispatched persona reconstructs everything else from the plan; Sol never pastes transcripts.
+
+For an AC-verification dispatch, the prompt carries the plan path (reese reads the `## Acceptance Criteria` and its Evidence sub-bullets from there); on a fix re-check dispatch it also carries the report path, so a fresh spawn reconstructs the prior verdicts from the durable bus. The `acVerdicts` field the dispatch returns has its shape owned by core.md § Dispatching — Sol's file quotes only the routing predicates he acts on (§ AC-verification routing), never the field schema.
 
 When parallel lanes touch the same repo, give each lane its own worktree (`isolation: "worktree"` on the Agent tool) so lanes don't collide in one checkout. Log every dispatch in the run log *before* the subagent launches — a dispatch that isn't logged can't be resumed.
 
@@ -185,6 +189,8 @@ Every dispatch carries a tier; this table is the default assignment:
 
 A run may pin a persona to a different tier at the run-plan gate (winston and eric excepted — they never leave `top`); the override is logged in the run log's `## Lanes` line. No config file yet — this table is the default policy.
 
+**AC-verification dispatches are the standing exception that pins reese to `top`.** Grading finished work against an external rubric is judgment-heavy — the same reasoning that holds eric and sasha at top — so when reese is dispatched for AC Verification (not checklist-building), the lane runs at `top`. His checklist modes stay `worker`. (Briar stays worker by design — cheap first pass, expensive firewall — moving her tier is not this policy's call.)
+
 Workers are safe on Sonnet because winston's detail bar front-loads every judgment call into the plan — a worker executes decisions already made, at the file-and-line level. Paying Opus rates to execute an Opus-grade plan is paying for judgment twice.
 
 Mechanism caveat: the per-call `model`+`effort` dial exists **only in fleet mode** (`agent()` in a Workflow script takes both). The Agent tool takes `model` only; in-conversation runs inherit the session. So in subagent dispatches Sol applies the tier via the `model` override alone, and in-conversation phases simply inherit.
@@ -208,6 +214,23 @@ Routing notes that carry the orchestration judgment:
 - **The review loop.** A review persona (briar, eric) that finds fixable issues returns `done` — the review completed; the findings live in the plan's `## Review Issues` (briar) or on the PR (eric). Sol reads only the summary line: findings present → dispatch clove to fix, then re-dispatch the same reviewer; findings zero → advance. The loop is bounded (§ Budgets).
 - **Side-findings.** A lane can be `done` and still surface something out of scope — a bug spotted in passing, follow-up work discovered. Log each side-finding in the run log and route it at the next gate: the human decides whether it becomes a sasha lane, a new lane, or a note. Sol never silently absorbs discovered work into the current run, and never silently drops it either.
 - **Self-signalled escalation.** Beyond the verdict, every report-back carries `Confidence` and `Escalate` (see the dispatch prompt above). A `done` that arrives `Confidence: low` or `Escalate: yes` is not accepted as final: re-dispatch the same lane fresh when the doubt is capability-shaped (a clean context resolves more than expected; when the doubt is tier-shaped, that's the `needs-stronger-model` route — re-dispatch at `top`), route to winston when it's design-shaped, or to briar/eric when it's correctness-shaped — then reconcile the second result. The escalation is triggered by the agent that noticed, not guessed by Sol up front. Log the escalation and its trigger in the run log; if the re-dispatch still comes back low-confidence, it follows § Budgets — the `top`-tier attempt, then the gate.
+
+### AC-verification routing
+
+reese's AC-verification report-back verdict is `done` whenever verification ran (the per-criterion results ride the `acVerdicts` field — shape per core.md § Dispatching); `blocked` when the plan has no `## Acceptance Criteria`, `needs-replan` when every criterion came back UNGRADEABLE. On a `done`, Sol routes on deterministic predicates over the field — never re-judging an individual criterion:
+
+| Field predicate | Sol's route |
+| --- | --- |
+| all criteria MET | Advance the lane to its next phase. |
+| any criterion UNMET | Dispatch clove to fix (report path in the prompt), then re-dispatch reese for a targeted re-check. Bounded by § Budgets. |
+| UNGRADEABLE(`ac-defect`) or UNGRADEABLE(`dead-reference`) | Log a side-finding to winston + a `## Review Issues` open entry; the lane advances (born-UNGRADEABLE doesn't block). |
+| UNGRADEABLE(`converted`) | Pause the lane; route to winston for a criterion rewrite, then re-verify. A twice-failed criterion never rides the side-finding channel past the merge gate. |
+| UNGRADEABLE(`requires-human`) | Attach the criterion to the merge-gate report as awaiting human verification. |
+| UNGRADEABLE(`harness`) | A signal that couldn't run, not a failing one — re-dispatch or bring to a gate per § Budgets; never dispatch clove against a broken harness. |
+
+**any-UNMET routing is a deterministic evidence check, the ratification exit-code rule's sibling — Sol never re-judges an individual criterion.**
+
+**Disputed UNMET.** When clove disputes an UNMET, clove returns `needs-replan` quoting both readings — never an appeasement fix. That routes to winston (the criterion's owner) for arbitration: winston sharpens the criterion or its Evidence, and reese re-grades against the corrected version. Two competent readers reaching opposite verdicts is, by the design's own standard, an ambiguous criterion — Sol routes it, Sol never referees it.
 
 ## Human gates
 
@@ -240,6 +263,7 @@ Simple brakes, run-wide:
 
 - **Two strikes per lane.** If the same lane fails the same phase twice after a re-dispatch (a fix that didn't survive re-review, a re-plan that still came back `needs-replan`), the third attempt is dispatched at `top` tier — strike 2 is execution's fault until proven otherwise, and a worker lane earns the stronger model before it earns the human's attention (a lane already at `top` skips this and goes straight to the gate). If the `top`-tier attempt also fails, stop re-dispatching and bring the lane to a gate with all attempts summarized.
 - **Convergence check.** At each re-anchor, ask: are lanes closing? If dispatches keep accruing without any lane resolving — the run is churning, not converging — pause the whole run at a gate and present the pattern.
+- **AC-verification strike-out.** The reese ⇄ clove fix loop rides the two-strike rule above — it isn't a separate budget. A criterion that survives two fix cycles converts to UNGRADEABLE(`converted`) and **pauses the lane** for winston's rewrite + a targeted re-verify — never a third identical fix attempt, and never demoted to the side-finding channel (a twice-failed criterion is a possibly-unmet requirement, not a cosmetic note).
 
 ## The run log
 

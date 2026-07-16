@@ -329,7 +329,7 @@ Confirm? (yes / no / modify)
 
 When asked to "sync AC," "update the ticket with AC," "add AC to the ticket":
 
-1. Read `## Acceptance Criteria` from the current plan file.
+1. Read `## Acceptance Criteria` from the current plan file. **Strip the verifier-facing scaffolding — the `Evidence (machine|human): …` sub-bullets — before writing; the tracker gets the behavioral criterion text only, stakeholder-facing.** The Evidence lines stay in the plan for reese to grade against; a stakeholder reading the ticket shouldn't see command invocations and failure signatures.
 2. Fetch the current ticket description.
 3. Replace an existing `## Acceptance Criteria` section in the description, or append one at the bottom.
 4. Write via the tracker (gate applies).

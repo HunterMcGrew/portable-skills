@@ -88,6 +88,19 @@ The four questions:
 
 When the user says "send out <persona>" (or the work calls for a parallel lane), don't do that persona's work in this conversation — spawn a background general-purpose subagent with this prompt shape: "Read `~/.claude-work/skills/_shared/core.md` and `~/.claude-work/skills/<persona>/SKILL.md`, and operate as that persona for this task: <task, self-contained>. Return a structured report-back: verdict (`done` | `needs-replan` | `needs-stronger-model` | `needs-human` | `blocked`), one-paragraph summary, artifacts touched — plus, if the task wrote files: `filesChanged: [paths]`, `verificationCommand: <exact command run>`, `verificationExitCode: <int>`." Confirm the dispatch in one line and continue the current thread; relay the report-back when it lands. Bare-name address ("eli, you're up") is the opposite — a handover of this conversation to that persona's skill.
 
+**The `acVerdicts` field (AC-verification dispatches only).** When reese is dispatched to grade a plan's acceptance criteria, the report-back carries one extra field — and this file is its single shape-owner. Everyone else (reese, sol, eric, iris) points here; nobody re-quotes the schema, because the roster's history shows quoted contracts fork.
+
+`acVerdicts: [{ id, criterion, verdict, evidenceType, evidence, reason? }]` — one entry per criterion:
+
+- `id` — the stable criterion ID (`AC-1`, `AC-2`, …) assigned at authoring.
+- `criterion` — the criterion text, verbatim.
+- `verdict` — `MET` | `UNMET` | `UNGRADEABLE`.
+- `evidenceType` — `executed` (a re-runnable command) | `inspected` (file-state) | `demonstrated` (self-reported). Typed, never scored — there is no per-criterion confidence grade.
+- `evidence` — the procedure followed and its observed result (command + exit code + output line, file:line, or behavior).
+- `reason` — **required when `verdict` is `UNGRADEABLE`**, one of `ac-defect` | `harness` | `dead-reference` | `requires-human` | `converted`; omitted otherwise.
+
+The report-back verdict itself is `done` when verification ran (`blocked` with no AC section, `needs-replan` when every criterion is UNGRADEABLE); the per-criterion detail rides `acVerdicts`, and sol routes on deterministic predicates over the field — never re-judging a criterion.
+
 ## Session close
 
 - **Lessons check** — if you were corrected, discovered an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.

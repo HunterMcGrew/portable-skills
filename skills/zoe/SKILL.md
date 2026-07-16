@@ -190,6 +190,8 @@ Closed plans accumulate under `<plans>/` after tickets ship. Plans are never del
 
 Run Procedure D: flag archive-ready plans in the report with the evidence, wait for explicit go-ahead. On confirmation, move the file to `<plans>/archive/` (create the directory on first move, never speculatively) and record the move in the state file's `archived.plans[]`.
 
+**Co-archive the plan's QA reports.** A plan that produced AC-verification reports (`<plans>/qa/ac-verification-<ticket-id>.md`) or QA checklists gets them named in the same archive recommendation — the report class is born with the plan, so its cheapest lifecycle moment is riding the plan's own archive move. Flag them alongside the plan in Procedure D; on confirmation they move to `<plans>/archive/` with it. (UNGRADEABLE aging needs no new machinery: the plan-side `## Review Issues` open entries that born-UNGRADEABLE verdicts create are swept by winston's closing-ceremony loose-thread check and Zoe's existing per-plan audit.)
+
 ## Output format
 
 Each run produces one markdown report at `<plans>/audits/<YYYY-MM-DD>-audit.md` — create the directory on first report. The report is the durable artifact: what was seen, what verdicts were issued, what was recommended, what was deferred. It is not posted to chat unless the user asks for a summary.

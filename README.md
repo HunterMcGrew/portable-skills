@@ -15,9 +15,10 @@ a background agent (see the persona-dispatch rule in `~/.claude-work/CLAUDE.md`)
 **Dev workflow:** winston (architecture + plans), sasha (debugging, never
 fixes), clove (implementation + shipping), briar (self-review, chat only),
 eric (PR review, never approves/merges), eli (docs), nora (ticket setup),
-mira (user stories), parker (PRDs), pixel (design), reese (QA test plans),
-sage (changelog), lilac (standup), iris (retros), theo (architect-doc walker),
-ren (refactor scout), zoe (surface audit).
+mira (user stories), parker (PRDs), pixel (design),
+reese (QA test plans + AC verification), sage (changelog), lilac (standup),
+iris (retros), theo (architect-doc walker), ren (refactor scout),
+zoe (surface audit).
 
 **Orchestration:** sol — the conductor; dispatches the roster, pauses at every
 human gate, tracks runs in `<plans>/conductor/`; never writes code or merges.

@@ -270,6 +270,19 @@ Prescriptive and concrete — which files, which patterns (cite codebase example
 ### Acceptance Criteria
 Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-behavioral. Written for non-technical testers — no file names, function names, or types; describe observable behavior only. Each criterion independently testable.
 
+**The gradeability bar.** Every criterion carries a stable ID and a falsifiable Evidence sub-bullet — this is what turns the AC from prose a human eyeballs into a grading instrument an independent verifier (reese) can execute.
+
+- **Stable ID** — `AC-1`, `AC-2`, … assigned at authoring, never reused. Targeted re-checks and disputes need a key that survives AC reordering: the criterion text can be rewritten, the ID can't move.
+- **Evidence sub-bullet**, one per criterion, in this shape:
+  `- Evidence (machine|human): <procedure> → <expected observation> · UNMET looks like: <failure signature>`
+  - **Falsifiable, not merely runnable.** Name the exact command, inspection, or behavior; the expected observation ("exit 0 and output includes `12 passed`", not "run the tests"); and the failure signature. If you can't name what UNMET looks like, the criterion isn't gradeable — that's the bar with teeth.
+  - **Tag each Evidence line `machine` or `human`.** Machine evidence is a command or inspection a verifier runs; human evidence is visual, timing, or feel that only a person can judge. reese grades the machine set and routes the human set to the merge gate as a checklist — each criterion goes to the verifier that can actually verify it.
+  - **Absence-evidence needs a positive control.** "Grep for X returns nothing" also passes when the grep is typo'd — pair it with a positive hit that proves the probe works.
+  - **Behavioral criteria get behavioral evidence** (a run, a probe). File-state evidence proves code was written, not that the criterion holds — reserve it for non-behavioral constraints.
+  - **Two-verifiers standard:** could two independent verifiers follow this with no author context and reach the same verdict? If not, rewrite.
+
+The criterion text itself stays tester-facing (the rule above is unchanged); the Evidence sub-bullet is for the verifier and may be technical. Winston owns this Evidence format — reese's AC-verification mode follows it and never re-specifies it. Evidence sub-bullets live in the plan only: nora strips them before syncing AC to the tracker, and reese strips them from tester-facing checklists.
+
 ### Open Questions
 Anything needing a decision before implementation. Omit if none.
 
@@ -297,7 +310,7 @@ When the user asks to plan, build tasks, or decompose work — or when evaluate 
    - Tag a task `[HITL]` only when human input blocks execution (stakeholder approval, an unresolved open question, cross-team sign-off); the default is agent-runnable and stays unmarked.
 5. **Docs impact check:** if the work changes user-facing behavior for a feature with existing docs, include a task under `### eli` naming the doc and what changed.
 6. **Decomposition check — one-line confirmation.** Before generating AC, pause: *"Does this decomposition feel right — granularity, dependencies, merge/split, tag accuracy?"* If pushback, reshape tasks before AC generation — this catches over/under-slicing before AC amplifies the wrong shape.
-7. Generate `## Acceptance Criteria`: Gherkin `Given / When / Then` for behavioral, plain checklist for non-behavioral, per the Acceptance Criteria rules in the output format above.
+7. Generate `## Acceptance Criteria`: Gherkin `Given / When / Then` for behavioral, plain checklist for non-behavioral, per the Acceptance Criteria rules in the output format above. Assign each criterion its stable ID and falsifiable Evidence sub-bullet (tagged machine or human) here, at generation — the gradeability bar is part of authoring, not a later pass. A criterion without gradeable evidence isn't done being written.
 8. Populate or update the plan: `## Goal` (one sentence if unset), `## Decisions` (choices with one-line rationale; non-trivial decisions get sub-bullets — root cause, alternatives considered, chosen approach, implementation guidance), `## Implementation Tasks`, `## Acceptance Criteria`, and a `## History` append: `YYYY-MM-DD [<branch>]: Plan created — [goal summary]`.
 9. If the team's ticket tracker is accessible, offer to sync the AC into the ticket description so testers see it there.
 
@@ -379,6 +392,7 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] Devil's Advocate section included — all 4 questions (Risks, Tradeoffs, Why anyway, Watch for) with genuine critique, not generic placeholders
 - [ ] Risk assessment included with concrete scenarios, not generic warnings
 - [ ] Acceptance Criteria included (Gherkin for behavioral, plain checklist for non-behavioral)
+- [ ] Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged machine or human (gradeability bar)
 - [ ] Design-aware flag raised if feature has UI implications and no mock
 - [ ] Design Decision Log bullets ready to paste into the plan's `## Decisions`
 - [ ] Architecture docs flagged for update if approach is adopted
@@ -398,6 +412,7 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] Opening Orientation Battery answered before any plan work
 - [ ] `## Implementation Tasks` populated with ordered, concrete tasks at the detail bar
 - [ ] `## Acceptance Criteria` generated from the goal (and user stories where present)
+- [ ] Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged machine or human (gradeability bar)
 - [ ] `## Goal` and `## Decisions` updated in plan
 - [ ] Epic detection evaluated (>5 tasks crossing system boundaries)
 - [ ] Cross-ticket decisions promoted to the repo's architecture docs immediately
