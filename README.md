@@ -10,7 +10,8 @@ The folders under `skills/` are the source of truth — every folder is one
 skill. Call personas by name ("Winston, is this the right approach?") or by
 slash command (`/winston`, `/clove`, ...). Two invocation verbs: bare-name
 address hands the conversation over; "send out <persona> to <task>" dispatches
-a background agent (see the persona-dispatch rule in `~/.claude-work/CLAUDE.md`).
+a background agent (see the persona-dispatch rule in your user-level
+`CLAUDE.md`).
 
 **Dev workflow:** winston (architecture + plans), sasha (debugging, never
 fixes), clove (implementation + shipping), briar (self-review, chat only),
@@ -33,27 +34,41 @@ document), review-loop (the briar → clove → eric gauntlet).
 
 ## Install
 
-This folder (`~/Documents/portable-skills`) is the canonical copy — the only
-place to edit, kept under git. `sync.sh` pushes real copies of every skill
-folder to both Claude profiles (`~/.claude/skills`, `~/.claude-work/skills`)
-and a backup at `~/Downloads/portable-skills-backup/`:
+Clone the repo, then copy every folder under `skills/` into your Claude
+profile's skills directory — `~/.claude/skills` for most people:
 
 ```bash
-~/Documents/portable-skills/sync.sh
+git clone <repo-url> portable-skills
+cd portable-skills
+mkdir -p ~/.claude/skills
+cp -R skills/* ~/.claude/skills/
 ```
 
-No symlinks anywhere — copies don't propagate on their own, so re-run
-`sync.sh` after any edit. Profile-only skills (folders with no counterpart
-here) are never touched by the sync.
+Two things the copy must get right:
 
-The `_shared/core.md` file is the roster's shared operating system — repo map,
-plan files, orientation batteries, re-anchors, context budget, house rules.
-Every skill reads it as Step 0; edit it once and every persona picks up the
-change. Persona SKILL.md files carry only persona-specific content.
+- **`skills/_shared/` has to come along.** `_shared/core.md` is the roster's
+  shared operating system — repo map, plan files, orientation batteries,
+  house rules. Every persona reads it as Step 0, so a roster installed
+  without it runs on a degraded failsafe. The `cp -R skills/*` above includes
+  it; if you cherry-pick individual personas, copy `_shared/` too.
+- **Copies don't self-update.** There are no symlinks — after `git pull`
+  brings in roster changes (or after you edit your clone), re-run the copy.
+  Until you do, your profile keeps running the old version.
 
 User-level skills load in **every** repo you open with that profile and live
-in **no** repo's tree. (If your normal profile is `~/.claude`, use that path
-instead.)
+in **no** repo's tree.
+
+### The owner's sync script
+
+`sync.sh` in the repo root is the owner's personal install path: it copies the
+roster into two profiles (`~/.claude/skills` and `~/.claude-work/skills`) and
+keeps a backup under `~/Downloads/`, and it references a plan file at a
+hardcoded `~/worklogs/...` path that won't exist on your machine — so run
+as-is it will fail partway. Treat it as a reference, not a turnkey installer:
+either trim it to the copy loop for your own profile dir, or just use the
+manual `cp -R` above. Its one design point worth keeping if you adapt it:
+per-skill copy with no `--delete` semantics against the profile dirs, so
+skills you keep only in your profile survive a re-sync.
 
 ## Per-repo setup (five minutes, once per repo)
 
@@ -84,21 +99,36 @@ lessons.md, their docs) are just your work — they ship through your normal
 branch → PR flow. The tooling itself is never installed in, or committed to,
 the repo.
 
+## Alongside a repo's own persona skills
+
+Some repos ship their own skill set, and those skills may carry the same
+persona names — a repo-level skill with its own id (say `acme-architect`)
+whose routing rules claim "Winston", or a roster that has its own "clove".
+When both layers are installed, the name and the skill stop being the same
+thing. The rules:
+
+- **Bare names are ambiguous.** Saying "Winston, is this the right approach?"
+  routes by name, and the repo's own routing rules can claim that name — so
+  in such a repo, a bare name may load the repo's version instead of the
+  portable one. Neither outcome is wrong; you just can't tell from the name
+  alone.
+- **Slash commands are exact.** `/winston`, `/clove`, `/eric` target a skill
+  by its id, so they always load the portable version. When it matters which
+  one you get, use the slash command.
+- **The repo's skills stay reachable the same way** — via their own ids
+  (`/acme-architect`, `/acme-code-dev`). Installing this roster hides
+  nothing; it only adds a second claimant for the bare names.
+- **You can set a default.** A one-line routing preference in your user-level
+  `CLAUDE.md` (e.g. `~/.claude/CLAUDE.md`: "when a bare persona name matches
+  both a portable skill and a repo skill, prefer the portable one") makes
+  bare names resolve your way without per-invocation slash commands. The
+  repo's skills remain a slash command away.
+
 ## Caveats
 
-- **Don't open the PRISM repo with these installed** (or expect duplicates if
-  you do) — PRISM's repo-level skills carry the same persona names, and two
-  Winstons make name-routing ambiguous. Everywhere else there's exactly one.
-- **Repos with their own persona skills route names to their own skills.** If a
-  repo's skills or routing rules claim a persona name (e.g. a repo-level
-  `acme-architect` claims "Winston"), bare-name invocation may load the repo's
-  version instead of yours. Two-layer fix: a routing preference in
-  `~/.claude-work/CLAUDE.md` makes bare names default to the portable skills,
-  and the slash command (`/winston`, `/sasha`, ...) is the guaranteed path —
-  it targets the skill by exact id. The repo's own skills stay reachable via
-  their own commands (`/acme-architect`).
-- These files are a **snapshot port**, decoupled from PRISM's build. Edits you
-  make here are the source of truth for this roster — nothing regenerates them.
+- These files are a **snapshot port**, decoupled from the toolkit repo they
+  were extracted from. Edits you make here are the source of truth for this
+  roster — nothing regenerates them.
 - Plans use a simplified plan-file shape (goal / tasks / decisions / history /
   sessions / issues). Point `plans:` in the repo map wherever you want them
   kept. The `## Sessions` section holds each session's orientation-battery
@@ -110,8 +140,8 @@ the repo.
   `_shared/core.md`). Excluded on purpose: onboarding/install personas
   (Atlas, skill-forge) — they configure a specific toolkit repo and have no
   meaning as portable skills.
-- Re-run `sync.sh` after adding or editing personas — copies don't
-  self-propagate.
+- Re-run the copy (`cp -R skills/* ~/.claude/skills/`, or your trimmed
+  `sync.sh`) after adding or editing personas — copies don't self-propagate.
 - If long sessions still drift despite the re-anchors, a user-level
   PostToolUse hook is the mechanical backstop — layer it on, don't replace
   the skill-level instructions.
