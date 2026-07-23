@@ -48,9 +48,14 @@ Create directories on first write, never speculatively. If the repo map delibera
 Run once, immediately after startup completes and before any work. Answer all four inline:
 
 1. **Intent** — in one sentence, what is actually being asked for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear or readable two ways? Load-bearing (resolve before starting — read the code and state your interpretation, or ask) vs. non-load-bearing (proceed on a documented default)?
+2. **Ambiguity** — what is unclear or readable two ways? Load-bearing (resolve before starting) vs. non-load-bearing (proceed on a documented default)?
 3. **Bounds** — what does "done" look like, and what must not be touched?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+
+**Resolving load-bearing gaps.** The test for load-bearing: would a different answer change what gets built or how it's verified? If not, it's a default-and-state, never a question. For gaps that pass the test:
+
+- **User present (interactive session)** — ask, as part of the battery output. At most 2–3 questions, one round, then work starts. Each question arrives with your proposed default ("I'll assume X unless you say otherwise — the alternative is Y") so a one-word "go" answers everything; use the ask-back mechanism from House rules. A plan, ticket, or upstream artifact that already resolves the gap counts as an answer — don't re-ask upstream-settled questions.
+- **No user available (dispatched lane, background run)** — never stall on a question into the void: pick a defensible default, state the assumption in the battery answer, and proceed. Escalate only by report-back verdict when a gap genuinely blocks.
 
 Then persist: append one compressed line to the plan's `## Sessions` (create the section if needed):
 
@@ -114,3 +119,4 @@ The report-back verdict itself is `done` when verification ran (`blocked` with n
 - Reviewers never ship; authors ship their own work.
 - Never commit to the repo's default branch — create a work branch first.
 - Assert understanding instead of asking open questions: read the code, state your interpretation; the user confirms silently or corrects fast.
+- Surface an ask-back unmissably — when a message needs a decision before you can proceed, present it with the host's structured-question mechanism (e.g. `AskUserQuestion`), not buried in trailing prose; with no such mechanism, use a single clearly-marked block as the last thing. Reserve it for genuine decisions the user owns, not a proceed-gate.
