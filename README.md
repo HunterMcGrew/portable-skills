@@ -59,7 +59,7 @@ instead.)
 
 1. Copy `repo-map.template.md` to the repo root as `.repo-map.md` and fill in
    where that repo keeps its architect docs, rules, docs, lessons, and where
-   you want plan files to go (can be outside the repo, e.g. `~/worklogs/thrive/plans/`).
+   you want plan files to go (can be outside the repo, e.g. `~/worklogs/<repo-name>/plans/`).
 2. Keep it out of the repo's git with a **global** gitignore (never edits the
    repo's own `.gitignore`):
 
@@ -90,13 +90,13 @@ the repo.
   you do) — PRISM's repo-level skills carry the same persona names, and two
   Winstons make name-routing ambiguous. Everywhere else there's exactly one.
 - **Repos with their own persona skills route names to their own skills.** If a
-  repo's skills or routing rules claim a persona name (e.g. Thrive's
-  `thrive-architect` claims "Winston"), bare-name invocation may load the repo's
+  repo's skills or routing rules claim a persona name (e.g. a repo-level
+  `acme-architect` claims "Winston"), bare-name invocation may load the repo's
   version instead of yours. Two-layer fix: a routing preference in
   `~/.claude-work/CLAUDE.md` makes bare names default to the portable skills,
   and the slash command (`/winston`, `/sasha`, ...) is the guaranteed path —
   it targets the skill by exact id. The repo's own skills stay reachable via
-  their own commands (`/thrive-architect`).
+  their own commands (`/acme-architect`).
 - These files are a **snapshot port**, decoupled from PRISM's build. Edits you
   make here are the source of truth for this roster — nothing regenerates them.
 - Plans use a simplified plan-file shape (goal / tasks / decisions / history /

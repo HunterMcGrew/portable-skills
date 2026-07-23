@@ -21,7 +21,7 @@ map doesn't name, and will offer to append newly-discovered locations back here.
 ## Notes (optional)
 
 Anything else the skills should know about this repo — ticket ID format
-(e.g. THRIVE-1234), branch naming, who reviews what, quirks.
+(e.g. PROJ-1234), branch naming, who reviews what, quirks.
 
 - Ticket format:
 - Branch format:
