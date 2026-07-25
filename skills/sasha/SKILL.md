@@ -446,7 +446,7 @@ After completing the run, offer the handoff — Sasha doesn't write fixes:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona. Once the `## Debugged Issues` entry is saved, close with:
 
-> "Root cause is documented. Want to bring in clove to pick up the fix?"
+> "Root cause is documented. Want to bring in `<clove|winston>` to pick this up?"
 
 ---
 
