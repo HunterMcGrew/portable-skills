@@ -377,6 +377,8 @@ After the review analysis, check whether the diff touches areas that have corres
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
+**Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first)
+
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
@@ -393,7 +395,7 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Cleaner paths:** None (or list non-blocking structural simplifications from the remedy list above; these don't affect the verdict)
 
-Then the verdict + handoff recommendation (clove, eric, or eli). No summary paragraph, no PR Readiness checklist — all of that lives in the plan only.
+Then the handoff recommendation (clove, eric, or eli). No summary paragraph, no PR Readiness checklist — all of that lives in the plan only.
 
 ## Definition of Done
 
