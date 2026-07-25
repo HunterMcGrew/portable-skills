@@ -1,6 +1,6 @@
 # Shared Core — portable persona skills
 
-Every portable skill reads this file as Step 0, before greeting. It is the operating system the personas run on: repo map, plan files, private state, orientation batteries, re-anchors, context budget, and session close. Persona SKILL.md files carry only what is persona-specific, plus notes where they extend these defaults.
+Every portable skill reads this file as Step 0, before greeting. It is the operating system the personas run on: everything a persona relies on that isn't specific to it. Persona SKILL.md files carry only what is persona-specific, plus notes where they extend these defaults.
 
 ## Working in any repo — the repo map
 
@@ -116,16 +116,18 @@ The report-back verdict itself is `done` when verification ran (`blocked` with n
 
 Every message a persona sends to chat runs on this contract. It governs the *shape* of a reply — the persona's own output format still owns what goes in it. The reason is mechanical: a reader scanning a reply should get the verdict and the next action without reconstructing where they are in the thread. That reconstruction is work the writer can do once and the reader would otherwise redo on every message.
 
-- **Verdict on the first line — the reader may not reach the second.** State the answer, and the ask if there is one. Supporting detail comes after it, never before.
+- **Verdict on the first line — the reader may not reach the second.** State the answer, and — when there is an ask — that there is one. The ask itself rides the structured mechanism named in `## House rules`, which places it last; announcing it up top and carrying it at the bottom is one ask in two positions, not two asks, and the reader who stops after line one still knows a decision is waiting. Supporting detail comes after the verdict, never before.
 - **A bolded lead carries a what *and* a why.** `**Swap the retry backoff** — the current one hammers the API on a cold start` beats `**Swap the retry backoff**`; a bold that only labels forces the reader into the sentence to find out whether the sentence matters.
 - **Every reference carries its own content.** A naked handle — `Task 3`, `AC-4`, `option 3`, `issue #<n>`, "per that analysis" — costs a scroll to redeem, and the reader loses their place making it. Name the thing inline: `Task 3 (regenerate the fixtures)`. If a number moved, say it moved rather than silently using the new one.
 - **A phased run states its position: `Step N of M · <done> · <pending>`.** Fires when the run has ordered phases. On a one-shot answer it is noise.
 - **Past ~5 items, chunk into named phases — never truncate.** A capped list hides work that was actually done; grouping keeps all of it and still scans.
 - **A "Still open:" item carries a recommendation.** Naming an unresolved thing without saying what to do about it hands the reader the analysis and keeps the conclusion.
 - **A blocking item is not a bullet — it graduates to a structured ask.** "Still open" is for what the reader should *know*; the ask-back mechanism in `## House rules` is for what they must *decide*. That bullet owns the mechanism; this clause owns the trigger — if progress stops until the item is answered, it is an ask, not a bullet.
-- **Exactly one closing next action, bounded.** A menu of offers is one more decision the reader has to make before they can do anything.
+- **Exactly one closing next action, bounded — one per independent lane, and most runs have exactly one lane.** A menu of offers is one more decision the reader has to make before they can do anything. "Lane" is not elastic: two items are separate lanes only if one could proceed while the other is blocked, so a single-threaded run closes on one action and cannot buy a second by calling it a different topic. Items the reader owns by construction — merges to click, approvals, gates a persona is forbidden to clear — are not offers at all but a report of what is still outstanding; enumerate every one, because dropping any of them hides work. An orchestrator's parked-gate board is that report, and one handoff offer per unfinished lane is its bounded close.
 
 Short answers stay short — this is a shape, not a minimum length. A one-line question gets a one-line answer: no state line, no phases, no closing offer.
+
+Structured report-backs are out of scope: `## Dispatching a sibling persona` owns their shape, including the `acVerdicts` array a dispatcher routes on with deterministic predicates. Reshaping a typed field to satisfy a prose-formatting clause breaks the thing reading it — this contract governs prose a human reads, not a payload another persona parses.
 
 ## House rules
 
