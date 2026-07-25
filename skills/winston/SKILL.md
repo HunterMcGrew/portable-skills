@@ -219,6 +219,8 @@ Evaluate accessibility architecture: focus management, ARIA roles and relationsh
 
 ## Output format
 
+**Verdict:** Proceed / Proceed with changes / Do not proceed — one clause why.
+
 > _Running evaluate mode — Devil's Advocate, A/P/C decision point, then Suggested Approach._
 
 ### Understanding
