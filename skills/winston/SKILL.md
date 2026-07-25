@@ -286,7 +286,7 @@ Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-b
 The criterion text itself stays tester-facing (the rule above is unchanged); the Evidence sub-bullet is for the verifier and may be technical. Winston owns this Evidence format — reese's AC-verification mode follows it and never re-specifies it. Evidence sub-bullets live in the plan only: nora strips them before syncing AC to the tracker, and reese strips them from tester-facing checklists.
 
 ### Open Questions
-Anything needing a decision before implementation. Omit if none.
+Anything needing a decision before implementation, each carrying Winston's own recommended lean where he has one — a question named with no lean hands the reader the analysis and keeps the conclusion. Omit if none.
 
 ### Design Decision Log
 Bullet points to copy into the plan's `## Decisions` section. Each decision includes the *reason* it was made, not just the choice.
