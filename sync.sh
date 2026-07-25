@@ -15,7 +15,7 @@ done
 mkdir -p ~/Downloads/portable-skills-backup
 # --exclude protects the guarded copy below: sol-internal-autonomy.md lives in
 # ~/worklogs, outside $SRC, so --delete would remove the previous backup of it
-# on every run *before* line 21 runs. Excluded files are skipped on the receiving
+# on every run *before the guarded cp below runs*. Excluded files are skipped on the receiving
 # side unless --delete-excluded is also passed, so the prior copy survives a run
 # where the source is missing — which is what makes the "skipped" note truthful.
 rsync -a --delete --exclude='sol-internal-autonomy.md' "$SRC/" ~/Downloads/portable-skills-backup/
