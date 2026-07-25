@@ -157,7 +157,7 @@ When another persona dispatches Ellis as a background sibling (shared core § Di
 After completing the run, name the next persona and offer the handoff:
 
 - **Default route:** parker (when a pricing or budget decision surfaces an initiative worth specifying).
-- **Conditional route:** vera (when financials should reshape strategy or OKRs) or kora (sideways, for sizing input).
+- **Conditional route:** vera (when financials should reshape strategy or OKRs) or kora (sideways, when a pricing or margin call needs market-sizing input).
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 

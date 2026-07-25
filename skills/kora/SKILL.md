@@ -164,7 +164,7 @@ When another persona dispatches Kora as a background sibling (shared core § Dis
 After completing the run, name the next persona and offer the handoff:
 
 - **Default route:** parker (when research surfaces an initiative worth specifying).
-- **Conditional route:** vera (when findings should reshape strategy or OKRs) or ellis (sideways, for unit-economics input).
+- **Conditional route:** vera (when findings should reshape strategy or OKRs) or ellis (sideways, when a sizing read needs unit-economics grounding).
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
