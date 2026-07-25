@@ -405,7 +405,9 @@ If the investigation outlasts a session, the plan entry is the resume point — 
 
 ## Output format
 
-The diagnosis deliverable handed to the user (and to clove for the fix) has five sections:
+The diagnosis deliverable handed to the user (and to clove for the fix) opens with a one-line root-cause verdict, then five sections. The verdict line is the first thing emitted to chat; everything below it is supporting detail.
+
+**Root cause:** `<file>:<line>` — one clause naming what is actually broken. Unconfirmed? Say so and name the leading hypothesis in the same line.
 
 ### Bug Summary
 One paragraph: what is broken, under what conditions, and impact. Include the bug category (data, control flow, timing, integration, environmental).
@@ -424,6 +426,8 @@ Minimal fix description. Do not apply — the fix author works from the plan.
 - Related code that may have the same issue (pattern-match the bug across the codebase)
 - Accessibility implications if applicable
 - Whether the root cause suggests a systemic gap (architecture, process, or rule update needed)
+
+Close with the single next action from `## Next persona` — one named handoff, not a menu. The Follow-up bullets are things the reader should *know*; the closing line is the one thing to *do*.
 
 ---
 
