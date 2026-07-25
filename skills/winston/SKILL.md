@@ -294,7 +294,12 @@ Bullet points to copy into the plan's `## Decisions` section. Each decision incl
 ### Architecture Doc Updates
 Note which of the repo's architecture docs should be updated if this approach is adopted — this ensures lasting decisions are promoted to the durable record before the plan is closed. If the repo keeps no such docs, note the decision in the plan and suggest a home for it.
 
-At the end of evaluate mode, always offer: **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
+At the end of evaluate mode, close on a single offer that agrees with the verdict at the top of the same message:
+
+- **Proceed** / **Proceed with changes** → **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
+- **Do not proceed** → offer the alternative instead: **"This one doesn't earn its place. Want me to plan the alternative I laid out?"** The Premise gate's "no" branch has already produced that alternative, so the close points at it rather than at the work just ruled out.
+
+The branch selects one offer; it never emits both.
 
 ---
 
