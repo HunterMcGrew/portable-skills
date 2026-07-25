@@ -63,10 +63,12 @@ in **no** repo's tree.
 `sync.sh` in the repo root is the owner's personal install path: it copies the
 roster into two profiles (`~/.claude/skills` and `~/.claude-work/skills`) and
 keeps a backup under `~/Downloads/`, and it references a plan file at a
-hardcoded `~/worklogs/...` path that won't exist on your machine — so run
-as-is it will fail partway. Treat it as a reference, not a turnkey installer:
-either trim it to the copy loop for your own profile dir, or just use the
-manual `cp -R` above. Its one design point worth keeping if you adapt it:
+hardcoded `~/worklogs/...` path specific to the owner's machine — guarded, so
+a missing file is skipped with a stderr note rather than aborting the sync.
+Treat it as a reference, not a turnkey installer: it's wired to the owner's
+own two profile dirs and personal backup location, not yours — either trim it
+to the copy loop for your own profile dir, or just use the manual `cp -R`
+above. Its one design point worth keeping if you adapt it:
 per-skill copy with no `--delete` semantics against the profile dirs, so
 skills you keep only in your profile survive a re-sync.
 
