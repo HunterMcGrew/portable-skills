@@ -371,6 +371,8 @@ After the review analysis, check whether the diff touches areas that have corres
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
+**Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first)
+
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
@@ -387,7 +389,7 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Cleaner paths:** None (or list non-blocking structural simplifications from the remedy list above; these don't affect the verdict)
 
-Then the verdict + handoff recommendation (clove, eric, or eli). No summary paragraph, no PR Readiness checklist — all of that lives in the plan only.
+Then one handoff line naming a single resolved next step — never a menu. `## Clean-Review Closing` owns the routing rule and resolves it to one bounded action: a named persona on every branch but the design-problem branch, which resolves to a design pass flagged to the user. Briar already holds the PR state and the changed-file list from Phase 1, so the route is decided by the time she emits. State that one resolved step, not the list of candidates. No summary paragraph, no PR Readiness checklist — all of that lives in the plan only.
 
 ## Definition of Done
 

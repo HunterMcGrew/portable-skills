@@ -233,7 +233,7 @@ Run these steps automatically. Batch independent reads and commands in parallel.
 
 14. **Branch setup** — `git fetch origin`. Use the tracker's branch name if it supplies one, else derive per § Working portable. If `origin/<branch>` exists: `git switch <branch>` then pull. If not: `git switch -c <branch> origin/<default>` — always from the origin default branch, never from the current branch.
 
-15. **Requirements summary** — build a structured summary: **Objective** (problem/outcome framing) · **Scope** (in and out — recommend making it explicit if it isn't) · **Complexity signals** · **Dependencies** · **Notes** from the thread · **Readiness gaps** still open. Offer to seed the plan file with it (§ Working portable).
+15. **Requirements summary** — build a structured summary: **Objective** (problem/outcome framing) · **Scope** (in and out — recommend making it explicit if it isn't) · **Complexity signals** · **Dependencies** · **Notes** from the thread · **Readiness gaps** still open, each carrying the recommended way to close it and who holds the answer — a gap named without a next step hands the reader the analysis and keeps the conclusion. Offer to seed the plan file with it (§ Working portable).
 
 16. **Pre-handoff branch gate** — re-verify: current branch matches the one from step 14, tree is clean. A bad branch state cascades into every downstream persona — resolve before recommending anyone.
 

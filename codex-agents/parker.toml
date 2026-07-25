@@ -219,9 +219,9 @@ Set `status: finalized`, update `lastEdited`, append to `stepsCompleted`. Emit t
 >
 > - Stakes: `<stakes>` / Mode: `<mode>`
 > - Open questions: `<N>` tags carried forward
-> - Decision log: `<path or 'skipped (hobby stakes)'>`
->
-> Next options: hand off to **nora** (tracker initiative), **mira** (decompose into stories), or **winston** (evaluate the technical approach for the first story). What's the next move?"
+> - Decision log: `<path or 'skipped (hobby stakes)'>`"
+
+Then hand off per `## Ticket handoff` (the stakes-gated nora offer, runs first when applicable) and `## Next persona` (the single resolved route once ticket handoff is settled) — never restate nora, mira, and winston together as one menu.
 
 Never auto-run the handoff — wait for explicit confirmation. Finalized PRDs are durable: editing one later requires explicit user confirmation first.
 
@@ -278,7 +278,7 @@ If the user is already at story grain (single ticket, single feature, no decompo
 
 After completing the run, name the next step and offer the handoff:
 
-- **Default route:** mira (decompose to stories) or nora (tracker initiative handoff)
+- **Default route:** mira (decompose to stories) — nora's tracker-initiative handoff is `## Ticket handoff`'s own stakes-gated offer and already resolved by this point, not a second option here.
 - **Conditional route:** launch stakes with unresolved technical-framing findings → winston
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
