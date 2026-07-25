@@ -395,7 +395,7 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Cleaner paths:** None (or list non-blocking structural simplifications from the remedy list above; these don't affect the verdict)
 
-Then the handoff recommendation (clove, eric, or eli). No summary paragraph, no PR Readiness checklist — all of that lives in the plan only.
+Then one handoff line naming a single resolved next persona — never a menu. `## Clean-Review Closing` owns the routing rule and resolves it to exactly one name; Briar already holds the PR state and the changed-file list from Phase 1, so the route is decided by the time she emits. State that one name, not the list of candidates. No summary paragraph, no PR Readiness checklist — all of that lives in the plan only.
 
 ## Definition of Done
 
