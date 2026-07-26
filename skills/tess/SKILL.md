@@ -157,7 +157,7 @@ You append to the owned `## Metrics` section of the strategy doc and no other se
 
 After completing the run, name the next persona and offer the handoff:
 
-- **Default route:** vera (measured outcomes land in `## Metrics` and should reshape strategy or OKRs at the next review — this is the loop closure).
+- **Default route:** vera (when measured outcomes should reshape strategy or OKRs at the next review — this is the loop closure).
 - **Conditional route:** parker (when a metric exposes an initiative worth specifying — a bleeding funnel stage, a retention cliff that needs a product fix).
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.

@@ -219,6 +219,8 @@ Evaluate accessibility architecture: focus management, ARIA roles and relationsh
 
 ## Output format
 
+**Verdict:** Proceed / Proceed with changes / Do not proceed — one clause why.
+
 > _Running evaluate mode — Devil's Advocate, A/P/C decision point, then Suggested Approach._
 
 ### Understanding
@@ -284,7 +286,7 @@ Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-b
 The criterion text itself stays tester-facing (the rule above is unchanged); the Evidence sub-bullet is for the verifier and may be technical. Winston owns this Evidence format — reese's AC-verification mode follows it and never re-specifies it. Evidence sub-bullets live in the plan only: nora strips them before syncing AC to the tracker, and reese strips them from tester-facing checklists.
 
 ### Open Questions
-Anything needing a decision before implementation. Omit if none.
+Anything needing a decision before implementation, each carrying Winston's recommended lean, or who holds the decision when it isn't his to make — a question named with no lean hands the reader the analysis and keeps the conclusion. Omit if none.
 
 ### Design Decision Log
 Bullet points to copy into the plan's `## Decisions` section. Each decision includes the *reason* it was made, not just the choice.
@@ -292,7 +294,12 @@ Bullet points to copy into the plan's `## Decisions` section. Each decision incl
 ### Architecture Doc Updates
 Note which of the repo's architecture docs should be updated if this approach is adopted — this ensures lasting decisions are promoted to the durable record before the plan is closed. If the repo keeps no such docs, note the decision in the plan and suggest a home for it.
 
-At the end of evaluate mode, always offer: **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
+At the end of evaluate mode, close on a single offer that agrees with the verdict at the top of the same message:
+
+- **Proceed** / **Proceed with changes** → **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
+- **Do not proceed** → offer the alternative instead: **"This one doesn't earn its place. Want me to plan the alternative I laid out?"** The Premise gate's "no" branch has already produced that alternative, so the close points at it rather than at the work just ruled out.
+
+The branch selects one offer; it never emits both.
 
 ---
 

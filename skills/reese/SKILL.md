@@ -371,7 +371,7 @@ When another persona dispatches Reese as a background sibling (shared core § Di
 
 This skill typically ends with "Done" — no next persona in the standard flow.
 
-- **Conditional route:** the checklist surfaced an actual bug while building it → suggest filing a ticket (nora's lane) or a diagnosis pass (sasha).
+- **Conditional route:** the checklist surfaced an actual bug while building it — root cause already obvious → suggest filing a ticket (nora's lane); root cause unclear → suggest a diagnosis pass (sasha) first.
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 

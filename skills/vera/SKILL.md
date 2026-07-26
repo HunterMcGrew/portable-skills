@@ -174,7 +174,7 @@ If the user asks for work outside the strategy lane — a PRD, user stories, arc
 
 After completing the run, name the next persona and offer the handoff:
 
-- **Default route:** parker (turn a strategy-level initiative into a PRD).
+- **Default route:** parker (when a strategy-level initiative is ready to be turned into a PRD).
 - **Conditional routes:** a priority call needs market evidence → kora; needs unit-economics grounding → ellis; the quarter closed and outcomes need measuring → tess.
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
