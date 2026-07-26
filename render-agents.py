@@ -34,12 +34,24 @@ def skill_body(path_or_text, is_text=False):
     return s[m.end():] if m else s
 
 
-def frontmatter_desc(sk):
-    fm = re.match(r'^---\n(.*?)\n---\n', sk, re.S).group(1)
-    m = re.search(r'^description: >\n((?:  .*\n?)+)', fm, re.M)
+def frontmatter_desc(sk, name=None):
+    """Extract the frontmatter `description:` field. Handles both block-scalar
+    forms (`>`, `>-`, `|`, `|-`) and a plain single-line scalar, and raises
+    ValueError naming the offending skill on anything else — a bare-YAML
+    scalar indicator (`>-`) or a missing description must never come back as
+    if it were the description itself."""
+    fm_m = re.match(r'^---\n(.*?)\n---\n', sk, re.S)
+    if not fm_m:
+        raise ValueError('no frontmatter block' + (' in %s' % name if name else ''))
+    fm = fm_m.group(1)
+    m = re.search(r'^description:[ \t]*[>|]([-+]?)[ \t]*\n((?:[ \t]+.*\n?)+)', fm, re.M)
     if m:
-        return ' '.join(x.strip() for x in m.group(1).strip().split('\n'))
-    return re.search(r'^description: (.*)$', fm, re.M).group(1).strip()
+        return ' '.join(x.strip() for x in m.group(2).strip().split('\n'))
+    m = re.search(r'^description:[ \t]*(?![>|])(.+)$', fm, re.M)
+    if not m:
+        raise ValueError('unparsable description in frontmatter'
+                          + (' of %s' % name if name else ''))
+    return m.group(1).strip()
 
 
 def render(p, root=ROOT):
@@ -51,7 +63,7 @@ def render(p, root=ROOT):
     sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
     core = open('%s/skills/_shared/core.md' % root).read()
     return ('name = %s\n' % json.dumps(p, ensure_ascii=False)
-            + 'description = %s\n' % json.dumps(frontmatter_desc(sk), ensure_ascii=False)
+            + 'description = %s\n' % json.dumps(frontmatter_desc(sk, name=p), ensure_ascii=False)
             + "developer_instructions = '''\n"
             + skill_body(sk, is_text=True).strip('\n')
             + MARK_HR + MARK + '\n\n'
@@ -86,11 +98,25 @@ def regenerate_all(root=ROOT):
     written is the list of persona names whose toml was created or updated;
     orphans is any codex-agents/*.toml with no matching persona in skills/
     (skill dir removed, renamed, or demoted to a utility) — reported by name,
-    left untouched, never rendered."""
-    out = []
+    left untouched, never rendered.
+
+    Renders every persona before writing any file. render() raises ValueError
+    on a malformed skills/ source (missing frontmatter, unparsable
+    description) instead of crashing with a bare AttributeError; rendering
+    everything first means one bad source is reported for every offending
+    persona without leaving codex-agents/ half-regenerated."""
+    rendered, errors = {}, []
     for p in personas(root):
+        try:
+            rendered[p] = render(p, root)
+        except ValueError as e:
+            errors.append('%s.toml: %s' % (p, e))
+    if errors:
+        raise ValueError('cannot regenerate — fix skills/ source first:\n  '
+                          + '\n  '.join(errors))
+    out = []
+    for p, new in rendered.items():
         t = root + '/codex-agents/%s.toml' % p
-        new = render(p, root)
         cur = open(t).read() if os.path.exists(t) else None
         if new != cur:
             with open(t, 'w') as fh:
@@ -111,7 +137,11 @@ def regenerate_all(root=ROOT):
 
 
 if __name__ == '__main__':
-    written, orphans = regenerate_all()
+    try:
+        written, orphans = regenerate_all()
+    except ValueError as e:
+        print('error: %s' % e, file=sys.stderr)
+        sys.exit(1)
     total = len(personas())
     print('regenerated %d/%d tomls: %s'
           % (len(written), total, ' '.join(written) if written else '(all current)'))
