@@ -72,6 +72,17 @@ above. Its one design point worth keeping if you adapt it:
 per-skill copy with no `--delete` semantics against the profile dirs, so
 skills you keep only in your profile survive a re-sync.
 
+### The codex-agents toml surface
+
+`codex-agents/*.toml` is a derived artifact, not a second copy to maintain by
+hand: `render-agents.py` in the repo root rewrites every persona's toml from
+its `skills/<persona>/SKILL.md` plus `skills/_shared/core.md`, creating one
+for any new persona and reporting any orphaned toml with no matching skill.
+Run `python3 render-agents.py` after any `skills/` edit — it's idempotent,
+safe to run any time, and prints which tomls it wrote. **Never hand-edit a
+toml** — the next run silently reverts it; change the `skills/` source and
+re-run instead.
+
 ## Per-repo setup (five minutes, once per repo)
 
 1. Copy `repo-map.template.md` to the repo root as `.repo-map.md` and fill in
