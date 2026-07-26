@@ -16,6 +16,10 @@
 # different kind of side effect than copying already-committed files out.
 #
 # Usage: python3 render-agents.py   # regenerates every toml in place, idempotent
+#
+# Iterates skills/, not codex-agents/: a persona added under skills/ gets a
+# toml the first time this runs, and a toml with no matching persona in
+# skills/ is reported as an orphan on stderr rather than touched or crashed on.
 import glob, json, os, re, sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -55,21 +59,62 @@ def render(p, root=ROOT):
             + "\n'''\n")
 
 
-def regenerate_all(root=ROOT):
-    """Rewrites every toml from its skills/ source. Returns the list of files changed."""
+def has_persona_line(sk_text):
+    """True if the skill declares a persona ('You are **X**' as a body line).
+    A utility skill (handoff, review-loop) has no such line and gets no toml —
+    the absence of the line is the signal, not an oversight."""
+    body = skill_body(sk_text, is_text=True)
+    return any(l.startswith('You are **') for l in body.split('\n'))
+
+
+def personas(root=ROOT):
+    """Every skills/<p> that should have a codex-agents/<p>.toml: those whose
+    SKILL.md declares a persona. Iterating this set (not codex-agents/*.toml)
+    is what lets a newly added persona get a toml the first time this runs,
+    instead of being silently skipped because no stub toml exists for it yet."""
     out = []
-    for t in sorted(glob.glob(root + '/codex-agents/*.toml')):
-        p = os.path.basename(t)[:-5]
-        new = render(p, root)
-        if new != open(t).read():
-            with open(t, 'w') as fh:
-                fh.write(new)
+    for f in sorted(glob.glob(root + '/skills/*/SKILL.md')):
+        p = os.path.basename(os.path.dirname(f))
+        if has_persona_line(open(f).read()):
             out.append(p)
     return out
 
 
+def regenerate_all(root=ROOT):
+    """Rewrites every persona's toml from its skills/ source, creating one for
+    any persona that doesn't have one yet. Returns (written, orphans):
+    written is the list of persona names whose toml was created or updated;
+    orphans is any codex-agents/*.toml with no matching persona in skills/
+    (skill dir removed, renamed, or demoted to a utility) — reported by name,
+    left untouched, never rendered."""
+    out = []
+    for p in personas(root):
+        t = root + '/codex-agents/%s.toml' % p
+        new = render(p, root)
+        cur = open(t).read() if os.path.exists(t) else None
+        if new != cur:
+            with open(t, 'w') as fh:
+                fh.write(new)
+            out.append(p)
+    valid = set(personas(root))
+    orphans = []
+    for t in sorted(glob.glob(root + '/codex-agents/*.toml')):
+        p = os.path.basename(t)[:-5]
+        if p in valid:
+            continue
+        if not os.path.exists('%s/skills/%s/SKILL.md' % (root, p)):
+            reason = 'no skills/%s/SKILL.md' % p
+        else:
+            reason = 'skills/%s/SKILL.md has no persona line' % p
+        orphans.append('%s.toml (%s)' % (p, reason))
+    return out, orphans
+
+
 if __name__ == '__main__':
-    written = regenerate_all()
-    total = len(glob.glob(ROOT + '/codex-agents/*.toml'))
+    written, orphans = regenerate_all()
+    total = len(personas())
     print('regenerated %d/%d tomls: %s'
           % (len(written), total, ' '.join(written) if written else '(all current)'))
+    if orphans:
+        print('orphan tomls (fix skills/, do not hand-edit): %s' % ', '.join(orphans),
+              file=sys.stderr)
