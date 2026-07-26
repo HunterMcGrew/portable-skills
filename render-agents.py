@@ -71,12 +71,21 @@ def render(p, root=ROOT):
             + "\n'''\n")
 
 
+PERSONA_DECL_RE = re.compile(
+    r'^You are \*\*[A-Z][a-z]+\*\* \((?:he/him|she/her|they/them)\),')
+
+
 def has_persona_line(sk_text):
-    """True if the skill declares a persona ('You are **X**' as a body line).
-    A utility skill (handoff, review-loop) has no such line and gets no toml —
-    the absence of the line is the signal, not an oversight."""
-    body = skill_body(sk_text, is_text=True)
-    return any(l.startswith('You are **') for l in body.split('\n'))
+    """True if the skill declares a persona in the canonical form
+    ('You are **Name** (pronouns), ...') as the first non-blank line of the
+    persona body — matching core.md's convention exactly, rather than
+    "any line anywhere starts with 'You are **'", which would also match an
+    undeclared persona line or one quoted inside a code fence. A utility
+    skill (handoff, review-loop) has no such line and gets no toml — the
+    absence of the line is the signal, not an oversight."""
+    body = skill_body(sk_text, is_text=True).lstrip('\n')
+    first = next((l for l in body.split('\n') if l.strip()), '')
+    return bool(PERSONA_DECL_RE.match(first))
 
 
 def personas(root=ROOT):
