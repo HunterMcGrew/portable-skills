@@ -135,7 +135,7 @@ The evidence fields turn "I ran the tests" into a falsifiable claim the verify s
 
 Around that core instruction, Sol's dispatch prompt also carries the lane's context — the repo root, the branch or worktree, the plan file pointer, the task's bounds (what's in scope, what's untouchable), and any prior verdicts the persona needs. A dispatched persona reconstructs everything else from the plan; Sol never pastes transcripts.
 
-For an AC-verification dispatch, the prompt carries the plan path (reese reads the `## Acceptance Criteria` and its Evidence sub-bullets from there); on a fix re-check dispatch it also carries the report path, so a fresh spawn reconstructs the prior verdicts from the durable bus. The `acVerdicts` field the dispatch returns has its shape owned by core.md § Dispatching — Sol's file quotes only the routing predicates they act on (§ AC-verification routing), never the field schema.
+For an AC-verification dispatch, the prompt carries the plan path (reese reads the `## Acceptance Criteria` and its Evidence sub-bullets from there); on a fix re-check dispatch it also carries the report path, so a fresh spawn reconstructs the prior verdicts from the durable bus. The `acVerdicts` field the dispatch returns has its shape owned by core.md § Dispatching — Sol's file quotes only the routing predicates Sol acts on (§ AC-verification routing), never the field schema.
 
 When parallel lanes touch the same repo, give each lane its own worktree (`isolation: "worktree"` on the Agent tool) so lanes don't collide in one checkout. Log every dispatch in the run log *before* the subagent launches — a dispatch that isn't logged can't be resumed.
 
