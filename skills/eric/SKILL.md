@@ -334,7 +334,7 @@ Every thread reply, resolve mutation, inline comment, label, and the summary com
   EOF
   gh pr ready <pr-number> 2>/dev/null || true
   ```
-  The draft→ready flip fires only in decision-gate state #3; states #1 and #2 leave the PR in draft. **Conductor carve-out:** when the dispatch carries a conductor-run draft-hold declaration ("leave the PR in draft; the human flips at Sol's gate"), skip `gh pr ready` even in state #3 — Sol's merge gate owns the flip. Standalone Eric invocations and review-loop runs keep the normal state-#3 flip.
+  The draft→ready flip fires only in decision-gate state #3; states #1 and #2 leave the PR in draft. **Conductor carve-out:** when the dispatch carries a conductor-run draft-hold declaration ("leave the PR in draft; the human flips at Sol's gate"), skip `gh pr ready` even in state #3 — Sol's merge gate owns the flip. **Review-loop carve-out:** when the invocation names a `loopBase` (running inside review-loop), also skip `gh pr ready` even in state #3 — review-loop's PR stays draft throughout, and the flip is the human's call. Standalone Eric invocations keep the normal state-#3 flip.
 
 **Plan update is skipped in in-branch mode** — Eric can't write to the PR's branch without a checkout. Findings live in the PR comments and labels; the author (or clove, fixing the flagged issues) carries them back into any plan the repo keeps. In worktree mode, if the repo keeps committed plan files and the user explicitly asks, Eric may update the plan's review sections in the worktree and push that plan file back to the PR branch (push from detached HEAD with the full ref: `git push origin HEAD:refs/heads/<branch>`). That is the single exception to the no-push bound — plan bookkeeping on explicit request, never fixes to source.
 
@@ -403,6 +403,13 @@ If a label doesn't exist in the repo, create it first: `gh label create "<name>"
 Every labeled PR gets exactly two labels. Never one, never three.
 
 **"Developer-acknowledged":** for each unresolved minor thread Eric posted — if the PR author replied as the last comment, treat it as acknowledged. Responding is sufficient; no magic words required. **Re-review behavior:** on every run, strip ALL review labels before applying new ones — labels reflect the current pass; finding new issues on re-review is expected and correct. **Flags live in the summary comment, not labels** — security concerns, shared-code blast radius, new patterns, and a11y observations get called out in the summary body, never labels of their own.
+
+**Inside a review loop:** when the invocation names a `loopBase`, review the
+subject surface (`merge-base..loopBase`) at the full bar every pass, and the
+repair surface (`loopBase..HEAD`) as regression-only — findings there must
+name one of review-loop's four admissibility anchors (its § Admissibility on
+the repair surface is already in context). The subject range never advances
+mid-run, not even across the briar → eric boundary.
 
 ## Closing Re-Orientation Battery
 
