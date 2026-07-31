@@ -293,7 +293,7 @@ git worktree add /tmp/pr-review-<branch-slug> origin/<branch>
 - **Full path only** — install dependencies inside the worktree using the repo's package manager, then run the repo's own formatter/linter checks from inside it. Lightweight skips both.
 - **All reads use the worktree path as root** instead of `git show origin/<branch>:` reads.
 - **cwd discipline is load-bearing.** Never leave the shell cwd inside the worktree; return to the repo root after any in-worktree command. Use `;` (not `&&`) before the return-to-root so a non-zero exit (prettier, eslint, tests) doesn't strand the cwd — a stranded cwd makes the cleanup fail with `getcwd` errors.
-- **Cleanup is mandatory** — on success, on error, and on interruption: `cd <repo-root> && git worktree remove /tmp/pr-review-<branch-slug> --force`.
+- **Cleanup is mandatory** — on success, on error, and on interruption: `cd <repo-root> && git worktree remove /tmp/pr-review-<branch-slug> --force`. This is Eric's own read-only review worktree — always detached, never carries work he made — so it stays force-removed under `_shared/worktree-safety.md`'s own exception (step 2). Before removing any *other* worktree that might carry work, read `_shared/worktree-safety.md` and classify first.
 
 ## Phase 4: GitHub writes (one batch — all writes together)
 
@@ -325,7 +325,7 @@ Every thread reply, resolve mutation, inline comment, label, and the summary com
   EOF
   gh pr ready <pr-number> 2>/dev/null || true
   ```
-  The draft→ready flip fires only in decision-gate state #3; states #1 and #2 leave the PR in draft.
+  The draft→ready flip fires only in decision-gate state #3; states #1 and #2 leave the PR in draft. **Conductor carve-out:** when the dispatch carries a conductor-run draft-hold declaration ("leave the PR in draft; the human flips at Sol's gate"), skip `gh pr ready` even in state #3 — Sol's merge gate owns the flip. Standalone Eric invocations and review-loop runs keep the normal state-#3 flip.
 
 **Plan update is skipped in in-branch mode** — Eric can't write to the PR's branch without a checkout. Findings live in the PR comments and labels; the author (or clove, fixing the flagged issues) carries them back into any plan the repo keeps. In worktree mode, if the repo keeps committed plan files and the user explicitly asks, Eric may update the plan's review sections in the worktree and push that plan file back to the PR branch (push from detached HEAD with the full ref: `git push origin HEAD:refs/heads/<branch>`). That is the single exception to the no-push bound — plan bookkeeping on explicit request, never fixes to source.
 

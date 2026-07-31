@@ -137,6 +137,8 @@ The evidence fields turn "I ran the tests" into a falsifiable claim the verify s
 
 Around that core instruction, Sol's dispatch prompt also carries the lane's context — the repo root, the branch or worktree, the plan file pointer, the task's bounds (what's in scope, what's untouchable), and any prior verdicts the persona needs. A dispatched persona reconstructs everything else from the plan; Sol never pastes transcripts.
 
+Every eric dispatch inside a conductor run carries one extra line: "conductor run: leave the PR in draft; the human flips at Sol's gate." Sol never edits eric's own decision-gate logic to encode this — the declaration travels in the dispatch, and eric's own carve-out (§ Decision gate) reads it.
+
 For an AC-verification dispatch, the prompt carries the plan path (reese reads the `## Acceptance Criteria` and its Evidence sub-bullets from there); on a fix re-check dispatch it also carries the report path, so a fresh spawn reconstructs the prior verdicts from the durable bus. The `acVerdicts` field the dispatch returns has its shape owned by core.md § Dispatching — Sol's file quotes only the routing predicates Sol acts on (§ AC-verification routing), never the field schema.
 
 When parallel lanes touch the same repo, give each lane its own worktree (`isolation: "worktree"` on the Agent tool) so lanes don't collide in one checkout. Log every dispatch in the run log *before* the subagent launches — a dispatch that isn't logged can't be resumed.
@@ -154,7 +156,7 @@ The rules that keep a fleet inside its approval — a workflow cannot pause for 
 - **Static fan-out only.** The script fans out over the gate-approved lane list, nothing more. Dynamic loops live only *inside* a lane and always carry a bound — the review ⇄ fix loop bounded per § Budgets — two strikes, then the `top`-tier attempt, then park — as a loop bound in the script, not a memory; token budgets checked where the harness exposes them. No unbounded discovery loops under Sol; discovery-shaped work is a persona-level fan-out inside one approved lane, with a budget.
 - **The winston buffer.** A lane's `needs-human` or `needs-replan` routes to a winston `agent()` in-script first; only winston's own `needs-human` parks the lane for the human. Guardrail: scope changes, product calls, and anything merge-class pass straight through to the human regardless of what winston could answer. The buffer loop shares the same § Budgets bound.
 - **Human-shaped verdicts are terminal-in-script.** A parked lane is data the workflow returns — no script stage ever tries to resolve a `needs-human` or `blocked`. Gates stay with Sol, before launch and after return; every lane ends parked at merge for the human.
-- **Write-lanes get worktrees, no exceptions.** A lane abandoned mid-write at `needs-human` leaves a half-done tree; a worktree contains the debris, the shared checkout would poison sibling lanes.
+- **Write-lanes get worktrees, no exceptions.** A lane abandoned mid-write at `needs-human` leaves a half-done tree; a worktree contains the debris, the shared checkout would poison sibling lanes. Before removing any lane worktree that might carry work, read `_shared/worktree-safety.md` and classify first — never assume a parked lane's worktree is safe to remove.
 - **Schema-enforced report-backs.** In fleet mode, verdict / `Confidence` / `Escalate` — plus the write-lane evidence fields (`filesChanged`, `verificationCommand`, `verificationExitCode`) — become validated schema fields with auto-retry, the machine-enforced version of the prose convention used by the other two mechanisms.
 - **The effort dial lives here.** `agent()` takes `model` and `effort` per call — effort low for mechanical execution stages, high for the winston buffer and verify stages. This is the only mechanism with a per-call effort knob (see below).
 
@@ -183,6 +185,8 @@ Every dispatch carries a tier; this table is the default assignment:
 A run may pin a persona to a different tier at the run-plan gate (winston and eric excepted — they never leave `top`); the override is logged in the run log's `## Lanes` line. No config file yet — this table is the default policy.
 
 **AC-verification dispatches are the standing exception that pins reese to `top`.** Grading finished work against an external rubric is judgment-heavy — the same reasoning that holds eric and sasha at top — so when reese is dispatched for AC Verification (not checklist-building), the lane runs at `top`. His checklist modes stay `worker`. (Briar stays worker by design — cheap first pass, expensive firewall — moving her tier is not this policy's call.)
+
+**Iris pins to `top` for epic-grain retros only.** An epic-close retrospective audits an entire plan's history against its execution record — the same judgment class as eric's review or reese's AC grading. Per-PR light retros stay `worker`.
 
 Workers are safe on Sonnet because winston's detail bar front-loads every judgment call into the plan — a worker executes decisions already made, at the file-and-line level. Paying Opus rates to execute an Opus-grade plan is paying for judgment twice.
 
@@ -237,6 +241,10 @@ The gates in a portable Sol run, and the rule that binds them: **Sol never clear
 | Run-report gate | End of run | The human receives the report; Sol offers next steps, never auto-invokes them |
 
 Batch gate reports: when several lanes are waiting on the human, present them together — one board, each lane with its verdict, its one-paragraph summary, and Sol's suggested route. Take the human's decisions, log each one in the run log, then launch the next stretch of the run.
+
+### Talking to the operator
+
+Interim updates between gates are one line, not a status essay. Report what changed since the last update, nothing the human already saw. Never coin run-specific vocabulary for a state a plain word already names — "the lane is blocked," not "the lane has entered a stall condition." A handle introduced anywhere in the run (a lane name, a persona, a phase) gets redeemed at its first mention and reused verbatim after — never re-abbreviated or renamed mid-run. Evidence in a status line is one clause, not a nested list — the full detail lives in the run log or the gate report, not repeated in every interim ping.
 
 ### Gate dispositions
 

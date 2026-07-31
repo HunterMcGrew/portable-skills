@@ -87,6 +87,17 @@ shared core's dispatch idiom — never a question into the void.
    lands pre-merge as the branch's final commit. The scoreboard TLDR reports
    it as its last line.
 
+## Meta findings
+
+A finding can be about the work itself, or about the prose that describes the
+work — the PR body, a readiness line, plan hygiene (a stale `## Decisions`
+entry, an unlogged fix). Meta findings never re-arm the loop: they close in
+one batch, after the subject (code or AC) has already converged, not
+interleaved with review/fix passes. Route them the same way as any other
+finding — clove fixes, the reviewer confirms — but track them on their own
+line in the scoreboard so a prose-only cleanup pass doesn't read as another
+code-review strike.
+
 ## Guardrails
 
 - **Pass budget: 20 review/fix passes.** Before every pass, run Procedure B.

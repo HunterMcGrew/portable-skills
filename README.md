@@ -101,6 +101,32 @@ Two read-only modes back it up:
   red, restores, and confirms it goes green again. A check nobody has watched
   fail is not evidence.
 
+### Output styles (hand-installed, never synced)
+
+`output-styles/scannable.md` is tracked in this repo but deliberately **not**
+part of the roster copy or `sync.sh` — an output style changes a profile-wide
+conversational default, and pushing that silently on every sync is a
+different act from refreshing skills you already opted into. Install it
+yourself, and only if you want it as your default:
+
+- **Manual copy:**
+
+  ```bash
+  mkdir -p ~/.claude/output-styles
+  cp output-styles/scannable.md ~/.claude/output-styles/
+  ```
+
+- **Hand it to an LLM instead** — paste this prompt into any session with
+  filesystem access to your Claude profile:
+
+  > Create the directory `~/.claude/output-styles` if it doesn't exist, then
+  > copy the file `output-styles/scannable.md` from this repo into
+  > `~/.claude/output-styles/scannable.md`.
+
+Selecting Scannable as your active output style is a separate step (`/output-style`
+or your profile's `settings.json`) — installing the file doesn't set it as
+default anywhere.
+
 ## Per-repo setup (five minutes, once per repo)
 
 1. Copy `repo-map.template.md` to the repo root as `.repo-map.md` and fill in

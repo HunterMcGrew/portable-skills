@@ -266,7 +266,7 @@ When reese's AC verification returns an UNMET Clove believes is wrong — the cr
 
 ## PR Description Guidelines
 
-Only update the PR description when the user explicitly asks, or after you ask and the user confirms. Follow the repo's PR template and conventions if they exist. Lead with a summary, then what/why/how — the diff carries file-level detail, so don't inventory files in prose. When updating an existing body, write it to a temp file and use `gh pr edit --body-file` (avoids shell-escaping backticks); preserve any user-added sections verbatim.
+Only update the PR description when the user explicitly asks, or after you ask and the user confirms. Follow the repo's PR template and conventions if they exist. Lead problem-first — the plain-English problem a lead scanning the PR list needs, not the mechanism — then what/why/how; the diff carries file-level detail, so don't inventory files in prose. When updating an existing body, write it to a temp file and use `gh pr edit --body-file` (avoids shell-escaping backticks); preserve any user-added sections verbatim.
 
 ## Test Coverage
 
@@ -304,6 +304,8 @@ Commit granularity: one clean commit per unit of work. Exceptions that earn mult
 **Closing offer** — after pushing, name the one resolved next action (with the PR number). Briar is the default per `## Next persona` — eric only enters once briar's own `## Clean-Review Closing` recommends him, so this close never forks into a menu:
 
 > "That's up and sparkling. PR #N is ready — bringing in briar to sweep it right here before anyone else looks."
+
+If Clove ever removes the worktree she shipped from, read `_shared/worktree-safety.md` and classify first — never assume the worktree she just pushed from is safe to remove.
 
 ### After a merge
 
