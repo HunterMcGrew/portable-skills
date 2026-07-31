@@ -27,9 +27,10 @@ belong to the personas this utility invokes, not to the utility itself.
 ## Lifecycle
 
 1. Resolve the target — PR (or branch), plan file, repo map.
-2. **briar loop** — self-review → clove fixes → re-review, until zero findings.
-3. **eric loop** — PR review → clove fixes → re-review, until zero new
-   findings and zero unresolved fixed threads.
+2. **briar loop** — self-review → clove fixes → re-review, until the phase
+   converges (two consecutive clean passes — see § The review base).
+3. **eric loop** — PR review → clove fixes → re-review, until the phase
+   converges and every fixed thread is resolved.
 4. Scoreboard TLDR. The PR stays draft throughout.
 
 ## Resolve the target
@@ -45,6 +46,76 @@ belong to the personas this utility invokes, not to the utility itself.
   role resolves before starting.
 - Confirm the PR is (or stays) draft. The loop never flips ready-for-review
   and never merges — both are the human's call.
+
+## The review base
+
+The loop reviews a fixed target. Capture it once, before the first briar pass:
+
+```
+loopBase = git rev-parse HEAD
+```
+
+`loopBase` does not move again for the rest of the run — not after a fix
+commit, not at the briar → eric boundary, not across a handoff into a fresh
+session. Recapturing it is the single thing that stops the loop from
+terminating: when the base advances with `HEAD`, every fix the loop lands
+joins the surface the next pass reviews, so each pass reviews the previous
+pass's repairs and the run ends only when it runs out of its own prose to
+tighten. A fresh session that recomputes it from `HEAD` inherits exactly the
+defect the freeze prevents — it looks like recovery and is actually the
+un-freezing. `loopBase` travels in `## Gauntlet state` (see Guardrails).
+
+### The four surfaces
+
+| Surface     | Range                                                    | Review bar |
+| ----------- | -------------------------------------------------------- | ---------- |
+| **Subject** | `merge-base..loopBase`                                    | The full review bar. The work under review — the same range on pass 1 and pass 9. |
+| **Repair**  | `loopBase..HEAD`                                          | Regression-only. A finding here needs one of the four anchors below. |
+| **Ledger**  | the plan's `## Review Issues` and `## History`, plus the repo's lessons file (per the repo map; no `lessons` role → just those two plan sections) | Not a review target during the loop. |
+| **Meta**    | prose *about* the work: PR title/body/labels, readiness lines, plan hygiene | One batch after the subject converges — see `## Meta findings`. Never loop fuel. |
+
+The ledger is the loop's own bookkeeping: briar and eric write it as they go,
+so reviewing it mid-run is the loop grading its own notes, and each grading
+pass writes more ledger for the next pass to grade. It re-enters review
+normally on a future run, once it is part of someone else's subject surface.
+The plan's `## Decisions` section is **not** ledger — it records intent that
+predates the loop, and the reviewers' Decisions sweeps still run against it.
+
+### Admissibility on the repair surface
+
+Subject-surface findings need no justification beyond the usual review bar.
+A repair-surface finding needs an anchor — one of these four, named
+explicitly in the finding:
+
+1. **A command that regressed.** A verification-role command (per the repo
+   map) passing at `loopBase`, failing at `HEAD` — name the command and both
+   results.
+2. **A violated acceptance criterion**, quoted by its stable ID (`AC-3`) and
+   text from the plan's `## Acceptance Criteria`.
+3. **A contradicted `## Decisions` entry**, quoted from the plan.
+4. **An original finding still unclosed** — quote the finding from the pass
+   that raised it, and say what about the fix leaves it open.
+
+No anchor, no finding. Each anchor points at something that existed before
+the fix commit — that is what separates a regression from a fresh opinion
+about text the loop itself just wrote. A repair-surface observation that
+clears none of them is real feedback in the wrong place: record it in the
+plan's `## Review Issues` with `Status: follow-up` and give it a scoreboard
+line; it never drives a fix pass.
+
+### Convergence
+
+A phase exits on **two consecutive passes with zero admissible subject
+findings**. One clean pass is not convergence: the pass right after a fix
+commit is the likeliest place for a reviewer to raise something about the
+repair rather than the subject, so the second clean pass confirms the first
+was not an accident of timing.
+
+Anything still open when a phase converges — minors the loop chose not to
+fix, observations that failed admissibility — converts to a `Status:
+follow-up` entry in `## Review Issues`, not to another fix pass; winston's
+closing ceremony carries them out through its loose-thread check. Only
+subject-surface findings count toward, or reset, the two-clean-pass exit.
 
 ## How personas are invoked
 
@@ -65,14 +136,17 @@ shared core's dispatch idiom — never a question into the void.
 1. **briar loop (self-review).** Invoke briar on the branch. Every finding,
    any severity (critical, major, minor, nit, cleanup), goes to clove to fix —
    review-fix commits stay separate commits, never amends, so the reviewer can
-   diff what changed since her last pass. Re-invoke briar. Repeat until a pass
-   returns zero findings.
+   diff what changed since her last pass. Re-invoke briar. Repeat until the
+   phase converges per § The review base. Name `loopBase` in every briar
+   invocation — her side of the contract is her § Inside a review loop.
 2. **eric loop (PR review).** Same shape on the PR: eric reviews and posts
-   findings, clove fixes, eric re-reviews. This phase is not done until a pass
-   returns **zero new findings AND zero fixed-but-unresolved review threads** —
-   when a fix lands a finding, the thread that flagged it is only closed by
-   eric's next pass (the reviewer is the sole actor that resolves threads). If
-   fixed threads remain unresolved when findings hit zero, run one final eric
+   findings, clove fixes, eric re-reviews. Eric gets the same `loopBase` and
+   the same surfaces — the subject range does not advance because the briar
+   phase landed fixes into it. This phase is not done until the phase
+   converges **AND zero fixed-but-unresolved review threads** remain — when a
+   fix lands a finding, the thread that flagged it is only closed by eric's
+   next pass (the reviewer is the sole actor that resolves threads). If fixed
+   threads remain unresolved when the phase converges, run one final eric
    pass to resolve them before closing the phase.
 3. **Cleaner paths.** Reviewer suggestions of a better shape — non-blocking by
    design; they never gate the zero-findings exit, but each must reach a
@@ -97,6 +171,11 @@ interleaved with review/fix passes. Route them the same way as any other
 finding — clove fixes, the reviewer confirms — but track them on their own
 line in the scoreboard so a prose-only cleanup pass doesn't read as another
 code-review strike.
+
+Only subject-surface findings count toward — or reset — the
+two-consecutive-clean-pass exit. The meta batch runs after that exit and
+cannot reopen it; a meta fix that touches source is no longer a meta fix,
+and routes as a subject finding on the next run.
 
 ## Guardrails
 
@@ -129,8 +208,13 @@ code-review strike.
   fixed-but-unresolved threads outstanding. If any remain after the final
   reviewer pass, run Procedure H.
 - **Gauntlet state travels.** Any mid-gauntlet handoff carries the loop's
-  live state — pass count, strike table, scoreboard, current phase — in a
-  `## Gauntlet state` section so a fresh session resumes without replaying.
+  live state — `loopBase`, pass count, consecutive-clean-pass count, strike
+  table, scoreboard, current phase, and draft-hold status (whether the
+  dispatch carried a conductor draft-hold declaration) — in a `## Gauntlet
+  state` section so a fresh session resumes without replaying. `loopBase`
+  leads the list because it is the one item a fresh session will silently
+  reconstruct wrong: recomputing it from `HEAD` looks like recovery and is
+  actually the un-freezing the base exists to prevent.
 
 ## Procedures
 

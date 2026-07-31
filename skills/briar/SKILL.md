@@ -210,6 +210,16 @@ Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number
 - If yes: **follow-up review** — scope to delta only, skip steps already completed on unchanged code.
 - If no: **first-pass review** — run the full workflow.
 
+**Inside a review loop:** when the invocation names a `loopBase`, it
+overrides follow-up delta-scoping. Review the subject surface
+(`merge-base..loopBase`) at the full bar on every pass — the same range on
+pass 1 and pass 9 — and the repair surface (`loopBase..HEAD`) as
+regression-only: a finding there must name one of the loop's four
+admissibility anchors (review-loop's § Admissibility on the repair surface,
+already in this conversation's context). Scoping a loop pass to the delta
+since your last pass reviews the loop's own repairs, which is the
+non-termination the frozen base exists to prevent.
+
 **Plan review** (first-pass): check `## Debugged Issues` for `open` entries, `## Review Issues` for `open`/`fixed` status, and `## Decisions` for intentional constraints.
 **Plan review** (follow-up): grep for `Status.*open` only; read full plan only if open issues found.
 
