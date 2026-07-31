@@ -49,8 +49,10 @@ Two things the copy must get right:
 - **`skills/_shared/` has to come along.** `_shared/core.md` is the roster's
   shared operating system — everything a persona relies on that isn't
   specific to it. Every persona reads it as Step 0, so a roster installed
-  without it runs on a degraded failsafe. The `cp -R skills/*` above includes
-  it; if you cherry-pick individual personas, copy `_shared/` too.
+  without it runs on a degraded failsafe. Its sibling `_shared/verification.md`
+  is loaded only by the personas that grade something (reviewers, QA, audits).
+  The `cp -R skills/*` above includes both; if you cherry-pick individual
+  personas, copy `_shared/` too.
 - **Copies don't self-update.** There are no symlinks — after `git pull`
   brings in roster changes (or after you edit your clone), re-run the copy.
   Until you do, your profile keeps running the old version.
@@ -61,16 +63,20 @@ in **no** repo's tree.
 ### The owner's sync script
 
 `sync.sh` in the repo root is the owner's personal install path: it copies the
-roster into two profiles (`~/.claude/skills` and `~/.claude-work/skills`) and
-keeps a backup under `~/Downloads/`, and it references a plan file at a
-hardcoded `~/worklogs/...` path specific to the owner's machine — guarded, so
-a missing file is skipped with a stderr note rather than aborting the sync.
-Treat it as a reference, not a turnkey installer: it's wired to the owner's
-own two profile dirs and personal backup location, not yours — either trim it
-to the copy loop for your own profile dir, or just use the manual `cp -R`
-above. Its one design point worth keeping if you adapt it:
-per-skill copy with no `--delete` semantics against the profile dirs, so
-skills you keep only in your profile survive a re-sync.
+roster into `~/.claude/skills` and keeps a backup under `~/Downloads/`, and it
+references a plan file at a hardcoded `~/worklogs/...` path specific to the
+owner's machine — guarded, so a missing file is skipped with a stderr note
+rather than aborting the sync. Treat it as a reference, not a turnkey
+installer: it's wired to the owner's own profile dir and personal backup
+location, not yours — either retarget the copy loop, or just use the manual
+`cp -R` above. Its one design point worth keeping if you adapt it: per-skill
+copy with no `--delete` semantics against the profile dir, so skills you keep
+only in your profile survive a re-sync.
+
+The roster itself never names a profile directory. A dispatch prompt points a
+subagent at "the skills root this skill loaded from" rather than at a literal
+path, because a hardcoded profile is a dispatch that reads nothing on anyone
+else's machine. `render-agents.py --check` enforces that (below).
 
 ### The codex-agents toml surface
 
@@ -82,6 +88,18 @@ Run `python3 render-agents.py` after any `skills/` edit — it's idempotent,
 safe to run any time, and prints which tomls it wrote. **Never hand-edit a
 toml** — the next run silently reverts it; change the `skills/` source and
 re-run instead.
+
+Two read-only modes back it up:
+
+- `python3 render-agents.py --check` — exits non-zero on a toml that has
+  drifted from its source, a `~/.claude*/skills` literal anywhere under
+  `skills/`, or an orphan toml. It prints how many personas, markdown files,
+  and tomls it examined alongside the violation count, because a zero with no
+  denominator beside it can't be told apart from a check that looked nowhere.
+- `python3 render-agents.py --selftest` — the positive control for all three:
+  it copies the tree, breaks one input per check, confirms that check goes
+  red, restores, and confirms it goes green again. A check nobody has watched
+  fail is not evidence.
 
 ## Per-repo setup (five minutes, once per repo)
 
@@ -136,6 +154,24 @@ thing. The rules:
   both a portable skill and a repo skill, prefer the portable one") makes
   bare names resolve your way without per-invocation slash commands. The
   repo's skills remain a slash command away.
+
+## Why the persona files are thin
+
+Each `SKILL.md` carries what is specific to that persona and points at
+`_shared/core.md` for the rest — the orientation batteries, the dispatch
+contract, the session-close routine. It reads as underspecified next to a
+self-contained skill file, and that is deliberate: the roster previously
+restated the shared chassis in every persona, which meant a wording fix had to
+land in 27 places and the copies drifted between them. Current models don't
+need the same instruction three times to follow it, and a repeated instruction
+competes with the persona-specific content around it. If you find yourself
+re-expanding a section because it looks too short, check whether `core.md`
+already says it.
+
+The same reasoning covers what is *absent*: instructions to double-check,
+re-verify, or narrate progress step by step were removed rather than
+shortened. Current models do those unprompted, and prompting for them on top
+compounds instead of adding.
 
 ## Caveats
 

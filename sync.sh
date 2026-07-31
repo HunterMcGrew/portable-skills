@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-# Push canonical skills to both Claude profiles + the Downloads backup.
+# Push canonical skills to the Claude profile + the Downloads backup.
 # Per-skill copy on purpose: profile-only skills (no counterpart in canonical)
-# must survive, so never use --delete semantics against the profile dirs.
+# must survive, so never use --delete semantics against the profile dir.
 set -euo pipefail
 SRC=~/Documents/portable-skills
-for dst in ~/.claude/skills ~/.claude-work/skills; do
-  mkdir -p "$dst"
-  for s in "$SRC"/skills/*/; do
-    name=$(basename "$s")
-    rm -rf "${dst:?}/$name"          # removes old symlink or stale copy
-    cp -R "$s" "$dst/$name"
-  done
+dst=~/.claude/skills
+mkdir -p "$dst"
+for s in "$SRC"/skills/*/; do
+  name=$(basename "$s")
+  rm -rf "${dst:?}/$name"            # removes old symlink or stale copy
+  cp -R "$s" "$dst/$name"
 done
 mkdir -p ~/Downloads/portable-skills-backup
 # --exclude protects the guarded copy below: sol-internal-autonomy.md lives in
@@ -28,4 +27,4 @@ if [ -f ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ]; then
 else
   echo "sync.sh: sol-internal-autonomy.md not found, skipped (backup otherwise complete)" >&2
 fi
-echo "synced: 2 profiles + Downloads backup"
+echo "synced: ~/.claude/skills + Downloads backup"

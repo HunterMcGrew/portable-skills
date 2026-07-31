@@ -20,9 +20,8 @@ entries, `## History` appends, batteries) exactly as if invoked by hand.
 ## Shared core
 
 If it isn't already loaded in this conversation, read `_shared/core.md` from
-the same skills root as this skill (installed:
-`~/.claude-work/skills/_shared/core.md`). The loop leans on it for the repo
-map, the plan file shape, and the dispatch idiom. The orientation batteries
+the same skills root as this skill. The loop leans on it for the repo map,
+the plan file shape, and the dispatch idiom. The orientation batteries
 belong to the personas this utility invokes, not to the utility itself.
 
 ## Lifecycle

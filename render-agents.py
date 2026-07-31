@@ -25,7 +25,14 @@ import glob, json, os, re, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 MARK = "## Shared core (inlined for subagent self-containment)"
+MARK_VERIF = "## Verification reference (inlined for subagent self-containment)"
 MARK_HR = "\n\n---\n"        # separator the toml assembler inserts before MARK
+
+# _shared/verification.md is loaded on demand in Claude Code (core.md points at
+# it from the closing battery, and only grading personas follow the pointer).
+# A codex agent has no such file to open, so the toml carries it inline for
+# every persona rather than for a guessed subset — parity beats a marker that
+# would need maintaining, and the cost is one short reference.
 
 
 def skill_body(path_or_text, is_text=False):
@@ -62,12 +69,15 @@ def render(p, root=ROOT):
     render(p) and the file on disk is content drift, never assembly churn."""
     sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
     core = open('%s/skills/_shared/core.md' % root).read()
+    verif = open('%s/skills/_shared/verification.md' % root).read()
     return ('name = %s\n' % json.dumps(p, ensure_ascii=False)
             + 'description = %s\n' % json.dumps(frontmatter_desc(sk, name=p), ensure_ascii=False)
             + "developer_instructions = '''\n"
             + skill_body(sk, is_text=True).strip('\n')
             + MARK_HR + MARK + '\n\n'
             + core.strip('\n')
+            + MARK_HR + MARK_VERIF + '\n\n'
+            + verif.strip('\n')
             + "\n'''\n")
 
 
@@ -145,7 +155,118 @@ def regenerate_all(root=ROOT):
     return out, orphans
 
 
+PROFILE_PATH_RE = re.compile(r'~/\.claude[\w.-]*/skills')
+
+
+def check_all(root=ROOT):
+    """Every violation the repo can currently detect, as (kind, detail) pairs,
+    plus the counts each check examined. Read-only — writes nothing.
+
+    Returns (violations, counts). `counts` is emitted alongside the verdict on
+    purpose: `0 violations` says nothing without the denominator beside it, and
+    a check whose denominator is zero because it looked in the wrong place
+    reports exactly the same green as one that looked everywhere.
+
+    Three checks:
+      toml-drift        — a toml differs from render() of its own source. This
+                          proves the tomls agree with their generator, not that
+                          the generator is right — it catches hand-edits and
+                          stale mirrors, which is the failure it exists for.
+      profile-path      — a `~/.claude*/skills` literal under skills/, which
+                          hardcodes one profile into a roster meant to travel
+      orphan-toml       — a toml with no persona behind it
+    """
+    v = []
+    ps = personas(root)
+    for p in ps:
+        t = '%s/codex-agents/%s.toml' % (root, p)
+        cur = open(t).read() if os.path.exists(t) else None
+        if cur is None:
+            v.append(('toml-drift', '%s.toml missing' % p))
+        elif cur != render(p, root):
+            v.append(('toml-drift', '%s.toml differs from its skills/ source' % p))
+
+    md = sorted(glob.glob(root + '/skills/*/SKILL.md')) + [root + '/skills/_shared/core.md']
+    md = [f for f in md if os.path.exists(f)]
+    for f in md:
+        for i, line in enumerate(open(f), 1):
+            m = PROFILE_PATH_RE.search(line)
+            if m:
+                v.append(('profile-path', '%s:%d hardcodes %s'
+                          % (os.path.relpath(f, root), i, m.group(0))))
+
+    tomls = sorted(glob.glob(root + '/codex-agents/*.toml'))
+    valid = set(ps)
+    for t in tomls:
+        p = os.path.basename(t)[:-5]
+        if p not in valid:
+            v.append(('orphan-toml', '%s.toml has no persona in skills/' % p))
+
+    return v, {'personas': len(ps), 'markdown files': len(md), 'tomls': len(tomls)}
+
+
+def selftest(root=ROOT):
+    """Positive control for each check: break one input, confirm that check
+    goes red, restore, confirm green. Runs against a throwaway copy so the
+    real tree is never mutated. Prints red/green for each and returns True
+    only if every check both fired and cleared."""
+    import shutil, tempfile
+    ok = True
+    with tempfile.TemporaryDirectory() as tmp:
+        r = os.path.join(tmp, 'repo')
+        shutil.copytree(root, r, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+
+        base, counts = check_all(r)
+        if base:
+            print('selftest: baseline copy is not clean (%d violations) — '
+                  'fix the tree before trusting the controls' % len(base))
+            for k, d in base:
+                print('  %-13s %s' % (k, d))
+            return False
+        print('selftest: baseline green over %s'
+              % ', '.join('%d %s' % (n, k) for k, n in counts.items()))
+
+        cases = [
+            ('toml-drift', '%s/codex-agents/%s.toml' % (r, personas(r)[0]),
+             lambda s: s + "\n# drift\n"),
+            ('profile-path', '%s/skills/_shared/core.md' % r,
+             lambda s: s + "\nSee `~/.claude-work/skills/_shared/core.md`.\n"),
+        ]
+        for kind, path, mutate in cases:
+            orig = open(path).read()
+            open(path, 'w').write(mutate(orig))
+            red = [x for x in check_all(r)[0] if x[0] == kind]
+            open(path, 'w').write(orig)
+            green = [x for x in check_all(r)[0] if x[0] == kind]
+            fired, cleared = bool(red), not green
+            ok &= fired and cleared
+            print('selftest: %-13s red=%s green-after-restore=%s'
+                  % (kind, 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+
+        # orphan-toml: a toml whose skill dir is gone
+        p = personas(r)[0]
+        shutil.rmtree('%s/skills/%s' % (r, p))
+        red = [x for x in check_all(r)[0] if x[0] == 'orphan-toml']
+        ok &= bool(red)
+        print('selftest: %-13s red=%s (skill dir removed; not restored — '
+              'temp copy is discarded)' % ('orphan-toml', 'yes' if red else 'NO'))
+    return ok
+
+
 if __name__ == '__main__':
+    mode = sys.argv[1] if len(sys.argv) > 1 else ''
+    if mode == '--selftest':
+        sys.exit(0 if selftest() else 1)
+    if mode == '--check':
+        violations, counts = check_all()
+        print('%d violations over %s'
+              % (len(violations), ', '.join('%d %s' % (n, k) for k, n in counts.items())))
+        for kind, detail in violations:
+            print('  %-13s %s' % (kind, detail), file=sys.stderr)
+        sys.exit(1 if violations else 0)
+    if mode:
+        print('usage: render-agents.py [--check | --selftest]', file=sys.stderr)
+        sys.exit(2)
     try:
         written, orphans = regenerate_all()
     except ValueError as e:

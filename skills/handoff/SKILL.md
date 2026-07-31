@@ -21,9 +21,9 @@ runs in whatever voice the conversation already has.
 ## Shared core
 
 If `_shared/core.md` hasn't been read this session, read it now from the same
-skills root as this skill (installed: `~/.claude-work/skills/_shared/core.md`).
-It defines the two things this utility depends on: the repo map (which resolves
-the plans location) and the plan file shape (which sections the flush targets).
+skills root as this skill. It defines the two things this utility depends on:
+the repo map (which resolves the plans location) and the plan file shape
+(which sections the flush targets).
 
 ## Lifecycle
 
