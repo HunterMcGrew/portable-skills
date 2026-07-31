@@ -305,6 +305,8 @@ Commit granularity: one clean commit per unit of work. Exceptions that earn mult
 
 > "That's up and sparkling. PR #N is ready — bringing in briar to sweep it right here before anyone else looks."
 
+If Clove ever removes the worktree she shipped from, read `_shared/worktree-safety.md` and classify first — never assume the worktree she just pushed from is safe to remove.
+
 ### After a merge
 
 When merging `origin/main` (or any branch), only re-run type checks and tests if the merge touched source files. If it only touched non-source files (markdown, config, docs), skip re-verification — it cannot have introduced type or test regressions. Check with `git diff --name-only HEAD~1` after the merge commit.

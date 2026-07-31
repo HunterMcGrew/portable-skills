@@ -283,7 +283,7 @@ git worktree add /tmp/pr-review-<branch-slug> origin/<branch>
 - **Full path only** — install dependencies inside the worktree using the repo's package manager, then run the repo's own formatter/linter checks from inside it. Lightweight skips both.
 - **All reads use the worktree path as root** instead of `git show origin/<branch>:` reads.
 - **cwd discipline is load-bearing.** Never leave the shell cwd inside the worktree; return to the repo root after any in-worktree command. Use `;` (not `&&`) before the return-to-root so a non-zero exit (prettier, eslint, tests) doesn't strand the cwd — a stranded cwd makes the cleanup fail with `getcwd` errors.
-- **Cleanup is mandatory** — on success, on error, and on interruption: `cd <repo-root> && git worktree remove /tmp/pr-review-<branch-slug> --force`.
+- **Cleanup is mandatory** — on success, on error, and on interruption: `cd <repo-root> && git worktree remove /tmp/pr-review-<branch-slug> --force`. This is Eric's own read-only review worktree — always detached, never carries work he made — so it stays force-removed under `_shared/worktree-safety.md`'s own exception (step 2). Before removing any *other* worktree that might carry work, read `_shared/worktree-safety.md` and classify first.
 
 ## Phase 4: GitHub writes (one batch — all writes together)
 
@@ -597,4 +597,25 @@ A control has to keep the thing under test *in scope* while making it false. Two
 - **Mutating something the check normalizes away** — punctuation, casing, whitespace where the comparison strips it. The run stays green because nothing changed as far as the check can see.
 
 Both leave the check looking fine with nothing tested, and "the control didn't fire" then reads as "the check is fine" when it means the opposite. Confirm the mutation landed in the file, then confirm it turns the run red.
+
+---
+## worktree-safety reference (inlined for subagent self-containment)
+
+# Worktree removal safety
+
+Read this before removing any worktree that might carry work. Classify first — the color decides. Ambiguity always resolves to the more conservative color.
+
+**Classify** (run inside the worktree):
+1. `git status --porcelain` non-empty → **RED** (uncommitted work).
+2. Detached HEAD (`git rev-parse --abbrev-ref HEAD` = `HEAD`) → **YELLOW** — except a read-only review worktree you created detached this session, which never carried work and may be removed.
+3. `git rev-list --count @{upstream}..HEAD` = 0 → **GREEN** (everything is on the remote). No upstream, or count > 0 → continue to step 4.
+4. Merged-PR check — the squash-merge case. A squash-merged branch's commits are never ancestors of main, so never use git ancestry as the durability oracle; use the PR record: `gh pr list --state merged --head <branch> --json headRefOid,number`. A merged PR makes the work durable **only if** its `headRefOid` contains the current HEAD: `git rev-list --count <headRefOid>..HEAD` = 0 → **GREEN**. Count > 0 means commits landed *after* the merge → **RED**. Trust commit identity, never the branch name alone. No `gh`, no remote, or no merged PR → **YELLOW**.
+5. Anything the steps above didn't color → **YELLOW**.
+
+**Act:**
+- **GREEN** — `git worktree remove <path>`, never `--force`: if git refuses a GREEN removal, the classification was wrong — reclassify, don't override. Removing a worktree never deletes its branch; branch deletion is a separate, human-approved act.
+- **YELLOW** — leave it; name it to the user with the reason.
+- **RED** — never remove, never list as removable.
+
+Batch removals (zoe's hygiene mode): dry-run listing first, then one confirmation covering the GREEN set only.
 '''

@@ -34,6 +34,16 @@ MARK_HR = "\n\n---\n"        # separator the toml assembler inserts before MARK
 # every persona rather than for a guessed subset — parity beats a marker that
 # would need maintaining, and the cost is one short reference.
 
+# Any other _shared/<name>.md a persona's own SKILL.md text points at (e.g.
+# worktree-safety.md, read on demand by zoe/eric/sol/clove) is inlined only
+# for the personas that cite it — unlike verification.md, this content is
+# relevant to a handful of personas, not all 27, so blanket inlining would
+# bloat every other toml with a pointer it never follows. A codex agent has
+# no filesystem to resolve the pointer at runtime, so leaving it uninlined
+# is a silently broken reference, not a graceful on-demand read.
+EXTRA_SHARED_RE = re.compile(r'_shared/([\w-]+)\.md')
+EXTRA_SHARED_SKIP = {'core', 'verification'}
+
 
 def skill_body(path_or_text, is_text=False):
     s = path_or_text if is_text else open(path_or_text).read()
@@ -70,14 +80,23 @@ def render(p, root=ROOT):
     sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
     core = open('%s/skills/_shared/core.md' % root).read()
     verif = open('%s/skills/_shared/verification.md' % root).read()
+    body = skill_body(sk, is_text=True).strip('\n')
+
+    extra = ''
+    for name in sorted(set(m for m in EXTRA_SHARED_RE.findall(body) if m not in EXTRA_SHARED_SKIP)):
+        content = open('%s/skills/_shared/%s.md' % (root, name)).read()
+        mark = '## %s reference (inlined for subagent self-containment)' % name
+        extra += MARK_HR + mark + '\n\n' + content.strip('\n')
+
     return ('name = %s\n' % json.dumps(p, ensure_ascii=False)
             + 'description = %s\n' % json.dumps(frontmatter_desc(sk, name=p), ensure_ascii=False)
             + "developer_instructions = '''\n"
-            + skill_body(sk, is_text=True).strip('\n')
+            + body
             + MARK_HR + MARK + '\n\n'
             + core.strip('\n')
             + MARK_HR + MARK_VERIF + '\n\n'
             + verif.strip('\n')
+            + extra
             + "\n'''\n")
 
 

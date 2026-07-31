@@ -146,7 +146,7 @@ The rules that keep a fleet inside its approval — a workflow cannot pause for 
 - **Static fan-out only.** The script fans out over the gate-approved lane list, nothing more. Dynamic loops live only *inside* a lane and always carry a bound — the review ⇄ fix loop bounded per § Budgets — two strikes, then the `top`-tier attempt, then park — as a loop bound in the script, not a memory; token budgets checked where the harness exposes them. No unbounded discovery loops under Sol; discovery-shaped work is a persona-level fan-out inside one approved lane, with a budget.
 - **The winston buffer.** A lane's `needs-human` or `needs-replan` routes to a winston `agent()` in-script first; only winston's own `needs-human` parks the lane for the human. Guardrail: scope changes, product calls, and anything merge-class pass straight through to the human regardless of what winston could answer. The buffer loop shares the same § Budgets bound.
 - **Human-shaped verdicts are terminal-in-script.** A parked lane is data the workflow returns — no script stage ever tries to resolve a `needs-human` or `blocked`. Gates stay with Sol, before launch and after return; every lane ends parked at merge for the human.
-- **Write-lanes get worktrees, no exceptions.** A lane abandoned mid-write at `needs-human` leaves a half-done tree; a worktree contains the debris, the shared checkout would poison sibling lanes.
+- **Write-lanes get worktrees, no exceptions.** A lane abandoned mid-write at `needs-human` leaves a half-done tree; a worktree contains the debris, the shared checkout would poison sibling lanes. Before removing any lane worktree that might carry work, read `_shared/worktree-safety.md` and classify first — never assume a parked lane's worktree is safe to remove.
 - **Schema-enforced report-backs.** In fleet mode, verdict / `Confidence` / `Escalate` — plus the write-lane evidence fields (`filesChanged`, `verificationCommand`, `verificationExitCode`) — become validated schema fields with auto-retry, the machine-enforced version of the prose convention used by the other two mechanisms.
 - **The effort dial lives here.** `agent()` takes `model` and `effort` per call — effort low for mechanical execution stages, high for the winston buffer and verify stages. This is the only mechanism with a per-call effort knob (see below).
 
@@ -489,4 +489,25 @@ A control has to keep the thing under test *in scope* while making it false. Two
 - **Mutating something the check normalizes away** — punctuation, casing, whitespace where the comparison strips it. The run stays green because nothing changed as far as the check can see.
 
 Both leave the check looking fine with nothing tested, and "the control didn't fire" then reads as "the check is fine" when it means the opposite. Confirm the mutation landed in the file, then confirm it turns the run red.
+
+---
+## worktree-safety reference (inlined for subagent self-containment)
+
+# Worktree removal safety
+
+Read this before removing any worktree that might carry work. Classify first — the color decides. Ambiguity always resolves to the more conservative color.
+
+**Classify** (run inside the worktree):
+1. `git status --porcelain` non-empty → **RED** (uncommitted work).
+2. Detached HEAD (`git rev-parse --abbrev-ref HEAD` = `HEAD`) → **YELLOW** — except a read-only review worktree you created detached this session, which never carried work and may be removed.
+3. `git rev-list --count @{upstream}..HEAD` = 0 → **GREEN** (everything is on the remote). No upstream, or count > 0 → continue to step 4.
+4. Merged-PR check — the squash-merge case. A squash-merged branch's commits are never ancestors of main, so never use git ancestry as the durability oracle; use the PR record: `gh pr list --state merged --head <branch> --json headRefOid,number`. A merged PR makes the work durable **only if** its `headRefOid` contains the current HEAD: `git rev-list --count <headRefOid>..HEAD` = 0 → **GREEN**. Count > 0 means commits landed *after* the merge → **RED**. Trust commit identity, never the branch name alone. No `gh`, no remote, or no merged PR → **YELLOW**.
+5. Anything the steps above didn't color → **YELLOW**.
+
+**Act:**
+- **GREEN** — `git worktree remove <path>`, never `--force`: if git refuses a GREEN removal, the classification was wrong — reclassify, don't override. Removing a worktree never deletes its branch; branch deletion is a separate, human-approved act.
+- **YELLOW** — leave it; name it to the user with the reason.
+- **RED** — never remove, never list as removable.
+
+Batch removals (zoe's hygiene mode): dry-run listing first, then one confirmation covering the GREEN set only.
 '''
