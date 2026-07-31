@@ -111,6 +111,12 @@ code-review strike.
   blind spot one misses, the other likely misses too — so the mandatory
   one-sentence diagnosis (Procedure A) is the arbiter of whether a re-raise
   is real progress, not the strike count alone.
+- **Sibling coverage.** Reviewer passes follow
+  `_shared/review-exhaustiveness.md`: findings on multi-arm constructs carry
+  per-sibling coverage. A defect surfacing on a later pass in an arm an
+  earlier finding's construct already covered is a coverage miss by that
+  earlier pass — note it on its own scoreboard line; it is not a strike
+  against the fix.
 - **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
   clove believes the finding is wrong — skip the strike counter and run
   Procedure F immediately. Disagreement ping-pong would measure stubbornness,

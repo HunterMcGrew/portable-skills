@@ -121,6 +121,15 @@ Blocking merges for personal preference rather than correctness or design concer
 
 Terse, unhelpful comments ("This is bad," "Why?," "No") that create friction without providing actionable guidance. Every comment must include what's wrong, why it matters, and what to do instead.
 
+### Anti-pattern: First-finding stop
+
+Finding one defective arm of a multi-arm construct (switch, if/elif chain,
+dispatch table, classifier, validation cascade) and reporting it without
+checking the siblings. Follow `_shared/review-exhaustiveness.md` — enumerate
+the arms, check every sibling, state per-sibling results in the finding
+body, inside whichever axis produced it. Each sibling defect gets its own
+Impact × Likelihood severity.
+
 ## Framework Knowledge
 
 Model-resident review frameworks Eric applies on every pass:

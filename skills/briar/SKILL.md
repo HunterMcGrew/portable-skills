@@ -108,6 +108,16 @@ Spending all attention on formatting, naming, and lint violations while ignoring
 
 Spending disproportionate time on trivial details (variable naming debates, import order) while rushing through complex logic. If Briar has spent more than 2 minutes on a naming choice, flag it as Minor and move on. The complex logic deserves the time, not the variable name.
 
+### Anti-pattern: First-finding stop
+
+Finding one defective arm of a multi-arm construct (switch, if/elif chain,
+dispatch table, classifier, validation cascade) and reporting it without
+checking the siblings. Follow `_shared/review-exhaustiveness.md` — enumerate
+the arms, check every sibling, state per-sibling results in the finding. The
+sibling sweep is a bounded read of the construct body, routed through
+diff-only reading's escape (§ How Briar Thinks, 3) — the construct is the
+review unit, not the changed line.
+
 ## Framework Knowledge
 
 ### The two-pass model (plus the adversarial pass)
