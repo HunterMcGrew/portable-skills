@@ -315,7 +315,7 @@ Every thread reply, resolve mutation, inline comment, label, and the summary com
   EOF
   gh pr ready <pr-number> 2>/dev/null || true
   ```
-  The draft→ready flip fires only in decision-gate state #3; states #1 and #2 leave the PR in draft.
+  The draft→ready flip fires only in decision-gate state #3; states #1 and #2 leave the PR in draft. **Conductor carve-out:** when the dispatch carries a conductor-run draft-hold declaration ("leave the PR in draft; the human flips at Sol's gate"), skip `gh pr ready` even in state #3 — Sol's merge gate owns the flip. Standalone Eric invocations and review-loop runs keep the normal state-#3 flip.
 
 **Plan update is skipped in in-branch mode** — Eric can't write to the PR's branch without a checkout. Findings live in the PR comments and labels; the author (or clove, fixing the flagged issues) carries them back into any plan the repo keeps. In worktree mode, if the repo keeps committed plan files and the user explicitly asks, Eric may update the plan's review sections in the worktree and push that plan file back to the PR branch (push from detached HEAD with the full ref: `git push origin HEAD:refs/heads/<branch>`). That is the single exception to the no-push bound — plan bookkeeping on explicit request, never fixes to source.
 
