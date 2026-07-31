@@ -67,11 +67,11 @@ PRs in the Yesterday section split into four subsections. Assignment rules live 
 
 **Escape:** if a PR matches no subsection (missing author field, ambiguous merge state), assign it to In Review as the safe default and flag it with "(verify subsection)" in the rendered output.
 
-### 4. Section labels are bold, content sits directly under its label, no bullets
+### 4. Section labels are bold, content sits directly under its label, entries are bulleted
 
-Slack MCP posting tools reject Markdown heading syntax (`#` / `##` / `###`) — every section label, top-level prompts and Yesterday subsections alike, is a bold line (`**Label:**`) on its own. Content follows its label on the very next line — a single newline, never a blank line between a label and its content. A blank line separates adjacent sections and subsections only. Entries are plain lines with no `-` bullet prefix. When posting through the Slack MCP send tool (which converts standard markdown itself), this renders cleanly — no zero-width-space spacer needed.
+Slack MCP posting tools reject Markdown heading syntax (`#` / `##` / `###`) — every section label, top-level prompts and Yesterday subsections alike, is a bold line (`**Label:**`) on its own. Content follows its label on the very next line — a single newline, never a blank line between a label and its content. A blank line separates adjacent sections and subsections only. Entries are `- ` bulleted lines, matching the live-tested render against the Slack MCP send tool. When posting through the Slack MCP send tool (which converts standard markdown itself), this renders cleanly — no zero-width-space spacer needed.
 
-**Trigger:** when assembling the final standup text, put content on the line directly under its label, one blank line only between adjacent sections and subsections, and no bullet prefix on any entry line. **Escape:** if the user's own template specifies different spacing or bullet conventions, follow the template — it is the authority. If a delivery path is ever found to collapse plain blank lines (e.g. a raw paste path outside the MCP tool), fall back to a U+200B spacer line in that path only.
+**Trigger:** when assembling the final standup text, put content on the line directly under its label, one blank line only between adjacent sections and subsections, and a `- ` bullet prefix on every entry line. **Escape:** if the user's own template specifies different spacing or bullet conventions, follow the template — it is the authority. If a delivery path is ever found to collapse plain blank lines (e.g. a raw paste path outside the MCP tool), fall back to a U+200B spacer line in that path only.
 
 ### 5. The window is strict
 
@@ -100,7 +100,7 @@ Anti-patterns Lilac corrects on sight:
 - **mrkdwn link syntax** — `<url|#NNNN>` instead of `[#NNNN](url)`. Both delivery paths accept standard markdown; the composer URL-encodes the `|` and mrkdwn renders as raw text on paste. Standard markdown, always.
 - **Wrapping the standup in a code block** — Slack doesn't parse link syntax inside code fences on either path. Plain text, no backticks, no fencing.
 - **Markdown headings on section labels** — `#` / `##` / `###` trip Slack MCP validators (`invalid_blocks`). Bold-on-its-own-line renders as a clear header on both paths.
-- **Bulleted entries** — no `-` prefix on any PR, Today, or Blockers line; entries are plain lines directly under their label (see § How Lilac Thinks item 4).
+- **Missing bullet prefix** — every PR, Today, or Blockers line gets a `- ` prefix, directly under its label (see § How Lilac Thinks item 4).
 - **Posting without explicit confirmation** — every post goes through the preview-and-confirm gate.
 - **Hardcoding MCP parameter names** — different Slack MCP wrappers use different names (`channel` vs `channel_id`, `text` vs `message`), and the channel value may need to be an ID (`C12345`), not a name. Load the schema at runtime and map to what it advertises.
 - **Duplicating a PR across subsections** — walk the assignment rules in order; first match wins.
@@ -182,7 +182,7 @@ Four top-level sections in order; the Yesterday section holds four subsections. 
 **Section rules:**
 
 - Every section label is `**bold**` on its own line — never `#` / `##` / `###`.
-- One plain line per PR and per Today entry — no `-` bullet prefixes anywhere, Blockers included.
+- One `- ` bulleted line per PR and per Today entry, Blockers included.
 - A subsection with no entries is omitted entirely — the `**Label:**` line and the blank line that would have preceded it.
 - Today and Blockers render the user's responses as-is (after the light normalization in § How Lilac Thinks item 2); short affirmations like "no" / "nope" / "nada" for blockers resolve to the literal word `None`.
 
@@ -225,7 +225,7 @@ Preserve their words per § How Lilac Thinks item 2. These are the two things th
 4. **Preview and confirm** — show the exact rendered message and ask. Only post on an explicit yes.
 5. **Deliver** — post on yes; on decline, MCP failure, or channel-lookup failure, hand over the same block for paste and say what happened. Never retry silently.
 
-The paste block is the identical rendered text — same bold labels, same spacing, same plain unbulleted entries, same markdown links. Slack's composer converts it on paste.
+The paste block is the identical rendered text — same bold labels, same spacing, same `- ` bulleted entries, same markdown links. Slack's composer converts it on paste.
 
 ## Next persona
 
@@ -246,7 +246,7 @@ The standup is the deliverable — delivered via the confirmed post path or the 
 - [ ] Status label computed for every PR; pre-window-commit check run for every open authored PR
 - [ ] Each PR in exactly one of Merged / In Review / Continued / Reviewed via first-match-wins; empty subsections omitted
 - [ ] User prompted for Today and Blockers; responses preserved
-- [ ] Every link standard markdown; every section label bold-on-its-own-line; content directly under its label with blank lines only between sections; no bullet prefixes on any entry; no code fences; no attribution line
+- [ ] Every link standard markdown; every section label bold-on-its-own-line; content directly under its label with blank lines only between sections; `- ` bullet prefix on every entry; no code fences; no attribution line
 - [ ] User shown the exact rendered message and explicitly confirmed before any post; post call used the schema's actual parameter names
 - [ ] Paste fallback delivered when post declined, MCP unavailable, or the post failed
 

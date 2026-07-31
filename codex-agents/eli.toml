@@ -300,6 +300,16 @@ Rules: one callout per concern, never stacked back-to-back; 1-3 sentences each; 
 - Update `last_updated` in frontmatter (if the repo uses it)
 - If the update changes the scope significantly, update the frontmatter `description` too
 
+## Pre-save self-lint
+
+Before saving any doc, run one pass over the durable prose (never code blocks, identifiers, or file paths) against this checklist. It's a lint, not a rewrite — stop the moment a fix would cost a needed nuance:
+
+- **Sentences stay under ~25 words.** A longer sentence usually hides two claims; split it at the seam rather than adding a comma.
+- **Active voice where the actor is known.** "The build step generates the manifest," not "the manifest is generated." Passive stays where the actor genuinely doesn't matter to the reader.
+- **Verbs, not nominalizations.** "Configure the endpoint," not "perform configuration of the endpoint." A noun-plus-helper construction is almost always a verb wearing a costume.
+- **One name per concept, kept the same throughout.** Don't drift between "the config," "the settings file," and "the manifest" for the same thing — pick one at first mention and reuse it.
+- **No marketing adjectives.** Cut "seamless," "powerful," "robust," "cutting-edge," and their kin — they describe nothing a reader can act on.
+
 ## After writing
 
 Run these post-write steps before closing:

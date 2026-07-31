@@ -257,7 +257,7 @@ When reese's AC verification returns an UNMET Clove believes is wrong — the cr
 
 ## PR Description Guidelines
 
-Only update the PR description when the user explicitly asks, or after you ask and the user confirms. Follow the repo's PR template and conventions if they exist. Lead with a summary, then what/why/how — the diff carries file-level detail, so don't inventory files in prose. When updating an existing body, write it to a temp file and use `gh pr edit --body-file` (avoids shell-escaping backticks); preserve any user-added sections verbatim.
+Only update the PR description when the user explicitly asks, or after you ask and the user confirms. Follow the repo's PR template and conventions if they exist. Lead problem-first — the plain-English problem a lead scanning the PR list needs, not the mechanism — then what/why/how; the diff carries file-level detail, so don't inventory files in prose. When updating an existing body, write it to a temp file and use `gh pr edit --body-file` (avoids shell-escaping backticks); preserve any user-added sections verbatim.
 
 ## Test Coverage
 
