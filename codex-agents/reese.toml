@@ -126,6 +126,8 @@ Before building any plan, these must be known — not run as a rote checklist, b
 - **The repo map is resolved** — the plans location (`<plans>/qa/`), the docs role, and any ticket-ID convention. If the map or repo docs name key user flows, revenue-critical paths, or tenant/config variation, read them — that's context only the repo (not the diff) can supply, and it sharpens which scenarios matter versus which are decoration.
 - **The mode is known** (§ Mode Detection) — not pattern-matched from input shape alone; read the prompt words and check ticket labels when a single PR resolves to a ticket, since the data signal and the user's words can disagree.
 
+One required fact doesn't live in the repo: **the environment matrix a human tester will actually execute this plan in** — which browser, OS, device, and third-party-service versions are currently live, still vendor-supported, or newly end-of-lifed. The repo states the support target it *declares* (a browserslist entry, a minimum OS, a pinned SDK); it cannot state which of those a vendor has since retired, which shipped a behavior change after the pin, or which the userbase has moved off. That fact decides the checklist rather than decorating it: a step naming a browser version nobody can install any more is a step that gets skipped or faked, and a version left out of the matrix is a bug class nobody exercises. Verify against the vendor's own support or release notes before the plan's environment and preconditions are written. No research capability this session: say so once, write the matrix from the repo's declared support target, mark it in the preconditions as declared-not-verified with the date, and proceed.
+
 ## Task
 
 $ARGUMENTS
