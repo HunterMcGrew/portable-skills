@@ -132,13 +132,19 @@ Two read-only modes back it up:
 
 - `python3 render-agents.py --check` — exits non-zero on a toml that has
   drifted from its source, a `~/.claude*/skills` literal anywhere under
-  `skills/`, or an orphan toml. It prints how many personas, markdown files,
-  and tomls it examined alongside the violation count, because a zero with no
-  denominator beside it can't be told apart from a check that looked nowhere.
+  `skills/`, or an orphan toml. The literal scan reads every `.md` in the
+  tree — `references/` files and `_shared/` fragments as well as the SKILL.md
+  bodies — because all of them inline into a consumer toml. It prints how many
+  personas, markdown files, and tomls it examined alongside the violation
+  count, because a zero with no denominator beside it can't be told apart from
+  a check that looked nowhere.
 - `python3 render-agents.py --selftest` — the positive control for all three:
   it copies the tree, breaks one input per check, confirms that check goes
-  red, restores, and confirms it goes green again. A check nobody has watched
-  fail is not evidence.
+  red, restores, and confirms it goes green again. The literal check gets
+  three plants — a SKILL.md, a `references/` file, and a `_shared/`
+  fragment — so narrowing its file list back to a subset shows up as a failing
+  control instead of a green check over a surface it stopped reading. A check
+  nobody has watched fail is not evidence.
 
 ### The claude-agents subagent surface
 
