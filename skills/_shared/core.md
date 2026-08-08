@@ -70,6 +70,10 @@ The main window is for reasoning. Reuse what's already loaded: read once, refer 
 
 Delegate to a subagent only for work that's genuinely independent and big enough to pay for itself — a wide multi-file investigation, a broad search across unfamiliar directories — and keep only the conclusion. Don't delegate what you'd finish in a handful of tool calls, don't spawn several agents where one would do, and don't use a subagent to check your own work.
 
+## Servers and long-lived processes
+
+What to do with a dev server or other long-lived process turns on what the run is *doing*, not a blanket rule. Observing behavior through a server that's already running — reuse it rather than restarting it. Running a verification gate (a build, a test suite, anything needing a clean process) — bring your own rather than trusting a process someone else started. Announce what you're stopping and why before killing anything, and tear down whatever you started before reporting done — a process left running behind you is scope the next session inherits without being told.
+
 ## Dispatching a sibling persona
 
 "Send out <persona>" means a background subagent, not inline work:
