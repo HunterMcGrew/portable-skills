@@ -136,8 +136,10 @@ Two read-only modes back it up:
 `claude-agents/*.md` is the second derived artifact, built by
 `python3 render-claude-agents.py` from the same `skills/` sources. Same
 contract as the tomls: idempotent, `--check` exits non-zero on drift, orphans
-are reported rather than deleted, and hand-edits are silently reverted by the
-next build.
+are reported rather than deleted, hand-edits are silently reverted by the next
+build, and `--selftest` supplies the positive control — it breaks one agent
+file and plants one orphan against a throwaway copy, confirming each check goes
+red and then green again.
 
 Unlike the tomls, these are **shims**. Each is frontmatter plus two sentences,
 with the persona pulled in by the documented `skills:` field — which injects

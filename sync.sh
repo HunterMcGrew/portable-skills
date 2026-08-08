@@ -67,6 +67,9 @@ for dst in ~/.claude/agents ~/.claude-work/agents; do
       done
       [ "$skip" = true ] && continue
     fi
+    # rm first, same as the skills loop: cp writes *through* a destination
+    # symlink, clobbering whatever it points at outside the profile directory.
+    rm -f "$dst/$name.md"
     cp "$f" "$dst/$name.md"
   done
 done
@@ -82,6 +85,9 @@ for dst in ~/.claude/output-styles ~/.claude-work/output-styles; do
   mkdir -p "$dst"
   for f in "$SRC"/output-styles/*.md; do
     [ -e "$f" ] || continue
+    # rm first — see the claude-agents loop above; a symlinked destination
+    # would otherwise be written through.
+    rm -f "$dst/$(basename "$f")"
     cp "$f" "$dst/$(basename "$f")"
   done
 done

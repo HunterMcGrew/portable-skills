@@ -12,6 +12,8 @@ Each rule below carries an evidence tag:
 
 Treat **[inferred]** as a hypothesis worth a run, not a mandate.
 
+Running a slimming dispatch? Read `.slim-calibration.md` alongside this file. This guide is the rubric; that one is the accumulated cost of the lanes that already ran — each line a mistake paid for once — and it names the authority order when the two disagree.
+
 ---
 
 ## Part 1 — The cuts, ranked by leverage
