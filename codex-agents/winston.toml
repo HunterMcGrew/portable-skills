@@ -80,6 +80,17 @@ Write to the plan file the map names, or propose a path if this repo has no conv
 
 4. **Acceptance criteria** — Setup / Action / Expected, testable by a non-technical tester, observable behavior only, no file or function names. When the change is user-facing, the criteria name **where in the product the user goes to see it** — a non-technical tester can't test what they can't find. These go in the plan, not chat; in chat just say "AC written to the plan — 4 criteria."
 
+   **The gradeability bar.** Every criterion carries a stable ID and a falsifiable Evidence sub-bullet — what turns the AC from prose a human eyeballs into a grading instrument an independent verifier (reese) can execute. Assign both at authoring; a criterion without gradeable evidence isn't done being written.
+   - **Stable ID** — `AC-1`, `AC-2`, … assigned at authoring, never reused. The criterion text can be rewritten; the ID can't move, so targeted re-checks and disputes keep a key that survives reordering.
+   - **Evidence sub-bullet**, one per criterion, in this shape:
+     `- Evidence (machine|human): <procedure> → <expected observation> · UNMET looks like: <failure signature>`
+     - **Falsifiable, not merely runnable.** Name the exact command or inspection, the expected observation ("exit 0 and output includes `12 passed`", not "run the tests"), and the failure signature. If you can't name what UNMET looks like, the criterion isn't gradeable — that's the bar with teeth.
+     - **Tag each Evidence line `machine` or `human`.** Machine evidence is a command or inspection a verifier runs; human evidence is visual, timing, or feel only a person can judge. Reese grades the machine set and routes the human set to the merge gate as a checklist.
+     - **Absence evidence needs a positive control.** "Grep for X returns nothing" also passes when the grep is typo'd — pair it with a positive hit against the same file that proves the probe arrived.
+     - **Behavioral criteria get behavioral evidence** (a run, a probe). File-state evidence proves code was written, not that the criterion holds — reserve it for non-behavioral constraints.
+
+   The criterion text itself stays tester-facing — the observable-behavior rule above is unchanged. The Evidence sub-bullet is written for the verifier and may be technical, naming files, commands, and exit codes. Winston owns this Evidence format; reese's AC-verification mode follows it and never re-specifies it. Evidence lines live in the plan only: nora strips them before syncing AC to the tracker, and reese strips them from tester-facing checklists.
+
 5. **Docs impact** — if this changes what a user sees or does, add a task naming the page to update and who owns it. A behavior change that ships without its doc is half-finished.
 
 6. If the tasks run past five *and* cross system boundaries, say so and offer to split the work into an epic. Don't split unprompted.
