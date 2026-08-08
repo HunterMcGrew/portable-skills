@@ -30,7 +30,16 @@ never sends outreach), tess (data/metrics), remy (customer success),
 penny (recruiting), lex (legal — never legal advice).
 
 **Utilities (no persona):** handoff (compact a session into a resumable
-document), review-loop (the briar → clove → eric gauntlet).
+document), review-loop (the briar → clove → eric gauntlet), devils-advocate
+(red-teams a finished plan, PRD, strategy, model, or diagnosis and hands back
+findings — never edits the artifact).
+
+devils-advocate has no name or voice on purpose: a character with a
+personality is tempted to *perform* skepticism, and performance is the failure
+mode the skill exists to prevent. It also has no toml under `codex-agents/`,
+for the same reason handoff and review-loop don't — `render-agents.py` keys
+off the persona declaration line, so a utility skill is skipped by
+construction rather than by a maintained exclusion list.
 
 ## Install
 

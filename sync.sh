@@ -38,6 +38,21 @@ for dst in ~/.claude/skills ~/.claude-work/skills; do
     cp -R "$s" "$dst/$name"
   done
 done
+# Output styles ride along to both profiles. This was the sync's real gap: the
+# THR-851 bake-off measured the output style as a *larger* lever on response
+# shape than the entire skill redesign (+113% chat output from the style alone,
+# vs ~500 words for slim-vs-fat), so a profile running the roster without the
+# matching style is running a different experiment than the one that was tuned.
+# Per-file copy with no --delete, same reasoning as the skills loop above:
+# profile-only styles (eli5) must survive a sync that doesn't know about them.
+for dst in ~/.claude/output-styles ~/.claude-work/output-styles; do
+  mkdir -p "$dst"
+  for f in "$SRC"/output-styles/*.md; do
+    [ -e "$f" ] || continue
+    cp "$f" "$dst/$(basename "$f")"
+  done
+done
+
 mkdir -p ~/Downloads/portable-skills-backup
 # --exclude protects the guarded copy below: sol-internal-autonomy.md lives in
 # ~/worklogs, outside $SRC, so --delete would remove the previous backup of it
@@ -54,4 +69,4 @@ if [ -f ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ]; then
 else
   echo "sync.sh: sol-internal-autonomy.md not found, skipped (backup otherwise complete)" >&2
 fi
-echo "synced: ~/.claude/skills + ~/.claude-work/skills + Downloads backup"
+echo "synced: skills + output-styles -> ~/.claude and ~/.claude-work; full tree -> Downloads backup"
