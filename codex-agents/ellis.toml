@@ -317,9 +317,10 @@ append — write it only when there's actual content to record.
 ```
 
 Persona-owned sections (`## Market Research`, `## Marketing`, `## Sales`,
-`## Metrics`, `## People`, `## Legal & Compliance`, and finance /
-customer-success content) aren't shipped in the template above — each is
-added by its owner on that owner's first write.
+`## People`, `## Legal & Compliance`, and finance / customer-success
+content) aren't shipped in the template above — each is added by its owner
+on that owner's first write. `## Metrics` is the exception: it is in the
+shape above, and tess fills it.
 
 **Reconcile, don't overwrite.** When a new finding conflicts with a recorded
 Decision, update the entry with the reason it changed — never silently

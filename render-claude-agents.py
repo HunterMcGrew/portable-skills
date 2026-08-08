@@ -179,9 +179,17 @@ def selftest(root=ROOT):
 
 
 if __name__ == '__main__':
-    if '--selftest' in sys.argv:
+    mode = sys.argv[1] if len(sys.argv) > 1 else ''
+    if mode == '--selftest':
         sys.exit(0 if selftest() else 1)
-    check = '--check' in sys.argv
+    # An unrecognized argument must never fall through to the write arm: a
+    # mistyped `--chek` would regenerate and overwrite tracked files while the
+    # caller believed a read-only check ran, and exit 0 either way.
+    if mode and mode != '--check':
+        print('usage: render-claude-agents.py [--check | --selftest]',
+              file=sys.stderr)
+        sys.exit(2)
+    check = mode == '--check'
     try:
         written, orphans = regenerate_all(check=check)
     except ValueError as e:
