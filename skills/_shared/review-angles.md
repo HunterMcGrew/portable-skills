@@ -54,6 +54,28 @@ Each angle reports exactly one status per pass — no free text:
   substitute for `n/a` — conflating "doesn't apply" with "didn't get to it"
   is what lets an incomplete pass read as a clean one.
 
+The reason on a `not reached` is load-bearing, because it says whether
+another pass can change the status. Two classes:
+
+- **Pass-bounded** — the reason names this pass: time ran out, the diff was
+  too large to finish, the budget was spent. A later pass can reach it, so
+  the angle is pending.
+- **Structural** — the reason names the *diff*: an axis that cannot run on
+  this PR at all, such as a Spec axis skipped because the PR is docs-only or
+  carries no plan and no AC. Nothing a later pass does changes the diff, so
+  the status is terminal — it reads the same on pass 1 and pass 9. Write the
+  structural cause into the reason so a consumer can tell the two apart
+  without guessing. A consumer gating on coverage must treat a structural
+  `not reached` as terminal rather than pending, or it waits forever for a
+  status that cannot move.
+
+A `n/a` on one of the six always-on angles is a legal status and a
+discrepancy at the same time — always-on is this file's claim that the angle
+applies to every diff, so a pass declaring it inapplicable is reporting that
+the claim didn't hold here. Give the reason, and expect a consumer to record
+it. It does not make the pass incomplete; `not reached` is the status for
+that.
+
 ## Reporting
 
 The coverage block is exempt from conditional-emit: report all nine angles'

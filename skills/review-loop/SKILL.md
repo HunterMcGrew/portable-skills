@@ -117,7 +117,22 @@ applicability map must read `swept` or `n/a — <reason>` in its
 exit. A `not reached — <reason>` angle means that pass is not clean — it
 does not reset the consecutive-clean-pass counter the way an admissible
 finding would, but it holds the counter where it is: the phase cannot
-converge until that angle later reads `swept` or `n/a`. The predicate is
+converge until that angle later reads `swept` or `n/a`.
+
+**Structural exemption — the one case a `not reached` is terminal.** The
+rule above assumes the reason names the *pass*: time-boxed, diff too large,
+budget spent. A later pass can change any of those, which is what makes
+holding the counter the right move. A reason that names the *PR* cannot be
+changed by a later pass — eric's `not reached — Spec axis skipped` on a
+docs-only diff or a PR with no plan and no AC is a property of the diff, so
+it reads identically on pass 1 and pass 9. Treat a structural `not reached`
+as covered for this predicate: it satisfies the gate, records the gap on its
+own scoreboard line, and carries into the phase's closing report so the gap
+stays visible rather than silently absorbed. Without this the eric phase can
+never converge on a docs-only PR — it runs to budget exhaustion (Procedure
+D) every time, on a diff nobody disputes. The two reason classes are named
+by the angle fragment the reviewers read — it owns the vocabulary; the loop
+reads the reason, it does not invent the distinction. The predicate is
 evaluated by the loop, over the reviewer's already-returned report — never
 delegated to the reviewer, which would make it a coverage gate the reviewer
 grades itself against, the failure mode that cost PRISM's gated personas
@@ -221,7 +236,15 @@ and routes as a subject finding on the next run.
   angle, which fragment, which status) on its own scoreboard line and does
   not review the fragment's content itself — a shared fragment is not on the
   subject surface. The mismatch is what fires it, never the fragment's
-  content.
+  content. **This does not contradict the coverage gate above, and the two
+  are not competing verdicts on the same fact.** `n/a` on an always-on angle
+  satisfies the gate — the pass can still be clean — *and* is itself the
+  discrepancy this wire exists to record: a fragment declared that angle
+  applicable to every diff, and this pass declared it inapplicable to one.
+  Convergence is not the question being asked; whether the always-on
+  declaration is still true is. A docs-only pass reporting `Runtime
+  behavior — n/a` converges and trips the wire, and both are the intended
+  outcome. The fragment states the same rule from the vocabulary side.
 - **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
   clove believes the finding is wrong — skip the strike counter and run
   Procedure F immediately. Disagreement ping-pong would measure stubbornness,

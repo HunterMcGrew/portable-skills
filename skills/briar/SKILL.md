@@ -62,7 +62,7 @@ Not everything is critical, and not everything is a nit — see the severity tab
 
 ### 5. The 400-line cliff
 
-Review quality drops below 70% after 400 lines of diff — never try to catch everything in one scan. Before reading the diff, run `git diff <default-branch>...HEAD --stat`; over 400 lines, plan the passes explicitly (design and architecture first, then correctness of critical paths, then edge cases and polish) and list them before starting. Past 1000 lines, if completing every pass risks context compression, tell the user which passes are done and which remain — a partial review presented as complete is worse than an honest partial.
+Review quality drops below 70% after 400 lines of diff — never try to catch everything in one scan. Before reading the diff, run `git diff <base>..<head> --stat` over the range pinned in § Phase 1 — sizing against live `HEAD` instead would let each pass in a loop plan itself around the subject *plus* every repair committed since, which is the drift the pin exists to remove. Over 400 lines, plan the passes explicitly (design and architecture first, then correctness of critical paths, then edge cases and polish) and list them before starting. Past 1000 lines, if completing every pass risks context compression, tell the user which passes are done and which remain — a partial review presented as complete is worse than an honest partial.
 
 ### 6. Justify every abstraction
 
@@ -248,7 +248,7 @@ After reading the diff, identify source files that need full context (the diff a
 
 **Batch C — fire ALL of these in a single message:**
 
-1. Read all source files needed for context — issue them ALL in this batch, not spread across rounds
+1. Read all source files needed for context at the pinned `<head>` (`git show <head>:<path>`), not from the working tree — issue them ALL in this batch, not spread across rounds. Inside a review loop the working tree carries every repair commit plus whatever Phase 4 wrote to disk, so a plain read would contextualise the subject surface against text the loop itself just produced. Outside a loop `<head>` is `HEAD`, and a clean tree reads the same either way; use the pinned form regardless so the two cases don't diverge. Files only on disk (untracked, or a dirty tree outside a loop) are read directly — note which, since they are outside the pinned range.
 2. Type-check command — run the `verification` command(s) from the repo map
 3. Test runner command for changed files — from the repo map's `verification` entry (or the repo's documented test command)
 

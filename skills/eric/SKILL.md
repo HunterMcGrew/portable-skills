@@ -158,7 +158,7 @@ Run the review automatically — do not wait for further instructions. **Maximiz
 
 Eric runs in one of two modes, chosen at session start and locked for the run.
 
-- **In-branch mode** (default) — Eric reads the PR's diff via `gh pr diff <pr-number>` and reads changed files at the PR head via `git show origin/<branch>:<path>`, without touching the working tree. No checkout, no install, no worktree. This is the common path and the cheap path.
+- **In-branch mode** (default) — Eric reads the PR's diff via `gh pr diff <pr-number>` and reads changed files at the PR head via `git show origin/<branch>:<path>`, without touching the working tree. No checkout, no install, no worktree. This is the common path and the cheap path. **Both commands are the outside-a-loop form**; inside a review loop they are replaced wholesale by the pinned `<base>`/`<head>` shas resolved in § Phases 1–2, because `gh pr diff` and `origin/<branch>` both resolve the PR's live head and the pin exists to stop exactly that.
 - **Worktree mode** (opt-in) — Eric creates an isolated checkout of the PR's branch and reviews against that checkout. For branches that need real filesystem isolation.
 
 **Mode gate** — Eric enters worktree mode if **any** of the following are true; otherwise he stays in-branch:
@@ -183,7 +183,12 @@ gh pr diff <pr-number> --name-only
 
 Store `headRefName` as `<branch>`. Classify the PR from the file list: if **all** changed files match non-code patterns (docs folders, `*.md`, `.github/**`, editor/tooling config) → **lightweight**; if **any** file falls outside them → **full** (conservative default).
 
-**Pin the review range.** Base is always `origin/<baseRefName>` — the field batch A just fetched and, until now, never used; **never hardcode the repo's default branch as the base**, or a PR stacked on an epic gets the wrong file list. Head is `loopBase` when the invocation names one, otherwise the PR's live head — outside a loop nothing has advanced past the PR head, so the commands below are already correct as written. This is a bug fix, not an enhancement: eric's own § Inside a review loop already promises to review `merge-base..loopBase`, but every command that actually fetches content — the name-only list above, the full diff and source reads in batch C, and `headRefOid` in batch B — resolves the PR's *live* head regardless of that promise. Inside a loop, after a fix commit, HEAD has advanced past `loopBase`; an unpinned eric reviews repairs he was explicitly told not to review and anchors inline comments outside the range he claims to be reviewing. **When `loopBase` is named**, replace the name-only list above with `git diff origin/<baseRefName>..<loopBase> --name-only`.
+**Pin the review range.** Resolve two shas and freeze them for the run:
+
+- `<head>` = `loopBase` when the invocation names one, otherwise the PR's live head — rev-parsed to a full sha.
+- `<base>` = `git merge-base origin/<baseRefName> <head>`, rev-parsed to a full sha. The base branch is always `origin/<baseRefName>` — the field batch A just fetched and, until now, never used; **never hardcode the repo's default branch as the base**, or a PR stacked on an epic gets the wrong file list. **Take the merge-base, never the base branch's tip.** `origin/<baseRefName>..<head>` is a two-dot diff between two tips, so every commit the base branch gained since the fork shows up as a reverse-deletion of files the PR never touched; `gh pr diff` — the command being replaced here — already used merge-base semantics, and dropping to a two-dot tip range would swap a wrong-head bug for a wrong-base one. `git merge-base` first, then `<base>..<head>`, mirrors what briar's § Phase 1 already does.
+
+This is a bug fix, not an enhancement: eric's own § Inside a review loop already promises to review `merge-base..loopBase`, but every command that actually fetches content — the name-only list above, the full diff and source reads in batch C, and `headRefOid` in batch B — resolves the PR's *live* head regardless of that promise. Inside a loop, after a fix commit, HEAD has advanced past `loopBase`; an unpinned eric reviews repairs he was explicitly told not to review and anchors inline comments outside the range he claims to be reviewing. **When `loopBase` is named**, replace the name-only list above with `git diff <base>..<head> --name-only`.
 
 **Parallel batch B** — one message, all independent:
 
@@ -202,7 +207,7 @@ Store `headRefName` as `<branch>`. Classify the PR from the file list: if **all*
 
 **Parallel batch C — the big read.** Immediately after batch B returns, issue ONE parallel batch containing:
 
-- **Full diff**: `gh pr diff <pr-number>` — or, when `loopBase` is named, `git diff origin/<baseRefName>..<loopBase>` (the pinned range, not the PR's live head).
+- **Full diff**: `gh pr diff <pr-number>` — or, when `loopBase` is named, `git diff <base>..<head>` (the pinned range, not the PR's live head).
 - **Standards and architect context** — the repo's engineering rules and any architect docs relevant to the changed paths (per the repo map, when they exist). Load every relevant doc — partial loads miss constraints. Skip what doesn't exist.
 - **All source files at the pinned head** — from the file list, identify every file needed for review context (new/modified source, not deleted files) and read them ALL in this batch via `git show origin/<branch>:<path>`, or `git show <loopBase>:<path>` when `loopBase` is named — `origin/<branch>` resolves the live remote tip, the same defect one layer down. Do not spread source reads across multiple rounds — that is the single biggest time waste in this workflow. The only acceptable extra round is a dependency discovered later (e.g., a shared utility imported by a changed file). No formatting checks in in-branch mode — formatters need files on disk; defer to CI and flag only formatting issues visible in the diff itself.
 
