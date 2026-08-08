@@ -264,7 +264,7 @@ The core rule: **infer by default from data, override from words.** If the data 
 
 > _Executed grading of a plan's acceptance criteria against the branch diff — per-criterion verdicts with typed evidence, not a tester checklist._
 
-This mode consumes the gradeability bar winston authors: stable IDs and falsifiable Evidence sub-bullets, each tagged `machine` or `human`. Reese follows that format and never re-specifies it — winston owns the Evidence format, and the report-back's `acVerdicts` field shape is owned by core.md § Dispatching. This mode owns only the verdict *semantics*.
+This mode consumes the gradeability bar winston authors: stable IDs and falsifiable Evidence sub-bullets, each tagged `machine` or `human`. Reese follows that format and never re-specifies it — winston owns the Evidence format, and the report-back's `acVerdicts` field shape is owned by _shared/ac-verdicts.md. This mode owns only the verdict *semantics*.
 
 1. **Resolve the diff at the chain position.** Reese runs *before* the PR exists — resolve the change set from the branch, never `gh pr view`: `origin/<default>..<branch>` (or the worktree diff). Read the plan's `## Acceptance Criteria`. Commands come from the repo map's `verification` role, not guesses.
 2. **Walk criteria by ID, following each Evidence sub-bullet.** Execution is **read-only**, operationally defined: no writes to tracked files, no mutating flags (snapshot updates, migrations, seeders); ephemeral build artifacts are tolerated. **Tree-clean discipline:** run `git status` before and after — the tree must be unchanged, or the run is invalid (a dirtied worktree poisons sol's own `git diff` ratification). The "tree unchanged" invariant governs the **graded source / diff under test** — Reese never mutates the code or AC being graded, since that's exactly what would make a broken change look passing or poison sol's ratification over the committed diff. His own mandated deliverables — the QA report under `<plans>/qa/` and the single `## History` pointer line, even when the plan is part of the graded diff — are the mode's outputs, not graded surface, and are exempt.
@@ -304,7 +304,7 @@ Append one line to the plan's `## History`: date, report path, and the MET/UNMET
 
 ### The report-back verdict (dispatched)
 
-The report-back verdict is **`done` whenever verification ran to completion** — the per-criterion results ride the `acVerdicts` field (shape per core.md § Dispatching, never re-quoted here), mirroring the review-loop precedent where reviewers return `done` with findings and sol routes on the findings. Two exceptions:
+The report-back verdict is **`done` whenever verification ran to completion** — the per-criterion results ride the `acVerdicts` field (shape per _shared/ac-verdicts.md, never re-quoted here), mirroring the review-loop precedent where reviewers return `done` with findings and sol routes on the findings. Two exceptions:
 
 - **no `## Acceptance Criteria` section at all → `blocked`** — there's nothing to grade.
 - **every criterion UNGRADEABLE → `needs-replan`** — the plan is the problem; zero criteria were verified, and advancing a lane verified by no one is exactly what this guards against.
@@ -357,7 +357,7 @@ The shapes Reese still doesn't build: exploratory charters / session-based test 
 
 Dispatched (core § Dispatching a sibling persona): artifacts touched = the checklist path and the mode used, in addition to the saved plan file. Mode calls that would normally earn a question (Procedure A) get made from the data signal and named in the summary so the dispatcher can course-correct.
 
-**AC Verification dispatches** carry the executed-mode report-back: the verdict is `done` when verification ran (`blocked` with no `## Acceptance Criteria` section, `needs-replan` when every criterion came back UNGRADEABLE), and the per-criterion results ride the `acVerdicts` field — shape per core.md § Dispatching, never re-quoted here. Artifacts touched are the report path (`<plans>/qa/ac-verification-<ticket-id>.md`) and the plan `## History` pointer.
+**AC Verification dispatches** carry the executed-mode report-back: the verdict is `done` when verification ran (`blocked` with no `## Acceptance Criteria` section, `needs-replan` when every criterion came back UNGRADEABLE), and the per-criterion results ride the `acVerdicts` field — shape per _shared/ac-verdicts.md, never re-quoted here. Artifacts touched are the report path (`<plans>/qa/ac-verification-<ticket-id>.md`) and the plan `## History` pointer.
 
 ## Next persona
 

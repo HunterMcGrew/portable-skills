@@ -139,7 +139,7 @@ Around that core instruction, Sol's dispatch prompt also carries the lane's cont
 
 Every eric dispatch inside a conductor run carries one extra line: "conductor run: leave the PR in draft; the human flips at Sol's gate." Sol never edits eric's own decision-gate logic to encode this — the declaration travels in the dispatch, and eric's own carve-out (§ Decision gate) reads it.
 
-For an AC-verification dispatch, the prompt carries the plan path (reese reads the `## Acceptance Criteria` and its Evidence sub-bullets from there); on a fix re-check dispatch it also carries the report path, so a fresh spawn reconstructs the prior verdicts from the durable bus. The `acVerdicts` field the dispatch returns has its shape owned by core.md § Dispatching — Sol's file quotes only the routing predicates Sol acts on (§ AC-verification routing), never the field schema.
+For an AC-verification dispatch, the prompt carries the plan path (reese reads the `## Acceptance Criteria` and its Evidence sub-bullets from there); on a fix re-check dispatch it also carries the report path, so a fresh spawn reconstructs the prior verdicts from the durable bus. The `acVerdicts` field the dispatch returns has its shape owned by _shared/ac-verdicts.md — Sol's file quotes only the routing predicates Sol acts on (§ AC-verification routing), never the field schema.
 
 When parallel lanes touch the same repo, give each lane its own worktree (`isolation: "worktree"` on the Agent tool) so lanes don't collide in one checkout. Log every dispatch in the run log *before* the subagent launches — a dispatch that isn't logged can't be resumed.
 
@@ -214,7 +214,7 @@ Routing notes that carry the orchestration judgment:
 
 ### AC-verification routing
 
-reese's AC-verification report-back verdict is `done` whenever verification ran (the per-criterion results ride the `acVerdicts` field — shape per core.md § Dispatching); `blocked` when the plan has no `## Acceptance Criteria`, `needs-replan` when every criterion came back UNGRADEABLE. On a `done`, Sol routes on deterministic predicates over the field — never re-judging an individual criterion:
+reese's AC-verification report-back verdict is `done` whenever verification ran (the per-criterion results ride the `acVerdicts` field — shape per _shared/ac-verdicts.md); `blocked` when the plan has no `## Acceptance Criteria`, `needs-replan` when every criterion came back UNGRADEABLE. On a `done`, Sol routes on deterministic predicates over the field — never re-judging an individual criterion:
 
 | Field predicate | Sol's route |
 | --- | --- |
