@@ -4,7 +4,9 @@ Audited 2026-08-08 against [SLIMMING-GUIDE.md](SLIMMING-GUIDE.md), using slim Wi
 
 > **Correction — four entries below read a stale tree.** The audit ran against local `main` at `1037460`, which was five commits behind `origin/main`. PRs #5 and #6 merged 2026-07-31 and changed exactly the review machinery: **review-loop 1,634 → 2,483 (+52%)**, eric 6,345 → 6,497, briar 5,566 → 5,734, plus a new `skills/_shared/review-exhaustiveness.md` (284w) the core-intersection analysis never saw. The "review-loop is already clean" verdict is the one that needs re-checking — it is half again larger than the version graded here. Every other skill's numbers are unaffected. The tree is now current at `2a2cdc3`; the delta re-audit is tracked as lane-1 of the implementation run.
 
-**Roster total: 119,735 words across 29 skills.** Applying the rubric everywhere lands it near 45,000 — a ~62% cut.
+**Roster total: 119,735 words across 29 skills.** Projected at the time of writing: ~45,000, a ~62% cut.
+
+> **That projection was wrong, and the run that followed measured the real number.** The rubric was applied to every skill in this audit; the roster landed at **~102,000 words (16%)**, or **24% lighter on what actually loads per invocation** — core plus one skill, since relocated content lives in `references/` and loads only when its mode fires. The ~62% figure was arithmetic from the 78% Winston exemplar, and Winston was not representative: its bulk was personality prose, an 11-section output template, and a checklist, all near-fully compressible. Skills carrying real reference density — Divio tables, story templates, framework matrices, mode skeletons — do not compress that far, and forcing them to would cut content the keep-lists exist to protect. Per-skill cuts ranged 3% (zoe, already compliant) to 79% (winston). See [SLIMMING-GUIDE.md](SLIMMING-GUIDE.md) § Part 8 for what the run actually measured.
 
 ## The headline: this isn't 29 problems, it's four
 

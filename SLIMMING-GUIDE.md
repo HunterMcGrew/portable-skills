@@ -194,3 +194,57 @@ Ranked by suppression risk, not by file size:
 The unanswered question underneath all of this: **what does a skill add over the always-on rules?** The no-skill control in the bake-off produced 801 chat words, 18 tasks, and 15 verification commands — matching or beating both Winston versions on detail at a third of the output — and it did research the skills didn't. Its one durable weakness was task sequencing (2 sequence markers vs 7–8). The skill's measured marginal contribution was ~1,500 extra chat words for a better-sequenced plan.
 
 That may justify the roster or may not, and the bake-off can't say: the control also got two clarifying questions answered mid-run that the other conditions didn't. **Control vs slim, three runs each, same output style, no edits between** is the experiment that settles it, and it should probably run before 30 skills get rewritten.
+
+---
+
+## Part 8 — What the run actually measured
+
+The rubric above was applied to the whole roster on 2026-08-08. This section records what held, what didn't, and what only showed up under execution. It supersedes the projections in Parts 1–7 wherever they disagree.
+
+### The projections were wrong about size and right about mechanism
+
+| | Projected | Measured |
+| --- | --- | --- |
+| Roster total | ~45,000 (−62%) | **~102,000 (−16%)** |
+| Typical load per invocation (core + one skill) | — | **6,441 → 4,896 (−24%)** |
+| `## The run, in order` | — | **27 of 29 → 0** |
+| Skills asking a question the repo can't answer | 2 | **2 → 14** |
+| Definition of Done blocks | 26 | **26 → 1** |
+| Trigger/Escape scaffolding | 147 | **147 → 12** |
+
+**The 62% projection came from treating Winston as representative. It isn't.** Its bulk was personality prose, an 11-section output template, and a checklist — all near-fully compressible, hence 79%. Skills carrying reference density (Divio tables, story templates, framework matrices, mode skeletons) landed at 3–38%. Per-invocation load is the honest metric anyway: relocated content sits in `references/` and loads only when its mode fires.
+
+**Word count was the wrong headline.** The two rows that matter are the run-order sweep and the external-question count — those are the measured mechanism from the bake-off, and they went to completion.
+
+### Rule 1 is confirmed, and stronger than stated
+
+Every one of the 27 `## The run, in order` sections turned out to be **pure restatement**. Agents removing them checked each step for content existing nowhere else and found none, across every file. That section never carried information; it carried a script.
+
+**But removing it is only half the fix, and the half that gets forgotten.** Twenty-four skills initially got a clean non-prescriptive orientation with no outside-facing question — which leaves the verify-at-source rule without its trigger, the exact condition that produced fat Winston's zero research calls. A dedicated sweep took the count from 6 to 14, and a read-only audit judged the remaining 14 genuinely N/A with a stated reason each (handoff has no subject matter; sol is pure dispatch; theo's Deletion Test is inherently repo-internal; lex deliberately defers regulation questions to counsel). **Budget the second half as its own pass.**
+
+The worst case found was clove, which carried a line instructing it to *skip* third-party library behavior — worse than silence. The fix separated two ideas that had collapsed into one bullet: don't write tests that pin third-party behavior, but do verify it before building on it.
+
+### Rule 8 needs one correction
+
+"Protected" applied to a cognitive lens means **keep the discriminator, drop the Trigger/Escape scaffolding**. One agent read it as "leave the block untouched" and landed at 10 surviving pairs where its siblings hit 0. The 12 that legitimately remain are genuine escape machinery — sasha's phase gates, zoe's named procedures — which Part 3 already protects.
+
+### What the process cost
+
+Twelve dispatch briefs contained a factual error about the file under edit — every one from writing against this audit's summary rather than the file. Agents caught all twelve: two refused to fabricate protected content that didn't exist, several followed the plan over the brief and said so.
+
+Three mechanisms did the work, and they're the transferable part:
+
+- **A word ceiling fights its own keep-list.** State what must survive and let the count fall out; mark any number an expectation, never a gate. Two implementers hit the conflict and reported it instead of silently compressing protected content — after one earlier pass, given a hard ceiling, did exactly that.
+- **Authorized deletions must travel to the reviewer.** A reviewer flagged a dependency-verified deletion as a Major defect because its brief never said the cut was sanctioned.
+- **One shared calibration file beats N bespoke briefs.** After the errors were traced to a common cause, the standing rules moved into a single file every dispatch reads. The next brief error was caught upstream by an agent citing the authority order, rather than in ratification.
+
+### Verification traps worth stealing
+
+- **`grep -c <pat> && <next>` is a broken absence check.** Zero matches exits non-zero and silently kills the rest of the chain — it produced a falsely-reported exit code. Use `! grep -q`, pair every absence check with a positive control proving the probe reached the file, and read printed values (`wc`, `grep -c`) rather than `$?`.
+- **`sed -n '/^---$/,/^---$/p'` false-positives on frontmatter** for any file whose body contains a `---` horizontal rule. Use the awk form.
+- **A grep for the right string is not a check for the right structure.** Winston's port passed `grep -q 'he/him'` but `render-agents.py` correctly refused to generate its toml: a carried-over H1 had displaced the persona declaration from the first body line. The deterministic build caught what the probe couldn't.
+- **The renderer only scans the SKILL.md body** for `_shared/<name>.md` citations. A citation relocated into `references/` silently drops that fragment from the generated surface.
+
+### Still unanswered
+
+The control-vs-slim experiment never ran, and the roster was rewritten anyway on an explicit call. **What a skill adds over the always-on rules remains unmeasured** — Part 7's question stands, and now stands against a slimmed roster rather than a fat one.

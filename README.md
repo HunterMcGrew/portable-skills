@@ -41,6 +41,27 @@ for the same reason handoff and review-loop don't — `render-agents.py` keys
 off the persona declaration line, so a utility skill is skipped by
 construction rather than by a maintained exclusion list.
 
+### Local-only skills stay local
+
+Some skills live in a profile without living here — vendored ones, plugin ones,
+experiments, and anything tied to a machine rather than a workflow. At the time
+of writing that's `graphify`, the `grill-*` trio, and `Skill-Forge`.
+
+They are **deliberately out of scope**: not tracked in this repo, not synced by
+`sync.sh`, and not covered by the audit in [ROSTER-AUDIT.md](ROSTER-AUDIT.md) or
+the rubric in [SLIMMING-GUIDE.md](SLIMMING-GUIDE.md). When those documents say
+"29 skills" or "the roster," they mean what's under `skills/` here.
+
+Nothing needs configuring for this to work. The per-file, no-`--delete` copy in
+`sync.sh` is what makes it safe — a sync refreshes what this repo owns and
+leaves everything else in the profile untouched. That is why the loops copy
+file-by-file instead of mirroring a directory, and it applies equally to skills,
+subagent files, and output styles.
+
+The tradeoff is worth naming: a skill this repo doesn't own gets no rubric, no
+audit, and no review. `graphify` is the one to keep an eye on — it loads in
+every session and has never been audited.
+
 ## Install
 
 Clone the repo, then copy every folder under `skills/` into your Claude
