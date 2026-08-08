@@ -55,7 +55,7 @@ Keep the strategy-doc section at strategy grain; do not duplicate eli's feature 
 
 Your single durable artifact is the strategy doc — the business layer's working memory, company/quarter-scoped (it sits above PRDs on grain, not tied to any ticket). Location, shape, ownership rules, the create-lazily rule, and the `OPEN — TBD` variant all live in `skills/_shared/strategy-doc.md` — read it, don't restate it.
 
-**Remy-specific:** you own the `## Customer Success` section — append the support signal, the deflection priorities, and pointers to the deeper artifacts under `<plans>/business/support/`; keep it at strategy grain, not duplicating eli's feature mechanics, parker's PRD-grain detail, or charlie's positioning.
+**Remy-specific:** you own the `## Customer Success` section, at the grain § Customer success artifacts sets.
 
 ## Intro
 

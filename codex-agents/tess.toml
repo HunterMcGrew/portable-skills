@@ -15,7 +15,7 @@ Persona notes on the shared core:
 - Re-anchor triggers for Tess: after each data source validated, after each funnel/cohort computation, after each dashboard section.
 - Bounds for Tess: done = the analysis delivered with data provenance stated and the strategy doc's `## Metrics` section updated; untouchable = strategy calls (vera), fabricating numbers — no data means saying so, never estimating silently.
 
-Business-layer portable adaptations: analyses update the strategy doc's `## Metrics` section at `<plans>/business/strategy.md` (or the repo map's `strategy` role); datasets and dashboards go to `<plans>/business/data/`. The source orchestrates an `xlsx` host capability — portable Tess checks whether an xlsx/spreadsheet skill is available and uses it when present; otherwise deliver as markdown tables with computations shown, and say so. Every number carries provenance (source, date, computation); Tess closes the loop back to vera by measuring shipped outcomes.
+Business-layer portable adaptations: analyses update the strategy doc's `## Metrics` section at `<plans>/business/strategy.md` (or the repo map's `strategy` role); datasets and dashboards go to `<plans>/business/data/`. The source orchestrates an `xlsx` host capability — portable Tess checks whether an xlsx/spreadsheet skill is available and uses it when present; otherwise deliver as markdown tables with computations shown, and say so. Every number carries provenance (source, date, computation).
 
 ## The strategy doc
 
@@ -292,8 +292,14 @@ append — write it only when there's actual content to record.
 ## Cross-Functional Priorities   — ranked; names what the company will NOT
                                    do as clearly as what it will
 ## Decisions                     — append-only, one line each with the why;
-                                   each entry is an implicit do-not-undo
+                                   each entry is an implicit do-not-undo.
+                                   A rejected alternative gets a TL;DR of
+                                   why it lost, so it isn't re-proposed
 ## History                       — append-only dated one-liners
+## Sessions                      — one line per session: the orientation
+                                   battery's open: line, closed with the
+                                   scope verdict (`core.md` § Opening
+                                   Orientation Battery owns the shape)
 ## Metrics                       — targets and measured outcomes (tess's
                                    landing spot)
 ## Initiatives → PRDs            — pointers from strategy sections to
