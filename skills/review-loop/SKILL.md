@@ -106,10 +106,25 @@ line; it never drives a fix pass.
 ### Convergence
 
 A phase exits on **two consecutive passes with zero admissible subject
-findings**. One clean pass is not convergence: the pass right after a fix
-commit is the likeliest place for a reviewer to raise something about the
-repair rather than the subject, so the second clean pass confirms the first
-was not an accident of timing.
+findings** *and* full angle coverage. One clean pass is not convergence: the
+pass right after a fix commit is the likeliest place for a reviewer to raise
+something about the repair rather than the subject, so the second clean pass
+confirms the first was not an accident of timing.
+
+**The coverage gate.** Every angle in the reviewer's angle-sweep
+applicability map must read `swept` or `n/a — <reason>` in its
+`### Angle Coverage` block before a pass counts toward the two-clean-pass
+exit. A `not reached — <reason>` angle means that pass is not clean — it
+does not reset the consecutive-clean-pass counter the way an admissible
+finding would, but it holds the counter where it is: the phase cannot
+converge until that angle later reads `swept` or `n/a`. The predicate is
+evaluated by the loop, over the reviewer's already-returned report — never
+delegated to the reviewer, which would make it a coverage gate the reviewer
+grades itself against, the failure mode that cost PRISM's gated personas
+their final turns satisfying their own gate instead of doing the work. The
+applicability map only **widens** across the run — an angle that reads
+`n/a` on one pass can read `swept` on a later one, never the reverse — and
+it travels with `loopBase` (§ Guardrails, Gauntlet state travels).
 
 Anything still open when a phase converges — minors the loop chose not to
 fix, observations that failed admissibility — converts to a `Status:
@@ -190,12 +205,23 @@ and routes as a subject finding on the next run.
   blind spot one misses, the other likely misses too — so the mandatory
   one-sentence diagnosis (Procedure A) is the arbiter of whether a re-raise
   is real progress, not the strike count alone.
-- **Sibling coverage.** Reviewer passes follow
-  `_shared/review-exhaustiveness.md`: findings on multi-arm constructs carry
-  per-sibling coverage. A defect surfacing on a later pass in an arm an
-  earlier finding's construct already covered is a coverage miss by that
-  earlier pass — note it on its own scoreboard line; it is not a strike
-  against the fix.
+- **Sibling and angle coverage.** Reviewer passes follow
+  `_shared/review-exhaustiveness.md` for multi-arm constructs (findings carry
+  per-sibling coverage) and their own angle sweep for angle coverage (every
+  pass's `### Angle Coverage` block is read against the applicability
+  map). A defect surfacing on a later pass in an arm — or an angle — an
+  earlier pass's construct already covered, or already reported `swept`, is
+  a coverage miss by that earlier pass — note it on its own scoreboard line;
+  it is not a strike against the fix.
+- **Always-on-content trip-wire.** Generalized off directory membership —
+  any `skills/_shared/*.md` fragment, not off frontmatter, since the
+  fragments carry none. If a pass's `### Angle Coverage` block reports
+  anything other than `swept` for an angle a fragment declares always-on,
+  that mismatch fires the trip-wire: the loop records the discrepancy (which
+  angle, which fragment, which status) on its own scoreboard line and does
+  not review the fragment's content itself — a shared fragment is not on the
+  subject surface. The mismatch is what fires it, never the fragment's
+  content.
 - **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
   clove believes the finding is wrong — skip the strike counter and run
   Procedure F immediately. Disagreement ping-pong would measure stubbornness,
@@ -208,13 +234,17 @@ and routes as a subject finding on the next run.
   fixed-but-unresolved threads outstanding. If any remain after the final
   reviewer pass, run Procedure H.
 - **Gauntlet state travels.** Any mid-gauntlet handoff carries the loop's
-  live state — `loopBase`, pass count, consecutive-clean-pass count, strike
-  table, scoreboard, current phase, and draft-hold status (whether the
-  dispatch carried a conductor draft-hold declaration) — in a `## Gauntlet
-  state` section so a fresh session resumes without replaying. `loopBase`
-  leads the list because it is the one item a fresh session will silently
-  reconstruct wrong: recomputing it from `HEAD` looks like recovery and is
-  actually the un-freezing the base exists to prevent.
+  live state — `loopBase`, the angle applicability map, pass count,
+  consecutive-clean-pass count, strike table, scoreboard, current phase, and
+  draft-hold status (whether the dispatch carried a conductor draft-hold
+  declaration) — in a `## Gauntlet state` section so a fresh session resumes
+  without replaying. `loopBase` leads the list because it is the one item a
+  fresh session will silently reconstruct wrong: recomputing it from `HEAD`
+  looks like recovery and is actually the un-freezing the base exists to
+  prevent. The applicability map travels for the same reason: a fresh
+  session that starts it over from empty forgets every angle a prior pass
+  already swept, which the widen-only rule (§ Convergence) only protects
+  against if the map itself makes the handoff.
 
 ## Procedures
 
@@ -272,6 +302,7 @@ fixed, plus totals —
 - review passes / fix passes
 - issues found and fixed, by severity
 - strike table (any issue that survived a strike, with its diagnosis)
+- coverage misses (sibling arms and angles), by pass
 - cleaner paths: implemented / rejected / parked
 
 The PR stays draft; tell the user it's ready for human testing and review.
