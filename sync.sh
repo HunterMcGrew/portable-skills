@@ -38,6 +38,39 @@ for dst in ~/.claude/skills ~/.claude-work/skills; do
     cp -R "$s" "$dst/$name"
   done
 done
+# Subagent projections ride along to both profiles. Built by
+# render-claude-agents.py from the same skills/ sources as codex-agents/, and
+# deployed here rather than by the renderer for the same reason: rendering is a
+# build step that mutates tracked files, syncing only copies committed ones.
+#
+# Worth knowing what this does and does not buy you. Skills and subagents have
+# OPPOSITE precedence: a personal ~/.claude/skills entry beats a repo's
+# .claude/skills, but a repo's .claude/agents beats ~/.claude/agents. So these
+# give you the roster as subagents in every repo that ships none of its own,
+# and lose to any repo that does (thrive generates sixteen locally via hooks).
+# Same per-file, no-delete semantics as the loops above: a profile-only agent
+# nobody here knows about survives the sync.
+# EXCLUDE_WORK applies here too, and it has to: an agent file is a shim whose
+# `skills:` field preloads the same-named skill. Copying winston.md to the work
+# profile while the winston *skill* is excluded from it produces an agent
+# pointing at something that isn't installed — a persona that launches and then
+# has nothing to be.
+for dst in ~/.claude/agents ~/.claude-work/agents; do
+  mkdir -p "$dst"
+  for f in "$SRC"/claude-agents/*.md; do
+    [ -e "$f" ] || continue
+    name=$(basename "$f" .md)
+    if [ "$dst" = ~/.claude-work/agents ]; then
+      skip=false
+      for ex in $EXCLUDE_WORK; do
+        [ "$name" = "$ex" ] && skip=true && break
+      done
+      [ "$skip" = true ] && continue
+    fi
+    cp "$f" "$dst/$name.md"
+  done
+done
+
 # Output styles ride along to both profiles. This was the sync's real gap: the
 # THR-851 bake-off measured the output style as a *larger* lever on response
 # shape than the entire skill redesign (+113% chat output from the style alone,
@@ -69,4 +102,4 @@ if [ -f ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ]; then
 else
   echo "sync.sh: sol-internal-autonomy.md not found, skipped (backup otherwise complete)" >&2
 fi
-echo "synced: skills + output-styles -> ~/.claude and ~/.claude-work; full tree -> Downloads backup"
+echo "synced: skills + claude-agents + output-styles -> ~/.claude and ~/.claude-work; full tree -> Downloads backup"

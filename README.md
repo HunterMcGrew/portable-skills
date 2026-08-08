@@ -110,31 +110,55 @@ Two read-only modes back it up:
   red, restores, and confirms it goes green again. A check nobody has watched
   fail is not evidence.
 
-### Output styles (hand-installed, never synced)
+### The claude-agents subagent surface
 
-`output-styles/scannable.md` is tracked in this repo but deliberately **not**
-part of the roster copy or `sync.sh` — an output style changes a profile-wide
-conversational default, and pushing that silently on every sync is a
-different act from refreshing skills you already opted into. Install it
-yourself, and only if you want it as your default:
+`claude-agents/*.md` is the second derived artifact, built by
+`python3 render-claude-agents.py` from the same `skills/` sources. Same
+contract as the tomls: idempotent, `--check` exits non-zero on drift, orphans
+are reported rather than deleted, and hand-edits are silently reverted by the
+next build.
 
-- **Manual copy:**
+Unlike the tomls, these are **shims**. Each is frontmatter plus two sentences,
+with the persona pulled in by the documented `skills:` field — which injects
+the skill's *full content* at startup, not just its description. The Codex
+tomls inline everything because Codex has no skills mechanism to defer to;
+Claude Code does, and `sync.sh` already installs every persona under
+`~/.claude/skills/`. Inlining here would put each persona in the profile twice
+and let the copies drift, which is the failure `render-agents.py`'s own header
+records. Utilities (handoff, review-loop, devils-advocate) get no agent file,
+by the same persona-declaration gate that governs the tomls.
 
-  ```bash
-  mkdir -p ~/.claude/output-styles
-  cp output-styles/scannable.md ~/.claude/output-styles/
-  ```
+**Know what this buys before relying on it: skills and subagents have opposite
+precedence.** A personal `~/.claude/skills` entry beats a repo's
+`.claude/skills`, but a repo's `.claude/agents` beats `~/.claude/agents`. So
+these give you the roster as subagents in every repo that ships none of its
+own — and lose to any repo that does.
 
-- **Hand it to an LLM instead** — paste this prompt into any session with
-  filesystem access to your Claude profile:
+Neither renderer is wired into `sync.sh`: rendering is a build step that
+mutates tracked files, syncing only copies committed ones.
 
-  > Create the directory `~/.claude/output-styles` if it doesn't exist, then
-  > copy the file `output-styles/scannable.md` from this repo into
-  > `~/.claude/output-styles/scannable.md`.
+### Output styles
 
-Selecting Scannable as your active output style is a separate step (`/output-style`
-or your profile's `settings.json`) — installing the file doesn't set it as
-default anywhere.
+`output-styles/*.md` sync to both profiles alongside skills and agents.
+
+This was once deliberately excluded, on the reasoning that an output style
+changes a profile-wide conversational default and pushing that silently is a
+different act from refreshing skills you opted into. The reasoning was sound
+but aimed at the wrong risk: copying the file only makes a style *available*.
+Selecting it is a separate step (`/output-style`, or `outputStyle` in your
+profile's `settings.json`), and no default is set anywhere in this repo.
+
+What changed the call is that the THR-851 bake-off measured the output style
+as a *larger* lever on response shape than the entire skill redesign — +113%
+chat output from the style alone, against ~500 words for slim-vs-fat. A
+profile running this roster without the matching style is running a different
+configuration from the one that was tuned, so leaving the styles uninstalled
+was the bigger hazard.
+
+Two ship today: **Focused** (answer-first, calibrated to Opus 5's own
+guidance) and **Scannable** (high-density, and note it instructs the model not
+to announce what it is about to do — if your `CLAUDE.md` asks for exactly that,
+the two conflict, and conflicting guidance across layers degrades compliance).
 
 ## Per-repo setup (five minutes, once per repo)
 
