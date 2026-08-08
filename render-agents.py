@@ -44,6 +44,16 @@ MARK_HR = "\n\n---\n"        # separator the toml assembler inserts before MARK
 EXTRA_SHARED_RE = re.compile(r'_shared/([\w-]+)\.md')
 EXTRA_SHARED_SKIP = {'core', 'verification'}
 
+# skills/<p>/references/<name>.md is the same problem one directory over. A
+# persona's own reference files hold content relocated out of its SKILL.md —
+# a rarely-fired mode, an on-demand procedure — and the body points at them by
+# path. In Claude Code that pointer resolves against the filesystem; in a codex
+# toml it resolves against nothing, so an uninlined reference is the identical
+# silently-broken pointer the block above rules out for _shared fragments.
+# Cited either as `references/<name>.md` or `skills/<p>/references/<name>.md`;
+# the optional prefix names the owning persona, defaulting to the citing one.
+REFERENCE_RE = re.compile(r'(?:skills/([\w-]+)/)?references/([\w-]+)\.md')
+
 
 def skill_body(path_or_text, is_text=False):
     s = path_or_text if is_text else open(path_or_text).read()
@@ -86,6 +96,17 @@ def render(p, root=ROOT):
     for name in sorted(set(m for m in EXTRA_SHARED_RE.findall(body) if m not in EXTRA_SHARED_SKIP)):
         content = open('%s/skills/_shared/%s.md' % (root, name)).read()
         mark = '## %s reference (inlined for subagent self-containment)' % name
+        extra += MARK_HR + mark + '\n\n' + content.strip('\n')
+
+    for owner, name in sorted(set(REFERENCE_RE.findall(body))):
+        owner = owner or p
+        ref = '%s/skills/%s/references/%s.md' % (root, owner, name)
+        if not os.path.exists(ref):
+            raise ValueError('cites references/%s.md, which does not exist at '
+                             'skills/%s/references/' % (name, owner))
+        content = open(ref).read()
+        mark = ('## references/%s.md (inlined for subagent self-containment)'
+                % name)
         extra += MARK_HR + mark + '\n\n' + content.strip('\n')
 
     return ('name = %s\n' % json.dumps(p, ensure_ascii=False)

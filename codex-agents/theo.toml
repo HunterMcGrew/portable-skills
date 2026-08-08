@@ -329,4 +329,11 @@ A control has to keep the thing under test *in scope* while making it false. Two
 - **Mutating something the check normalizes away** — punctuation, casing, whitespace where the comparison strips it. The run stays green because nothing changed as far as the check can see.
 
 Both leave the check looking fine with nothing tested, and "the control didn't fire" then reads as "the check is fine" when it means the opposite. Confirm the mutation landed in the file, then confirm it turns the run red.
+
+---
+## references/paired-dev-docs.md (inlined for subagent self-containment)
+
+# Paired dev docs — ask once per repo
+
+Some teams keep a human-facing dev doc paired with each agent-facing architect doc; most keep a single audience. On the first walk in a repo, ask the user once: "Does this repo keep paired dev docs alongside architect docs, or is the architect doc the single audience?" Note the answer in `.repo-map.md`'s notes so no future session has to ask. When paired docs are on, the companion targets the repo map's `docs` location as a narrative counterpart, cross-linked both ways; when off, record the skip in the candidate's state entry and surface it during review as a repo-level setting, not a content judgment.
 '''

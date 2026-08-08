@@ -449,4 +449,44 @@ Read this before removing any worktree that might carry work. Classify first —
 - **RED** — never remove, never list as removable.
 
 Batch removals (zoe's hygiene mode): dry-run listing first, then one confirmation covering the GREEN set only.
+
+---
+## references/fleet-runs.md (inlined for subagent self-containment)
+
+# Fleet runs — Workflow
+
+The third dispatch mechanism, for one run shape only: **the run is a fleet of independently-shippable lanes** — a multi-PR epic, or a batch of unrelated tickets driven at once. That single question decides it; there is no lane-count threshold. Within-phase fan-outs (a review sweep over many files, a doc audit over a tree) are the dispatched persona's business, never Sol's — from the tower, that phase is still one lane.
+
+A fleet runs as a Workflow-tool script: each lane is a full lifecycle pipeline following the § Decompose chains (winston → clove → review loop → eli doc-audit → park at merge), worktree-isolated, fanned out with `pipeline()`. Sol proposes fleet mode at the run-plan gate — that proposal is also the explicit opt-in the Workflow tool requires. Lane independence is checked at the same gate: lanes that share files or order-depend on a sibling run as ordered stages, or fall back to parallel subagents.
+
+The rules that keep a fleet inside its approval — a workflow cannot pause for a human gate, so these are what make "the human approved this envelope" stay true from launch to return:
+
+- **Static fan-out only.** The script fans out over the gate-approved lane list, nothing more. Dynamic loops live only *inside* a lane and always carry a bound — the review ⇄ fix loop bounded per § Budgets — two strikes, then the `top`-tier attempt, then park — as a loop bound in the script, not a memory; token budgets checked where the harness exposes them. No unbounded discovery loops under Sol; discovery-shaped work is a persona-level fan-out inside one approved lane, with a budget.
+- **The winston buffer.** A lane's `needs-human` or `needs-replan` routes to a winston `agent()` in-script first; only winston's own `needs-human` parks the lane for the human. Guardrail: scope changes, product calls, and anything merge-class pass straight through to the human regardless of what winston could answer. The buffer loop shares the same § Budgets bound.
+- **Human-shaped verdicts are terminal-in-script.** A parked lane is data the workflow returns — no script stage ever tries to resolve a `needs-human` or `blocked`. Gates stay with Sol, before launch and after return; every lane ends parked at merge for the human.
+- **Write-lanes get worktrees, no exceptions.** A lane abandoned mid-write at `needs-human` leaves a half-done tree; a worktree contains the debris, the shared checkout would poison sibling lanes. Before removing any lane worktree that might carry work, read `_shared/worktree-safety.md` and classify first — never assume a parked lane's worktree is safe to remove.
+- **Schema-enforced report-backs.** In fleet mode, verdict / `Confidence` / `Escalate` — plus the write-lane evidence fields (`filesChanged`, `verificationCommand`, `verificationExitCode`) — become validated schema fields with auto-retry, the machine-enforced version of the prose convention used by the other two mechanisms.
+- **The effort dial lives here.** `agent()` takes `model` and `effort` per call — effort low for mechanical execution stages, high for the winston buffer and verify stages. This is the only mechanism with a per-call effort knob.
+
+---
+## references/model-tiers.md (inlined for subagent self-containment)
+
+# Model tiers
+
+Every dispatch carries a tier; this table is the default assignment:
+
+| Tier | Model / effort | Personas |
+| --- | --- | --- |
+| `top` | Opus, effort `high` (`xhigh` for the hardest verify/buffer stages) | sol, winston, eric, pixel, sasha — judgment cannot be front-loaded out of these; winston and eric are **never dispatched below top** (the review firewall never runs cheap — PRISM `fec26cc`) |
+| `worker` | Sonnet, effort `medium` (raise to `high` for harder execution stages) | everyone else, clove/briar/eli/sage/lilac/reese included — they execute against judgment already spent at plan time |
+
+A run may pin a persona to a different tier at the run-plan gate (winston and eric excepted — they never leave `top`); the override is logged in the run log's `## Lanes` line. No config file yet — this table is the default policy.
+
+**AC-verification dispatches are the standing exception that pins reese to `top`.** Grading finished work against an external rubric is judgment-heavy — the same reasoning that holds eric and sasha at top — so when reese is dispatched for AC Verification (not checklist-building), the lane runs at `top`. His checklist modes stay `worker`. (Briar stays worker by design — cheap first pass, expensive firewall — moving her tier is not this policy's call.)
+
+**Iris pins to `top` for epic-grain retros only.** An epic-close retrospective audits an entire plan's history against its execution record — the same judgment class as eric's review or reese's AC grading. Per-PR light retros stay `worker`.
+
+Workers are safe on Sonnet because winston's detail bar front-loads every judgment call into the plan — a worker executes decisions already made, at the file-and-line level. Paying Opus rates to execute an Opus-grade plan is paying for judgment twice.
+
+Mechanism caveat: the per-call `model`+`effort` dial exists **only in fleet mode** (`agent()` in a Workflow script takes both). The Agent tool takes `model` only; in-conversation runs inherit the session. So in subagent dispatches Sol applies the tier via the `model` override alone, and in-conversation phases simply inherit.
 '''

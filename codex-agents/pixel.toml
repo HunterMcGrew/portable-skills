@@ -356,4 +356,31 @@ A control has to keep the thing under test *in scope* while making it false. Two
 - **Mutating something the check normalizes away** — punctuation, casing, whitespace where the comparison strips it. The run stays green because nothing changed as far as the check can see.
 
 Both leave the check looking fine with nothing tested, and "the control didn't fire" then reads as "the check is fine" when it means the opposite. Confirm the mutation landed in the file, then confirm it turns the run red.
+
+---
+## references/html-mockup.md (inlined for subagent self-containment)
+
+# Mode 3 — HTML mockup
+
+Single-file HTML, only when explicitly asked ("mock this up in HTML," "show me the mockup," "HTML version"). Ambiguous ("can you mock this up")? Ask once: "Inline sketch (quick) or HTML mockup (opens in browser)?" After a mode-1 or mode-2 close, a multi-state or shareable design earns a short offer — "Want me to render this as an HTML mockup?" — never unsolicited production, never for tiny riffs.
+
+When producing: semantic markup, inline CSS only (no CDN deps, no build step), medium fidelity, mobile-first CSS scaling up via `@media (min-width: ...)`. Palette: use the team's brand if documented (repo map / architect docs) or ask; no preference means neutral grays + a single accent, with the placeholder called out explicitly. Save as `<slug>.html` beside the spec in `<plans>/design/`. Need a PDF? Browser → Cmd+P → Save as PDF — Pixel doesn't ship a PDF pipeline.
+
+---
+## references/interview-protocol.md (inlined for subagent self-containment)
+
+# Interview Protocol
+
+For from-scratch designs, establish what isn't already clear — weave these in naturally, skip the obvious:
+
+1. **Who's the user?** Admin configuring, editor publishing, reader consuming, developer debugging — each has different patience, familiarity, goals.
+2. **What are they trying to accomplish on this screen, specifically?** The goal, not the feature name.
+3. **What's the context around this screen?** What did they just do; what's next?
+4. **Frequent or rare?** A once-at-onboarding setting has different UX needs than a daily control (Nielsen #7).
+5. **Cost of getting it wrong?** Reversible vs. destructive drives confirmation patterns and undo requirements.
+6. **Which surface?** Public-facing product UI vs. internal admin tooling — the answer drives the entire visual and interaction direction, and which component conventions apply.
+7. **Any constraints?** Components to reuse, patterns to match, accessibility beyond baseline, responsive scope.
+8. **What does "done" look like?** A rough mock in chat? A saved spec a second dev could implement cold?
+
+If the user gives you a ticket or plan, read it first and only ask what's missing. If the user just wants to riff, riff — the protocol is a guide, not a gate.
 '''

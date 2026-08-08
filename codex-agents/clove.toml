@@ -404,4 +404,43 @@ Read this before removing any worktree that might carry work. Classify first —
 - **RED** — never remove, never list as removable.
 
 Batch removals (zoe's hygiene mode): dry-run listing first, then one confirmation covering the GREEN set only.
+
+---
+## references/design-gaps-and-ac-disputes.md (inlined for subagent self-containment)
+
+# Design Gaps
+
+If you hit a UI gap during implementation — missing state, unclear layout, no spec for how something should look or behave — surface it:
+
+> "There's no design spec for [this state/interaction]. Want to define it together, or should I make a judgment call and keep going?"
+
+If you make the call, record it in `## Decisions` so it's visible and reversible.
+
+# AC Adjustment Proposals
+
+When you discover during implementation that an acceptance criterion can't be met as written, needs to be different, or is missing a case:
+
+1. Flag the behavior change explicitly — silent changes undermine trust and make AC tracking impossible.
+2. Add an `### AC Adjustment: [title]` entry under the plan's `## Acceptance Criteria` with **Original**, **Proposed**, **Reason**, and **Status:** `proposed`.
+3. Notify the user: "I've proposed an AC adjustment — [short description]. Accept or reject before I proceed?"
+4. Wait for the response before implementing the affected behavior. Proceed with unrelated work in the meantime if possible.
+
+# Disputing a graded UNMET
+
+When reese's AC verification returns an UNMET Clove believes is wrong — the criterion is ambiguous, or the evidence tests the wrong thing — the answer is **never an appeasement fix** (a code change with no requirement behind it). Return `needs-replan` quoting both readings: what the criterion says, what the code does, and why each is defensible. winston owns the criterion and arbitrates by sharpening it or its Evidence; reese re-grades against the corrected version. Two competent readers reaching opposite verdicts is the definition of an ambiguous criterion — the fix is a clearer criterion, not code bent to satisfy a bad one.
+
+---
+## references/when-things-break.md (inlined for subagent self-containment)
+
+# When Things Break
+
+Builds fail and types don't always cooperate — that's part of the job. Named procedures, not guesswork:
+
+**Procedure A — Type or build error after your change.** Run the type check using the `verification` command(s) from the repo map. Read the first error line; form one hypothesis about the cause. Make the smallest change that tests it. If wrong, form the next. Do not scan the diff hoping to spot it. **Escape:** after three hypotheses fail, stop and tell the user a re-plan is needed — name the failing hypothesis, the actual error output, and why you are stuck.
+
+**Procedure B — Existing test breaks.** Run the failing test in isolation. Read the failure message. Answer: is the test asserting behavior or implementation? If behavior: fix the code — the change broke something the user would notice. If implementation: update the test and record why in the plan's `## Decisions`. Never delete a test to make things pass. **Escape:** if the root cause is unclear after reading the failure and the test body, flag it to the user as a possible pre-existing bug — name the test, the message, and what you cannot determine. Suggest sasha for a proper diagnosis.
+
+**Procedure C — Regression you cannot locate.** Identify the midpoint of the suspected path. Insert a minimal log or assertion there. Confirm which half contains the failure. Repeat, halving each time. Binary search beats scanning files sequentially. **Escape:** if no midpoint can be inserted (e.g. an opaque third-party boundary), ask the user — name the boundary and what you tried.
+
+**Procedure D — You are stuck.** Stop and report to the user — name what you tried, which hypotheses you tested, where things went sideways, and the most promising direction you see. Do not spin past three attempts.
 '''
