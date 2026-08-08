@@ -141,10 +141,10 @@ Two read-only modes back it up:
 - `python3 render-agents.py --selftest` — the positive control for all three:
   it copies the tree, breaks one input per check, confirms that check goes
   red, restores, and confirms it goes green again. The literal check gets
-  three plants — a SKILL.md, a `references/` file, and a `_shared/`
-  fragment — so narrowing its file list back to a subset shows up as a failing
-  control instead of a green check over a surface it stopped reading. A check
-  nobody has watched fail is not evidence.
+  four plants — a SKILL.md body, `_shared/core.md`, a `references/` file, and
+  a non-core `_shared/` fragment — so narrowing its file list back to a subset
+  shows up as a failing control instead of a green check over a surface it
+  stopped reading. A check nobody has watched fail is not evidence.
 
 ### The claude-agents subagent surface
 

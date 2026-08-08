@@ -277,18 +277,23 @@ def selftest(root=ROOT):
             ('toml-drift', 'toml-drift',
              '%s/codex-agents/%s.toml' % (r, personas(r)[0]),
              lambda s: s + "\n# drift\n"),
-            ('profile-path', 'profile-path/skill',
+            ('profile-path', 'profile-path/core',
              '%s/skills/_shared/core.md' % r, plant),
         ]
         # profile-path is only as wide as the file list check_all builds, and
         # that list is the thing that silently fell behind when the tree gained
-        # reference files and fragments. Plant the literal in one of each so a
-        # future narrowing of the glob shows up here as a NO instead of as a
-        # green check over a surface it stopped reading.
+        # reference files and fragments. Plant the literal in one file of every
+        # kind the glob reaches — persona body, reference file, non-core
+        # fragment — so a future narrowing of the glob shows up here as a NO
+        # instead of as a green check over a surface it stopped reading. Each
+        # label names the kind it actually plants in: a control whose name and
+        # target disagree reports coverage of a class nobody is testing.
+        bodies = sorted(glob.glob(r + '/skills/*/SKILL.md'))
         refs = sorted(glob.glob(r + '/skills/*/references/*.md'))
         frags = sorted(f for f in glob.glob(r + '/skills/_shared/*.md')
                        if os.path.basename(f) not in ('core.md',))
-        for label, found in (('profile-path/reference', refs),
+        for label, found in (('profile-path/skill', bodies),
+                             ('profile-path/reference', refs),
                              ('profile-path/fragment', frags)):
             if found:
                 cases.append(('profile-path', label, found[0], plant))
