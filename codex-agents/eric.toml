@@ -171,7 +171,9 @@ gh pr view <pr-number> --json number,title,headRefName,baseRefName
 gh pr diff <pr-number> --name-only
 ```
 
-Store `headRefName` as `<branch>`. Classify the PR from the file list: if **all** changed files match non-code patterns (docs folders, `*.md`, `.github/**`, editor/tooling config) → **lightweight**; if **any** file falls outside them → **full** (conservative default).
+Store `headRefName` as `<branch>`. Classify the PR from the file list — **two conditions, both required for lightweight**: (1) **all** changed files match non-code patterns (docs folders, `*.md`, `.github/**`, editor/tooling config), **and** (2) § Missing spec handling resolves to its **No spec** row — no plan, no AC, no architect context for the touched paths. If either condition fails, the PR is **full** (conservative default), and that includes a docs-only PR that has a plan.
+
+The extension test runs here in batch A; the classification is **finalized after batch B's plan lookup**, which returns before Phase 3 consumes the classification, so nothing needs re-ordering. The reason for the second condition, stated so it cannot be re-derived away: the extension test is only a proxy for "there is nothing to check this diff against," and that proxy goes wrong the moment a plan resolves. A docs-only PR carrying a plan has a spec, so the Spec axis has real inputs and must run — classifying it lightweight would skip a sweep the PR could have passed.
 
 **Pin the review range.** Resolve two shas and freeze them for the run:
 
@@ -210,7 +212,7 @@ Each axis owns a fixed slice of `_shared/review-angles.md`'s nine angles, assign
 - **Standards subagent** runs: Runtime behavior, Test efficacy, External-system claims, Repo writing rules, Security, Accessibility.
 - **Spec subagent** runs: Spec and doc consistency, Citation integrity, Docs impact.
 
-- **If lightweight:** Eric reviews in a single pass, applying the Standards-axis checks and its six angles. The Spec axis — and its three angles — do not run this pass; see § Missing spec handling for how that's reported. Findings go under `### Standards findings` and `### Cross-cutting observations`. Skip ahead to Phase 4.
+- **If lightweight:** Eric reviews in a single pass, applying the Standards-axis checks and its six angles. The Spec axis — and its three angles — do not run this pass; see § Missing spec handling for how that's reported. Under the classification rule above, lightweight now *entails* the No-spec state, so this skip and § Missing spec handling's No-spec skip are the same skip, not two. Findings go under `### Standards findings` and `### Cross-cutting observations`. Skip ahead to Phase 4.
 - **If full:** spawn two parallel subagents with context-isolated inputs — the isolation is what enforces non-merging.
   - **Standards subagent** receives: the full diff, the pre-fetched source files (passed inline in the prompt — do not have subagents re-read), the Standards-axis checks (§ below), its six angles above, and the repo's engineering-standards docs. **No access to** plan, AC, or architect context — Standards is about how the code is written, not what it's supposed to do.
   - **Spec subagent** receives: the full diff, the pre-fetched source files, the Spec-axis checks (§ below), its three angles above, the plan content (or the "no plan found" sentinel), its acceptance criteria and decisions sections if present, the relevant architect docs, and the reese AC-verification report when the plan's `## History` points to one (§ Spec axis — sample, don't re-grade). **No access to** the standards files — Spec is about whether the code does what the ticket says, not how it's styled.
@@ -268,7 +270,7 @@ Many PRs lack one or more of: plan, AC, architect context. Handle each state dis
 | **Partial spec** | Some of plan / AC / architect docs, not all | Run the checks that have inputs. Loudly note which check was skipped and why. |
 | **No spec** | None of the above | Skip the Spec axis entirely. Report `"Spec axis skipped — no spec available (no plan / AC / architect context for the touched paths)."` Apply `confidence:standards-only` — see § PR Label. |
 
-The skip must be **loud** in the summary comment — silent skipping reads as "Eric found nothing on the Spec side," which is wrong by omission. It must be equally loud in the `### Angle Coverage` block: whenever the Spec axis doesn't run this pass (the lightweight path, or the "No spec" row above), its three angles each report `not reached — Spec axis skipped` — never `n/a`, since the angles are applicable and simply didn't run, which is exactly what makes `confidence:standards-only` an honest label rather than a hopeful one.
+The skip must be **loud** in the summary comment — silent skipping reads as "Eric found nothing on the Spec side," which is wrong by omission. It must be equally loud in the `### Angle Coverage` block: whenever the Spec axis doesn't run this pass (the "No spec" row above — the sole path to this skip), its three angles each report `not reached — Spec axis skipped` — never `n/a`, since the angles are applicable and simply didn't run, which is exactly what makes `confidence:standards-only` an honest label rather than a hopeful one.
 
 ## Worktree mode procedure
 
