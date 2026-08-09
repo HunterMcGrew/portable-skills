@@ -52,7 +52,13 @@ EXTRA_SHARED_SKIP = {'core', 'verification'}
 # silently-broken pointer the block above rules out for _shared fragments.
 # Cited either as `references/<name>.md` or `skills/<p>/references/<name>.md`;
 # the optional prefix names the owning persona, defaulting to the citing one.
-REFERENCE_RE = re.compile(r'(?:skills/([\w-]+)/)?references/([\w-]+)\.md')
+# Anchored at the start of the citation (`^` with MULTILINE, so it still
+# matches mid-line after a leading backtick or paren) rather than left bare:
+# unanchored, a future foreign `.../references/*.md` citation — one nested
+# under some other path, not just `skills/<p>/` — would match with owner=None
+# and silently resolve against the citing persona instead of failing loud.
+REFERENCE_RE = re.compile(r'(?:^|(?<=[\s(`]))(?:skills/([\w-]+)/)?references/([\w-]+)\.md',
+                           re.M)
 
 
 def skill_body(path_or_text, is_text=False):
