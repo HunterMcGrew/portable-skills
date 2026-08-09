@@ -213,11 +213,29 @@ def check_all(root=ROOT):
     a check whose denominator is zero because it looked in the wrong place
     reports exactly the same green as one that looked everywhere.
 
-    Three checks:
+    Four checks:
       toml-drift        — a toml differs from render() of its own source. This
                           proves the tomls agree with their generator, not that
                           the generator is right — it catches hand-edits and
                           stale mirrors, which is the failure it exists for.
+      citation-inlined  — an INDEPENDENT check of the same surface toml-drift
+                          covers, deliberately not built on render(). toml-drift
+                          regenerates via render() and diffs against render() —
+                          an internally consistent oracle, not an independent
+                          one: a render() bug that is wrong in the same
+                          direction on both sides of that comparison (the toml
+                          on disk and the fresh render() call) passes both,
+                          silently. citation-inlined never calls render(). It
+                          re-derives, straight from source, every file a
+                          persona's body cites (the same _shared fragments and
+                          references/*.md files render() inlines) and checks
+                          that each one's raw current content is present
+                          verbatim, as a plain substring, inside the toml file
+                          as it sits on disk. A rendering bug that drops,
+                          truncates, or swaps a cited file's content still
+                          shows up here even when it fools toml-drift, because
+                          this check's oracle is the cited source files
+                          themselves, not render()'s own output.
       profile-path      — a `~/.claude*/skills` literal in any markdown under
                           skills/, which hardcodes one profile into a roster
                           meant to travel. The scan covers every `.md` in the
@@ -252,6 +270,37 @@ def check_all(root=ROOT):
             v.append(('toml-drift', '%s.toml missing' % p))
         elif cur != render(p, root):
             v.append(('toml-drift', '%s.toml differs from its skills/ source' % p))
+
+    for p in ps:
+        t = '%s/codex-agents/%s.toml' % (root, p)
+        if not os.path.exists(t):
+            continue  # already reported above as toml-drift
+        toml_text = open(t).read()
+        sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
+        body = skill_body(sk, is_text=True).strip('\n')
+        if body not in toml_text:
+            v.append(('citation-inlined', "%s.toml does not contain %s's own "
+                      "current SKILL.md body verbatim" % (p, p)))
+        for name in sorted(set(m for m in EXTRA_SHARED_RE.findall(body)
+                                if m not in EXTRA_SHARED_SKIP)):
+            frag = '%s/skills/_shared/%s.md' % (root, name)
+            if not os.path.exists(frag):
+                continue  # render() already errors loudly on this
+            content = open(frag).read().strip('\n')
+            if content not in toml_text:
+                v.append(('citation-inlined', '%s.toml is missing the current '
+                          'verbatim content of _shared/%s.md, which its body '
+                          'cites' % (p, name)))
+        for owner, name in sorted(set(REFERENCE_RE.findall(body))):
+            owner = owner or p
+            ref = '%s/skills/%s/references/%s.md' % (root, owner, name)
+            if not os.path.exists(ref):
+                continue  # render() already errors loudly on this
+            content = open(ref).read().strip('\n')
+            if content not in toml_text:
+                v.append(('citation-inlined', '%s.toml is missing the current '
+                          'verbatim content of references/%s.md, which its '
+                          'body cites' % (p, name)))
 
     md = sorted(glob.glob(root + '/skills/**/*.md', recursive=True))
     for f in md:
@@ -332,6 +381,44 @@ def selftest(root=ROOT):
             ok &= fired and cleared
             print('selftest: %-22s red=%s green-after-restore=%s'
                   % (label, 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+
+        # citation-inlined: prove this check is independent of toml-drift's
+        # oracle, not a second copy of it. Monkey-patch the module-level
+        # render() to drop the tail of its own output (the last inlined
+        # section), then write the toml using that SAME buggy render — so
+        # toml-drift, which also calls render() to get its expectation, sees
+        # the buggy toml match the buggy render exactly and stays green. That
+        # is the AC-16/AC-18 trap named verbatim: a renderer bug that is
+        # wrong in the same direction on both sides of toml-drift's
+        # comparison. citation-inlined never calls render() — it reads the
+        # cited source files and the toml's raw bytes directly — so it still
+        # catches the same bug toml-drift missed.
+        p = personas(r)[0]
+        t = '%s/codex-agents/%s.toml' % (r, p)
+        orig_toml = open(t).read()
+        real_render = globals()['render']
+        # Only p's own render is buggy — every other persona's render() must
+        # stay correct, or their toml-drift would fire too and the control
+        # would no longer isolate what it's testing.
+        buggy_render = (lambda pp, rroot=r:
+                         real_render(pp, rroot)[:-500] if pp == p
+                         else real_render(pp, rroot))
+        globals()['render'] = buggy_render
+        try:
+            open(t, 'w').write(buggy_render(p))
+            violations = check_all(r)[0]
+            drift_stayed_green = not [x for x in violations if x[0] == 'toml-drift']
+            fired = bool([x for x in violations if x[0] == 'citation-inlined'])
+        finally:
+            globals()['render'] = real_render
+            open(t, 'w').write(orig_toml)
+        cleared = not [x for x in check_all(r)[0] if x[0] == 'citation-inlined']
+        ok &= fired and cleared and drift_stayed_green
+        print('selftest: %-22s red=%s green-after-restore=%s '
+              '(toml-drift stayed green=%s, proving independence)'
+              % ('citation-inlined', 'yes' if fired else 'NO',
+                 'yes' if cleared else 'NO',
+                 'yes' if drift_stayed_green else 'NO'))
 
         # orphan-toml: a toml whose skill dir is gone
         p = personas(r)[0]
