@@ -213,7 +213,7 @@ def check_all(root=ROOT):
     a check whose denominator is zero because it looked in the wrong place
     reports exactly the same green as one that looked everywhere.
 
-    Four checks:
+    Five checks:
       toml-drift        — a toml differs from render() of its own source. This
                           proves the tomls agree with their generator, not that
                           the generator is right — it catches hand-edits and
@@ -260,6 +260,29 @@ def check_all(root=ROOT):
                           against a different failure mode, not a wider glob
                           on this one.
       orphan-toml       — a toml with no persona behind it
+      prefixed-reference — a persona's own markdown citing its OWN
+                          references/<name>.md via the repo-root-relative
+                          form `skills/<same-persona>/references/<name>.md`
+                          instead of the bare `references/<name>.md` form
+                          `7bfc811` normalized every self-citation onto. The
+                          two forms name the identical file for a
+                          self-citation, and letting the long form keep
+                          appearing there is exactly how bare and prefixed
+                          self-citations coexisted unnoticed across eleven
+                          review passes (AC-12/AC-18's prefix-stripping blind
+                          spot, D20): nothing rejected the long form outright,
+                          so it kept re-appearing beside the short one.
+
+                          Scoped to SELF-citations only. REFERENCE_RE's
+                          owner-prefix (`skills/<owner>/references/...`) is
+                          the only way render() can express a citation of a
+                          DIFFERENT persona's references/ directory — no
+                          such citation exists today, but it is a deliberate,
+                          supported mechanism, not the bug this check guards
+                          against. Rejecting every prefixed form outright
+                          would also outlaw that legitimate cross-persona
+                          citation; this check only flags the case where the
+                          named owner is the citing file's own persona.
     """
     v = []
     ps = personas(root)
@@ -309,6 +332,20 @@ def check_all(root=ROOT):
             if m:
                 v.append(('profile-path', '%s:%d hardcodes %s'
                           % (os.path.relpath(f, root), i, m.group(0))))
+
+    for f in md:
+        rel = os.path.relpath(f, root)
+        parts = rel.split(os.sep)
+        if len(parts) < 2 or parts[0] != 'skills' or parts[1] == '_shared':
+            continue  # not owned by a single persona; no "self" to check
+        owner = parts[1]
+        for i, line in enumerate(open(f), 1):
+            for pm in re.finditer(r'skills/([a-z0-9-]+)/references/[a-z0-9-]+\.md', line):
+                if pm.group(1) == owner:
+                    v.append(('prefixed-reference', '%s:%d cites its own %s '
+                              'via the repo-root-relative form instead of '
+                              'the bare references/ form'
+                              % (rel, i, pm.group(0))))
 
     tomls = sorted(glob.glob(root + '/codex-agents/*.toml'))
     valid = set(ps)
@@ -370,6 +407,32 @@ def selftest(root=ROOT):
                 ok = False
                 print('selftest: %-22s NO FILE — nothing of this kind in the '
                       'tree to plant in' % label)
+
+        # prefixed-reference: a persona's SKILL.md gains a self-citation
+        # written in the repo-root-relative form instead of the bare form.
+        # Cites a references/ file that actually exists (reusing `refs` from
+        # the profile-path setup above) so render() — which check_all()'s
+        # toml-drift arm also calls this same pass — resolves the citation
+        # instead of raising on a made-up path; the point is to prove this
+        # specific check fires, not to also exercise render()'s missing-file
+        # error path. The persona keeps its frontmatter and body otherwise
+        # intact — only a sentence is appended — so it stays on personas()
+        # and this reaches the same check_all() pass every other citation is
+        # read from, rather than the vacuous-fence trap (a broken '---'
+        # fence drops the persona from personas() entirely and no check ever
+        # sees it).
+        if refs:
+            pref_owner = os.path.basename(os.path.dirname(os.path.dirname(refs[0])))
+            pref_name = os.path.basename(refs[0])[:-3]
+            cases.append((
+                'prefixed-reference', 'prefixed-reference/self',
+                '%s/skills/%s/SKILL.md' % (r, pref_owner),
+                lambda s, _o=pref_owner, _n=pref_name: s + (
+                    '\nSee `skills/%s/references/%s.md`.\n' % (_o, _n))))
+        else:
+            ok = False
+            print('selftest: %-22s NO FILE — nothing of this kind in the '
+                  'tree to plant in' % 'prefixed-reference/self')
 
         for kind, label, path, mutate in cases:
             orig = open(path).read()
