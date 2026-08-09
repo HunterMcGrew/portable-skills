@@ -342,7 +342,15 @@ def check_all(root=ROOT):
             continue  # not owned by a single persona; no "self" to check
         owner = parts[1]
         for i, line in enumerate(open(f), 1):
-            for pm in re.finditer(r'skills/([a-z0-9-]+)/references/[a-z0-9-]+\.md', line):
+            # REFERENCE_RE, not a private copy: this check's denominator has to
+            # be exactly the set of citations render() resolves, or it grades a
+            # different population than the one that ships. A second pattern
+            # diverges in both directions the moment either is tightened —
+            # missing self-citations render() does resolve, flagging nested
+            # foreign paths it does not. group(1) is None for the bare form,
+            # which never equals a persona name, so only the prefixed form can
+            # match here.
+            for pm in REFERENCE_RE.finditer(line):
                 if pm.group(1) == owner:
                     v.append(('prefixed-reference', '%s:%d cites its own %s '
                               'via the repo-root-relative form instead of '
