@@ -268,3 +268,68 @@ Three mechanisms did the work, and they're the transferable part:
 ### Still unanswered
 
 The control-vs-slim experiment never ran, and the roster was rewritten anyway on an explicit call. **What a skill adds over the always-on rules remains unmeasured** — Part 7's question stands, and now stands against a slimmed roster rather than a fat one.
+
+---
+
+## Part 9 — What the follow-up run added
+
+Part 8 records the slimming run. This section records the follow-up run of 2026-08-09
+(`feat/roster-followups`), which cleared that run's five named follow-ups. It adds to
+Part 8 rather than amending it; where the two overlap, Part 8's wording stands.
+
+Nothing here is about slimming. All four items are one failure class, and it is the
+class that survived every pass of both runs: **a check that cannot fail in the way that
+matters.** Each is stated with what it cost and what proves it fixed.
+
+### A check that shares its oracle with its subject is not a check
+
+`render-agents.py --check` compared each generated toml against what the renderer *would*
+emit from the current body. Both sides of that comparison run the same rendering logic, so
+a rendering bug wrong in the same direction on both sides passes. The gap was closed with
+`citation-inlined`, which never calls `render()` — it re-derives what a body cites and
+requires each cited source to appear verbatim in the toml on disk, so the cited files
+themselves are the oracle.
+
+**The claim is proved, not asserted.** The self-test monkey-patches `render()` to truncate
+its own output and runs both checks: `toml-drift` stays green while `citation-inlined`
+fires red. That line prints on every run (`citation-inlined … (toml-drift stayed green=yes,
+proving independence)`), so the independence is a control rather than a comment. Before
+adding a check, ask what its oracle is — if the answer is "the same code path," it grades
+consistency, not correctness.
+
+### A control that stops the code path from running is a green that proves nothing
+
+The first control for the renderer's error contract corrupted a persona's `---` frontmatter
+fences. That drops the persona from `personas()` entirely, so `render()` never runs and the
+control could never have gone red for the reason it claimed. The working control corrupts the
+`description:` key instead: the persona is still recognized, and the error path it exercises
+actually executes. A control earns its label only by going red *for its stated reason*; check
+that the failure you injected reaches the code you meant to test.
+
+### A path-scoped diff cannot reveal a write outside that path
+
+One lane was briefed to own a single file and also edited a second lane's file. The write was
+harmless — byte-identical to what the owning lane would have written — but the lane's report
+listed only the expected file, and ratification used `git diff <base> -- <expected-file>`,
+which is structurally incapable of showing a write anywhere else. A boundary enforced only by
+a brief needs a complete report to be checkable at all. Ratify with an unscoped
+`git show --stat <sha>` and compare the file set against the lane's declared surface. Three
+further instances of the same class appeared across the two runs: a `grep -c` short-circuit, a
+reported exit 0 from a command that exits 1, and a post-commit `git diff` reported as evidence
+of what that commit changed.
+
+### When a claim is about behavior, run the thing
+
+The claim that a personal `~/.claude/skills` entry beats a repo's `.claude/skills` sat marked
+*observed but unverified* through an entire run, after an attempt to settle it by reading the
+shipped binary failed. It was settled in one lane by planting a same-named skill in both
+locations with distinguishable bodies and invoking a nested headless run from inside the repo:
+the personal body won, and the listing showed the skill once, so the resolution is override
+rather than merge. Every other check across both runs was structural — greps, frontmatter
+diffs, renderer idempotency. Running it was cheaper than reading about it, and it is the only
+verification either run produced that observed the behavior it claimed.
+
+Keep the evidence class visible in whatever the claim ships as. The README now states the two
+halves separately — the skills half experiment-verified, the agents half read out of the
+binary's dedupe — because a future reader has to know which half to re-check and how. The
+original defect was not the unverified claim; it was that its evidence class was invisible.
