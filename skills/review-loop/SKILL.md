@@ -124,7 +124,7 @@ rule above assumes the reason names the *pass*: time-boxed, diff too large,
 budget spent. A later pass can change any of those, which is what makes
 holding the counter the right move. A reason that names the *PR* cannot be
 changed by a later pass — eric's `not reached — Spec axis skipped` on a
-docs-only diff or a PR with no plan and no AC is a property of the diff, so
+PR with no plan and no AC is a property of the diff, so
 it reads identically on pass 1 and pass 9. Treat a structural `not reached`
 as covered for this predicate: it satisfies the gate, records the gap on its
 own scoreboard line, and carries into the phase's closing report so the gap
