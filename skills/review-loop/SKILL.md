@@ -129,8 +129,9 @@ reads identically on pass 1 and pass 9. Treat a structural `not reached`
 as covered for this predicate: it satisfies the gate, records the gap on its
 own scoreboard line, and carries into the phase's closing report so the gap
 stays visible rather than silently absorbed. Without this the eric phase can
-never converge on a docs-only PR — it runs to budget exhaustion (Procedure
-D) every time, on a diff nobody disputes. The two reason classes are named
+never converge on a PR that carries no plan and no AC — it runs to budget
+exhaustion (Procedure D) every time, waiting for a Spec axis that has
+nothing to read. The two reason classes are named
 by the angle fragment the reviewers read — it owns the vocabulary; the loop
 reads the reason, it does not invent the distinction. The predicate is
 evaluated by the loop, over the reviewer's already-returned report — never
