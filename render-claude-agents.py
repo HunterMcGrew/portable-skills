@@ -177,6 +177,32 @@ def selftest(root=ROOT):
         ok &= fired and cleared
         print('selftest: %-13s red=%s green-after-restore=%s'
               % ('orphan', 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+
+        # malformed source: a skills/<p>/SKILL.md whose frontmatter has no
+        # parseable `description:` field must make regenerate_all refuse to
+        # write anything (raise ValueError naming the offender), not crash on
+        # a bare AttributeError or silently skip the offender and write
+        # everyone else. Renaming only the `description:` key (not the `---`
+        # fences or the persona body) keeps the file a recognized persona —
+        # breaking the fences instead would drop it from personas() entirely
+        # and the render() call this control targets would never run.
+        sk_path = os.path.join(r, 'skills', ra.personas(r)[0], 'SKILL.md')
+        orig_sk = open(sk_path).read()
+        open(sk_path, 'w').write(orig_sk.replace('description:', 'desc:', 1))
+        try:
+            regenerate_all(r, check=True)
+            fired = False
+        except ValueError:
+            fired = True
+        open(sk_path, 'w').write(orig_sk)
+        try:
+            regenerate_all(r, check=True)
+            cleared = True
+        except ValueError:
+            cleared = False
+        ok &= fired and cleared
+        print('selftest: %-13s red=%s green-after-restore=%s'
+              % ('malformed-src', 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
     return ok
 
 
