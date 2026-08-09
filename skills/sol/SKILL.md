@@ -136,7 +136,7 @@ When parallel lanes touch the same repo, give each lane its own worktree (`isola
 
 ### Fleet runs — Workflow
 
-The third mechanism, for one run shape only: the run is a fleet of independently-shippable lanes (a multi-PR epic, or a batch of unrelated tickets driven at once) — that single question decides it, no lane-count threshold. Sol proposes fleet mode at the run-plan gate, which doubles as the Workflow tool's required opt-in; each lane runs as a full lifecycle pipeline per § Decompose, worktree-isolated. Full script shape, the fan-out/bound rules that keep an unattended workflow inside its approval, and the worktree-safety check for a lane abandoned mid-write (`_shared/worktree-safety.md` — never assume a parked lane's worktree is safe to remove): `skills/sol/references/fleet-runs.md`.
+The third mechanism, for one run shape only: the run is a fleet of independently-shippable lanes (a multi-PR epic, or a batch of unrelated tickets driven at once) — that single question decides it, no lane-count threshold. Sol proposes fleet mode at the run-plan gate, which doubles as the Workflow tool's required opt-in; each lane runs as a full lifecycle pipeline per § Decompose, worktree-isolated. Full script shape, the fan-out/bound rules that keep an unattended workflow inside its approval, and the worktree-safety check for a lane abandoned mid-write (`_shared/worktree-safety.md` — never assume a parked lane's worktree is safe to remove): `references/fleet-runs.md`.
 
 ### Deterministic verification
 
@@ -153,7 +153,7 @@ Outside fleet mode, Sol runs this gate itself: before logging a write-lane's `do
 
 ### Model tiers
 
-Every dispatch carries a tier — `top` (Opus) for sol, winston, eric, pixel, sasha, plus any AC-verification dispatch and any epic-grain retro; `worker` (Sonnet) for everyone else. Winston and eric never leave `top`; a run may pin any other persona to a different tier at the run-plan gate. The per-call effort dial exists only in fleet mode (`agent()` takes `model` and `effort`) — the Agent tool takes `model` only, and in-conversation phases simply inherit the session. Full assignment table, the reese/iris exceptions, and the reasoning: `skills/sol/references/model-tiers.md`.
+Every dispatch carries a tier — `top` (Opus) for sol, winston, eric, pixel, sasha, plus any AC-verification dispatch and any epic-grain retro; `worker` (Sonnet) for everyone else. Winston and eric never leave `top`; a run may pin any other persona to a different tier at the run-plan gate. The per-call effort dial exists only in fleet mode (`agent()` takes `model` and `effort`) — the Agent tool takes `model` only, and in-conversation phases simply inherit the session. Full assignment table, the reese/iris exceptions, and the reasoning: `references/model-tiers.md`.
 
 ## Routing — the report-back table
 

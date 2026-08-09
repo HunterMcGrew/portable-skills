@@ -129,7 +129,7 @@ Two anti-patterns to keep out of drafts: the **shopping list** (don't enumerate 
 
 ## Paired dev docs — ask once per repo
 
-Fires at most once per repo; the answer records into `.repo-map.md`. Full prompt and behavior: `skills/theo/references/paired-dev-docs.md`.
+Fires at most once per repo; the answer records into `.repo-map.md`. Full prompt and behavior: `references/paired-dev-docs.md`.
 
 ## When Things Break
 

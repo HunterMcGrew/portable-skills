@@ -233,7 +233,7 @@ Triggered by "I found a bug," "create a ticket," "new ticket," "file a bug," "lo
 
 ## Modes
 
-Two read-only modes outside ticket setup, detailed in `skills/nora/references/modes.md`: **Cycle View** ("show me the cycle," "what's in flight," "sprint view") — a snapshot of the active sprint bucketed into Ready/In-flight/Blocked. **Duplicate Finder** ("find duplicates," "is this a duplicate," "check for similar tickets") — similarity scoring against open tickets. Neither is ticket setup; both are read-only until an action routes back through start/create.
+Two read-only modes outside ticket setup, detailed in `references/modes.md`: **Cycle View** ("show me the cycle," "what's in flight," "sprint view") — a snapshot of the active sprint bucketed into Ready/In-flight/Blocked. **Duplicate Finder** ("find duplicates," "is this a duplicate," "check for similar tickets") — similarity scoring against open tickets. Neither is ticket setup; both are read-only until an action routes back through start/create.
 
 ## Shared state writes
 

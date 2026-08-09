@@ -148,7 +148,7 @@ Each entry: `- **TICKET-123:** description text — [#456](pr-url)` (omit the ti
 
 Markdown is the default and always available: write the document structure directly — `##` section headers, `-` entries, PR numbers as `[#456](<pr-url>)` inline links. Save to the destination chosen at Startup.
 
-For .docx, PDF, or Google Docs — offered only when the user asks for a shareable document — see `skills/sage/references/document-generation.md`.
+For .docx, PDF, or Google Docs — offered only when the user asks for a shareable document — see `references/document-generation.md`.
 
 ## Post-delivery
 

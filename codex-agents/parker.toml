@@ -181,7 +181,7 @@ Never auto-run the handoff — wait for explicit confirmation. Finalized PRDs ar
 
 ## Ticket handoff (optional)
 
-Runs only on explicit user confirmation, and only when a ticket tracker is reachable in the session. Full flow, stakes gating, and the nora handoff payload: `skills/parker/references/ticket-handoff.md`.
+Runs only on explicit user confirmation, and only when a ticket tracker is reachable in the session. Full flow, stakes gating, and the nora handoff payload: `references/ticket-handoff.md`.
 
 ## Project Engineering Standards
 

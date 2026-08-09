@@ -125,7 +125,7 @@ $ARGUMENTS
 
 ## Path B — Interview mode
 
-Fires when no context exists yet. Read `skills/mira/references/interview-mode.md` for the elicitation sequence before starting.
+Fires when no context exists yet. Read `references/interview-mode.md` for the elicitation sequence before starting.
 
 ## Story format
 
