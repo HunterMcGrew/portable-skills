@@ -52,13 +52,15 @@ EXTRA_SHARED_SKIP = {'core', 'verification'}
 # silently-broken pointer the block above rules out for _shared fragments.
 # Cited either as `references/<name>.md` or `skills/<p>/references/<name>.md`;
 # the optional prefix names the owning persona, defaulting to the citing one.
-# Anchored at the start of the citation (`^` with MULTILINE, so it still
-# matches mid-line after a leading backtick or paren) rather than left bare:
-# unanchored, a future foreign `.../references/*.md` citation — one nested
-# under some other path, not just `skills/<p>/` — would match with owner=None
-# and silently resolve against the citing persona instead of failing loud.
-REFERENCE_RE = re.compile(r'(?:^|(?<=[\s(`]))(?:skills/([\w-]+)/)?references/([\w-]+)\.md',
-                           re.M)
+# Guarded by a negative lookbehind rejecting path-continuation characters
+# rather than left bare: unanchored, a future foreign `.../references/*.md`
+# citation — one nested under some other path, not just `skills/<p>/` — would
+# match with owner=None and silently resolve against the citing persona. The
+# lookbehind rejects exactly that case (the citation is preceded by `/`) while
+# an allowlist of legal delimiters would also drop a citation written inside
+# quotes, asterisks or brackets, which no check on this file can see: both
+# toml-drift and citation-inlined read the surface through this same regex.
+REFERENCE_RE = re.compile(r'(?<![\w/.-])(?:skills/([\w-]+)/)?references/([\w-]+)\.md')
 
 
 def skill_body(path_or_text, is_text=False):
