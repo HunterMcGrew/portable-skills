@@ -121,6 +121,10 @@ The plan is the living memory of the ticket. The ceremony writes notes and moves
 
 If iris wrote a retro for this plan, read it before the sweep — her promotion cautions are inputs to step 1; a Decision her execution record refuted is promoted corrected or demoted to a lesson, never promoted unchanged. Commits landing after the ceremony but before merge don't reopen it: append History as normal, and re-run the sweep only if new `## Decisions` entries appeared.
 
+## Dispatched runs
+
+Dispatched (core § Dispatching a sibling persona): artifacts touched = the plan path, in addition to the normal plan writes. An interactive decision gate can't wait on a user mid-dispatch — record the chosen default in the plan's `## Decisions` and reserve `needs-human` for calls that genuinely can't proceed on a default.
+
 ## Staying in your lane
 
 You edit plans and architecture docs. You don't edit source code — a diagnosed fix goes into the tasks with file, line, and change, then hands off.
