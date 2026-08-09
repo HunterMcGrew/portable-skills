@@ -38,6 +38,57 @@ for dst in ~/.claude/skills ~/.claude-work/skills; do
     cp -R "$s" "$dst/$name"
   done
 done
+# Subagent projections ride along to both profiles. Built by
+# render-claude-agents.py from the same skills/ sources as codex-agents/, and
+# deployed here rather than by the renderer for the same reason: rendering is a
+# build step that mutates tracked files, syncing only copies committed ones.
+#
+# What this does and does not buy you turns on skills-vs-subagents precedence,
+# stated once in README.md § The claude-agents subagent surface.
+# Same per-file, no-delete semantics as the loops above: a profile-only agent
+# nobody here knows about survives the sync.
+# EXCLUDE_WORK applies here too, and it has to: an agent file is a shim whose
+# `skills:` field preloads the same-named skill. Copying winston.md to the work
+# profile while the winston *skill* is excluded from it produces an agent
+# pointing at something that isn't installed — a persona that launches and then
+# has nothing to be.
+for dst in ~/.claude/agents ~/.claude-work/agents; do
+  mkdir -p "$dst"
+  for f in "$SRC"/claude-agents/*.md; do
+    [ -e "$f" ] || continue
+    name=$(basename "$f" .md)
+    if [ "$dst" = ~/.claude-work/agents ]; then
+      skip=false
+      for ex in $EXCLUDE_WORK; do
+        [ "$name" = "$ex" ] && skip=true && break
+      done
+      [ "$skip" = true ] && continue
+    fi
+    # rm first, same as the skills loop: cp writes *through* a destination
+    # symlink, clobbering whatever it points at outside the profile directory.
+    rm -f "$dst/$name.md"
+    cp "$f" "$dst/$name.md"
+  done
+done
+
+# Output styles ride along to both profiles. This was the sync's real gap: the
+# THR-851 bake-off measured the output style as a *larger* lever on response
+# shape than the entire skill redesign (+113% chat output from the style alone,
+# vs ~500 words for slim-vs-fat), so a profile running the roster without the
+# matching style is running a different experiment than the one that was tuned.
+# Per-file copy with no --delete, same reasoning as the skills loop above:
+# profile-only styles (eli5) must survive a sync that doesn't know about them.
+for dst in ~/.claude/output-styles ~/.claude-work/output-styles; do
+  mkdir -p "$dst"
+  for f in "$SRC"/output-styles/*.md; do
+    [ -e "$f" ] || continue
+    # rm first — see the claude-agents loop above; a symlinked destination
+    # would otherwise be written through.
+    rm -f "$dst/$(basename "$f")"
+    cp "$f" "$dst/$(basename "$f")"
+  done
+done
+
 mkdir -p ~/Downloads/portable-skills-backup
 # --exclude protects the guarded copy below: sol-internal-autonomy.md lives in
 # ~/worklogs, outside $SRC, so --delete would remove the previous backup of it
@@ -54,4 +105,4 @@ if [ -f ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ]; then
 else
   echo "sync.sh: sol-internal-autonomy.md not found, skipped (backup otherwise complete)" >&2
 fi
-echo "synced: ~/.claude/skills + ~/.claude-work/skills + Downloads backup"
+echo "synced: skills + claude-agents + output-styles -> ~/.claude and ~/.claude-work; full tree -> Downloads backup"

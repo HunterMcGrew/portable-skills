@@ -44,6 +44,16 @@ MARK_HR = "\n\n---\n"        # separator the toml assembler inserts before MARK
 EXTRA_SHARED_RE = re.compile(r'_shared/([\w-]+)\.md')
 EXTRA_SHARED_SKIP = {'core', 'verification'}
 
+# skills/<p>/references/<name>.md is the same problem one directory over. A
+# persona's own reference files hold content relocated out of its SKILL.md —
+# a rarely-fired mode, an on-demand procedure — and the body points at them by
+# path. In Claude Code that pointer resolves against the filesystem; in a codex
+# toml it resolves against nothing, so an uninlined reference is the identical
+# silently-broken pointer the block above rules out for _shared fragments.
+# Cited either as `references/<name>.md` or `skills/<p>/references/<name>.md`;
+# the optional prefix names the owning persona, defaulting to the citing one.
+REFERENCE_RE = re.compile(r'(?:skills/([\w-]+)/)?references/([\w-]+)\.md')
+
 
 def skill_body(path_or_text, is_text=False):
     s = path_or_text if is_text else open(path_or_text).read()
@@ -86,6 +96,17 @@ def render(p, root=ROOT):
     for name in sorted(set(m for m in EXTRA_SHARED_RE.findall(body) if m not in EXTRA_SHARED_SKIP)):
         content = open('%s/skills/_shared/%s.md' % (root, name)).read()
         mark = '## %s reference (inlined for subagent self-containment)' % name
+        extra += MARK_HR + mark + '\n\n' + content.strip('\n')
+
+    for owner, name in sorted(set(REFERENCE_RE.findall(body))):
+        owner = owner or p
+        ref = '%s/skills/%s/references/%s.md' % (root, owner, name)
+        if not os.path.exists(ref):
+            raise ValueError('cites references/%s.md, which does not exist at '
+                             'skills/%s/references/' % (name, owner))
+        content = open(ref).read()
+        mark = ('## references/%s.md (inlined for subagent self-containment)'
+                % name)
         extra += MARK_HR + mark + '\n\n' + content.strip('\n')
 
     return ('name = %s\n' % json.dumps(p, ensure_ascii=False)
@@ -191,8 +212,15 @@ def check_all(root=ROOT):
                           proves the tomls agree with their generator, not that
                           the generator is right — it catches hand-edits and
                           stale mirrors, which is the failure it exists for.
-      profile-path      — a `~/.claude*/skills` literal under skills/, which
-                          hardcodes one profile into a roster meant to travel
+      profile-path      — a `~/.claude*/skills` literal in any markdown under
+                          skills/, which hardcodes one profile into a roster
+                          meant to travel. The scan covers every `.md` in the
+                          tree, not just SKILL.md and core.md: `references/`
+                          files and `_shared/` fragments inline into consumer
+                          tomls exactly like the bodies that cite them, so a
+                          literal in one of them ships just as far. Scanning
+                          the whole tree also means adding an inlinable file
+                          cannot silently shrink this check's coverage.
       orphan-toml       — a toml with no persona behind it
     """
     v = []
@@ -205,8 +233,7 @@ def check_all(root=ROOT):
         elif cur != render(p, root):
             v.append(('toml-drift', '%s.toml differs from its skills/ source' % p))
 
-    md = sorted(glob.glob(root + '/skills/*/SKILL.md')) + [root + '/skills/_shared/core.md']
-    md = [f for f in md if os.path.exists(f)]
+    md = sorted(glob.glob(root + '/skills/**/*.md', recursive=True))
     for f in md:
         for i, line in enumerate(open(f), 1):
             m = PROFILE_PATH_RE.search(line)
@@ -245,13 +272,37 @@ def selftest(root=ROOT):
         print('selftest: baseline green over %s'
               % ', '.join('%d %s' % (n, k) for k, n in counts.items()))
 
+        plant = lambda s: s + "\nSee `~/.claude-work/skills/_shared/core.md`.\n"
         cases = [
-            ('toml-drift', '%s/codex-agents/%s.toml' % (r, personas(r)[0]),
+            ('toml-drift', 'toml-drift',
+             '%s/codex-agents/%s.toml' % (r, personas(r)[0]),
              lambda s: s + "\n# drift\n"),
-            ('profile-path', '%s/skills/_shared/core.md' % r,
-             lambda s: s + "\nSee `~/.claude-work/skills/_shared/core.md`.\n"),
+            ('profile-path', 'profile-path/core',
+             '%s/skills/_shared/core.md' % r, plant),
         ]
-        for kind, path, mutate in cases:
+        # profile-path is only as wide as the file list check_all builds, and
+        # that list is the thing that silently fell behind when the tree gained
+        # reference files and fragments. Plant the literal in one file of every
+        # kind the glob reaches — persona body, reference file, non-core
+        # fragment — so a future narrowing of the glob shows up here as a NO
+        # instead of as a green check over a surface it stopped reading. Each
+        # label names the kind it actually plants in: a control whose name and
+        # target disagree reports coverage of a class nobody is testing.
+        bodies = sorted(glob.glob(r + '/skills/*/SKILL.md'))
+        refs = sorted(glob.glob(r + '/skills/*/references/*.md'))
+        frags = sorted(f for f in glob.glob(r + '/skills/_shared/*.md')
+                       if os.path.basename(f) not in ('core.md',))
+        for label, found in (('profile-path/skill', bodies),
+                             ('profile-path/reference', refs),
+                             ('profile-path/fragment', frags)):
+            if found:
+                cases.append(('profile-path', label, found[0], plant))
+            else:
+                ok = False
+                print('selftest: %-22s NO FILE — nothing of this kind in the '
+                      'tree to plant in' % label)
+
+        for kind, label, path, mutate in cases:
             orig = open(path).read()
             open(path, 'w').write(mutate(orig))
             red = [x for x in check_all(r)[0] if x[0] == kind]
@@ -259,15 +310,15 @@ def selftest(root=ROOT):
             green = [x for x in check_all(r)[0] if x[0] == kind]
             fired, cleared = bool(red), not green
             ok &= fired and cleared
-            print('selftest: %-13s red=%s green-after-restore=%s'
-                  % (kind, 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+            print('selftest: %-22s red=%s green-after-restore=%s'
+                  % (label, 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
 
         # orphan-toml: a toml whose skill dir is gone
         p = personas(r)[0]
         shutil.rmtree('%s/skills/%s' % (r, p))
         red = [x for x in check_all(r)[0] if x[0] == 'orphan-toml']
         ok &= bool(red)
-        print('selftest: %-13s red=%s (skill dir removed; not restored — '
+        print('selftest: %-22s red=%s (skill dir removed; not restored — '
               'temp copy is discarded)' % ('orphan-toml', 'yes' if red else 'NO'))
     return ok
 

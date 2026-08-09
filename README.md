@@ -30,7 +30,41 @@ never sends outreach), tess (data/metrics), remy (customer success),
 penny (recruiting), lex (legal — never legal advice).
 
 **Utilities (no persona):** handoff (compact a session into a resumable
-document), review-loop (the briar → clove → eric gauntlet).
+document), review-loop (the briar → clove → eric gauntlet), devils-advocate
+(red-teams a finished plan, PRD, strategy, model, or diagnosis and hands back
+findings — never edits the artifact).
+
+devils-advocate has no name or voice on purpose: a character with a
+personality is tempted to *perform* skepticism, and performance is the failure
+mode the skill exists to prevent. It also has no toml under `codex-agents/`,
+for the same reason handoff and review-loop don't — `render-agents.py` keys
+off the persona declaration line, so a utility skill is skipped by
+construction rather than by a maintained exclusion list.
+
+### Local-only skills stay local
+
+Some skills live in a profile without living here — vendored ones, plugin ones,
+experiments, and anything tied to a machine rather than a workflow: `graphify`
+(both profiles), `humanizer` (work profile only — both are named at `sync.sh:6`),
+and the `grill-*` trio.
+
+They are **deliberately out of scope**: not tracked in this repo, not synced by
+`sync.sh`, and not covered by the audit in [ROSTER-AUDIT.md](ROSTER-AUDIT.md) or
+the rubric in [SLIMMING-GUIDE.md](SLIMMING-GUIDE.md). When those documents say
+"the roster," they mean what's under `skills/` here — 30 skill directories, of
+which 27 declare a persona and 3 (`handoff`, `review-loop`, `devils-advocate`)
+are utilities. Their own headline counts were written at different times and
+have drifted; `ls -d skills/*/ | grep -vc _shared` is the live number.
+
+Nothing needs configuring for this to work. The per-file, no-`--delete` copy in
+`sync.sh` is what makes it safe — a sync refreshes what this repo owns and
+leaves everything else in the profile untouched. That is why the loops copy
+file-by-file instead of mirroring a directory, and it applies equally to skills,
+subagent files, and output styles.
+
+The tradeoff is worth naming: a skill this repo doesn't own gets no rubric, no
+audit, and no review. `graphify` is the one to keep an eye on — it loads in
+every session and has never been audited.
 
 ## Install
 
@@ -82,8 +116,13 @@ else's machine. `render-agents.py --check` enforces that (below).
 
 `codex-agents/*.toml` is a derived artifact, not a second copy to maintain by
 hand: `render-agents.py` in the repo root rewrites every persona's toml from
-its `skills/<persona>/SKILL.md` plus `skills/_shared/core.md`, creating one
-for any new persona and reporting any orphaned toml with no matching skill.
+its `skills/<persona>/SKILL.md` plus everything that file would otherwise have
+to open at runtime — `skills/_shared/core.md` and `_shared/verification.md` for
+every persona, plus any other `_shared/<name>.md` fragment and any
+`references/<name>.md` file that persona's own body cites. A codex agent has no
+filesystem to resolve a pointer against, so a cited path that isn't inlined is
+a broken reference rather than a deferred read. The renderer creates a toml for
+any new persona and reports any orphaned toml with no matching skill.
 Run `python3 render-agents.py` after any `skills/` edit — it's idempotent,
 safe to run any time, and prints which tomls it wrote. **Never hand-edit a
 toml** — the next run silently reverts it; change the `skills/` source and
@@ -93,39 +132,80 @@ Two read-only modes back it up:
 
 - `python3 render-agents.py --check` — exits non-zero on a toml that has
   drifted from its source, a `~/.claude*/skills` literal anywhere under
-  `skills/`, or an orphan toml. It prints how many personas, markdown files,
-  and tomls it examined alongside the violation count, because a zero with no
-  denominator beside it can't be told apart from a check that looked nowhere.
+  `skills/`, or an orphan toml. The literal scan reads every `.md` in the
+  tree — `references/` files and `_shared/` fragments as well as the SKILL.md
+  bodies — because all of them inline into a consumer toml. It prints how many
+  personas, markdown files, and tomls it examined alongside the violation
+  count, because a zero with no denominator beside it can't be told apart from
+  a check that looked nowhere.
 - `python3 render-agents.py --selftest` — the positive control for all three:
   it copies the tree, breaks one input per check, confirms that check goes
-  red, restores, and confirms it goes green again. A check nobody has watched
-  fail is not evidence.
+  red, restores, and confirms it goes green again. The literal check gets
+  four plants — a SKILL.md body, `_shared/core.md`, a `references/` file, and
+  a non-core `_shared/` fragment — so narrowing its file list back to a subset
+  shows up as a failing control instead of a green check over a surface it
+  stopped reading. A check nobody has watched fail is not evidence.
 
-### Output styles (hand-installed, never synced)
+### The claude-agents subagent surface
 
-`output-styles/scannable.md` is tracked in this repo but deliberately **not**
-part of the roster copy or `sync.sh` — an output style changes a profile-wide
-conversational default, and pushing that silently on every sync is a
-different act from refreshing skills you already opted into. Install it
-yourself, and only if you want it as your default:
+`claude-agents/*.md` is the second derived artifact, built by
+`python3 render-claude-agents.py` from the same `skills/` sources. Same
+contract as the tomls: idempotent, `--check` exits non-zero on drift, orphans
+are reported rather than deleted, hand-edits are silently reverted by the next
+build, and `--selftest` supplies the positive control — it breaks one agent
+file and plants one orphan against a throwaway copy, confirming each check goes
+red and then green again.
 
-- **Manual copy:**
+Unlike the tomls, these are **shims**. Each is frontmatter plus three short
+paragraphs, with the persona pulled in by the documented `skills:` field — which injects
+the skill's *full content* at startup, not just its description. The Codex
+tomls inline everything because Codex has no skills mechanism to defer to;
+Claude Code does, and `sync.sh` already installs every persona under
+`~/.claude/skills/`. Inlining here would put each persona in the profile twice
+and let the copies drift, which is the failure `render-agents.py`'s own header
+records. Utilities (handoff, review-loop, devils-advocate) get no agent file,
+by the same persona-declaration gate that governs the tomls.
 
-  ```bash
-  mkdir -p ~/.claude/output-styles
-  cp output-styles/scannable.md ~/.claude/output-styles/
-  ```
+**Know what this buys before relying on it: skills and subagents have opposite
+precedence.** A repo's `.claude/agents` beats `~/.claude/agents` — read out of
+the shipped Claude Code binary, whose agent dedupe walks built-in, plugin, user
+settings, then project settings, last write winning. The mirror-image half —
+that a personal `~/.claude/skills` entry beats a repo's `.claude/skills` — is
+**observed but unverified**: it matches how the roster has behaved in practice,
+but it could not be located in the binary, so don't build on it without
+re-checking. On the verified half: these give you the roster as subagents in
+every repo that ships none of its own, and lose to any repo that does.
 
-- **Hand it to an LLM instead** — paste this prompt into any session with
-  filesystem access to your Claude profile:
+This paragraph is the only copy of the precedence claim. It is vendor-owned and
+no `--check` covers prose, so `sync.sh` and `render-claude-agents.py` point here
+instead of restating it — three hand-maintained copies is the drift the
+renderers exist to prevent.
 
-  > Create the directory `~/.claude/output-styles` if it doesn't exist, then
-  > copy the file `output-styles/scannable.md` from this repo into
-  > `~/.claude/output-styles/scannable.md`.
+Neither renderer is wired into `sync.sh`: rendering is a build step that
+mutates tracked files, syncing only copies committed ones.
 
-Selecting Scannable as your active output style is a separate step (`/output-style`
-or your profile's `settings.json`) — installing the file doesn't set it as
-default anywhere.
+### Output styles
+
+`output-styles/*.md` sync to both profiles alongside skills and agents.
+
+This was once deliberately excluded, on the reasoning that an output style
+changes a profile-wide conversational default and pushing that silently is a
+different act from refreshing skills you opted into. The reasoning was sound
+but aimed at the wrong risk: copying the file only makes a style *available*.
+Selecting it is a separate step (`/output-style`, or `outputStyle` in your
+profile's `settings.json`), and no default is set anywhere in this repo.
+
+What changed the call is that the THR-851 bake-off measured the output style
+as a *larger* lever on response shape than the entire skill redesign — +113%
+chat output from the style alone, against ~500 words for slim-vs-fat. A
+profile running this roster without the matching style is running a different
+configuration from the one that was tuned, so leaving the styles uninstalled
+was the bigger hazard.
+
+Two ship today: **Focused** (answer-first, calibrated to Opus 5's own
+guidance) and **Scannable** (high-density, and note it instructs the model not
+to announce what it is about to do — if your `CLAUDE.md` asks for exactly that,
+the two conflict, and conflicting guidance across layers degrades compliance).
 
 ## Per-repo setup (five minutes, once per repo)
 

@@ -1,0 +1,3 @@
+# Paired dev docs — ask once per repo
+
+Some teams keep a human-facing dev doc paired with each agent-facing architect doc; most keep a single audience. On the first walk in a repo, ask the user once: "Does this repo keep paired dev docs alongside architect docs, or is the architect doc the single audience?" Note the answer in `.repo-map.md`'s notes so no future session has to ask. When paired docs are on, the companion targets the repo map's `docs` location as a narrative counterpart, cross-linked both ways; when off, record the skip in the candidate's state entry and surface it during review as a repo-level setting, not a content judgment.
