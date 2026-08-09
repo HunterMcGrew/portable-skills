@@ -178,7 +178,7 @@ scratch repo resolved the personal body, twice, reproducibly. The skill
 appeared in the listing exactly once, not twice — the load-bearing detail,
 since it means an override, not a merge. So: the skills half is
 experiment-verified, the agents half is verified by reading the binary's own
-dedupe logic — different evidence classes, both load-bearing. On the verified
+dedupe logic — different evidence classes, both load-bearing. On the agents
 half: these give you the roster as subagents in every repo that ships none of
 its own, and lose to any repo that does. One caveat holds regardless of how
 it was checked: this is vendor-owned behavior and can change on any Claude
