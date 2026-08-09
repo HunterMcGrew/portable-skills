@@ -230,6 +230,20 @@ The worst case found was clove, which carried a line instructing it to *skip* th
 
 "Protected" applied to a cognitive lens means **keep the discriminator, drop the Trigger/Escape scaffolding**. One agent read it as "leave the block untouched" and landed at 10 surviving pairs where its siblings hit 0. The 12 that legitimately remain are genuine escape machinery — sasha's phase gates, zoe's named procedures — which Part 3 already protects.
 
+### A deletion needs a successor, or it isn't a cut
+
+Four sections left the roster with no replacement anywhere and live citers still pointing at them: `_shared/core.md`'s `## Servers and long-lived processes`, and winston's `## Closing ceremony`, `## Dispatched runs`, and Evidence-format gradeability bar. Every one was found by a reviewer rather than by the slimming pass, and every one was restored compressed rather than authorized after the fact.
+
+Three questions separate a cut from a defect. Run them before deleting, not after:
+
+- **Does anything else say this?** Not "could the model infer it" — is it *written* where the reader arrives. Winston's closing ceremony had four dispatchers (`review-loop`, `eric`, `iris`, `sol`) and no successor; `## Dispatched runs` left `grep -ni 'dispatch' skills/winston/SKILL.md` at zero while review-loop dispatched winston at three separate sites.
+- **Does the evidence measure the right surface?** The servers-and-processes cut was justified by grepping all 29 skills for process mentions — which asks whether a skill *writes about* processes, when the rule governs what a persona *does*. Clove runs verification gates, briar runs builds, reese verifies against a running app; none of them names the bound locally, which is precisely why it belongs in the file all 27 read.
+- **Is the proposed repair "repoint the citers"?** Then you are proposing N copies of a single-owner procedure — the fork the fragment pattern exists to prevent. Restore instead.
+
+Restoration is compression, not reversion: each section came back shorter with every bound intact.
+
+**Part 2's table is stale on exactly this point.** Its `Closing Ceremony Mode | 450 | Deleted — promotion is the auditor's lane` row records a deletion this run reversed, and the premise was wrong twice over — the ceremony is winston's, and zoe's auditor lane is *archiving*, which the ceremony explicitly does not do. Part 4's `references/` example naming the same section is stale for the same reason. Part 8 supersedes both.
+
 ### What the process cost
 
 Twelve dispatch briefs contained a factual error about the file under edit — every one from writing against this audit's summary rather than the file. Agents caught all twelve: two refused to fabricate protected content that didn't exist, several followed the plan over the brief and said so.
@@ -239,13 +253,17 @@ Three mechanisms did the work, and they're the transferable part:
 - **A word ceiling fights its own keep-list.** State what must survive and let the count fall out; mark any number an expectation, never a gate. Two implementers hit the conflict and reported it instead of silently compressing protected content — after one earlier pass, given a hard ceiling, did exactly that.
 - **Authorized deletions must travel to the reviewer.** A reviewer flagged a dependency-verified deletion as a Major defect because its brief never said the cut was sanctioned.
 - **One shared calibration file beats N bespoke briefs.** After the errors were traced to a common cause, the standing rules moved into a single file every dispatch reads. The next brief error was caught upstream by an agent citing the authority order, rather than in ratification.
+- **Governance follows the surface that changed a file, not the file's lane label.** Two plans divided the roster by file, and one execution commit slimmed two files whose file-level scope lines disclaimed them — 121 removed lines that neither plan's deletion audit ever classified, and it took nine review passes to notice. A scope line naming files is a prediction; the diff is the fact. Assign governance by the surface that did the changing and the hole closes without redrawing anyone's file list.
 
 ### Verification traps worth stealing
 
 - **`grep -c <pat> && <next>` is a broken absence check.** Zero matches exits non-zero and silently kills the rest of the chain — it produced a falsely-reported exit code. Use `! grep -q`, pair every absence check with a positive control proving the probe reached the file, and read printed values (`wc`, `grep -c`) rather than `$?`.
 - **`sed -n '/^---$/,/^---$/p'` false-positives on frontmatter** for any file whose body contains a `---` horizontal rule. Use the awk form.
 - **A grep for the right string is not a check for the right structure.** Winston's port passed `grep -q 'he/him'` but `render-agents.py` correctly refused to generate its toml: a carried-over H1 had displaced the persona declaration from the first body line. The deterministic build caught what the probe couldn't.
-- **The renderer only scans the SKILL.md body** for `_shared/<name>.md` citations. A citation relocated into `references/` silently drops that fragment from the generated surface.
+- **The renderer only scans the SKILL.md body** for `_shared/<name>.md` citations. A citation relocated into `references/` silently drops that fragment from the generated surface. The sibling arm bites the same way and was missed for three passes: the relocated `references/*.md` files themselves — 15 files, 4,384 words — reached no generated toml at all until the renderer was taught to inline them on the same terms.
+- **A guard whose file list is enumerated falls behind the surface it guards.** The profile-path check named `skills/*/SKILL.md` plus one fragment; the tree then grew 21 inlinable files it never read, while the README claimed it fired "anywhere under `skills/`". Glob the surface (`skills/**/*.md`) so adding a file widens the guard by construction, and plant one labelled self-test control per file class so a future narrowing fails a control instead of reporting green over a shrunken denominator.
+- **A citation is unverifiable only after you've looked in the repo it names.** Four commit shas were flagged as stale references because they were absent from this repo and its sibling — all four resolved in the repo their own `PRISM <sha>` label named. Read the label before writing the finding.
+- **File-disjoint lanes are safe to merge, not safe to measure merged.** "Exactly two tomls changed" is a *delta* assertion, readable only in a tree that isolates the change. One uncommitted shared-fragment edit turned that two-file signal into 27, and a sibling lane's output does the same. Measure in the lane's own worktree, record the number there, and treat the merged tree as unmeasurable for that criterion.
 
 ### Still unanswered
 
