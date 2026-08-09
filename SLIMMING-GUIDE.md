@@ -120,7 +120,7 @@ A 78% cut that beat the original on every detail metric. Use it as the reference
 
 *Slimming is not purely subtractive.* Slim **adds** three things fat lacked, each concrete and each earning its line: acceptance criteria must name where in the product a tester goes to see the change; a chat-output cap on plan writes ("in chat just say 'AC written to the plan — 4 criteria'"); and a search-siblings-before-naming rule. Cutting 78% created room for the specifics that actually change output.
 
-**One divergence to decide deliberately.** Slim Winston does not read `_shared/core.md` at all — it inlines the little it needs and drops the rest, including the pronoun declaration the core's House rules require. That is the opposite of Part 4's advice to push shared content into the core. Both are defensible: a standalone skill is genuinely portable and costs one file to load; a core-backed skill means a wording fix lands in 30 places at once. Pick one and apply it to the whole roster, because a half-migrated roster gets the costs of both. Note that the standalone route makes rule 4's length instructions per-skill work rather than a one-line core edit.
+**One divergence, settled.** This worked example's slim Winston did not read `_shared/core.md` — it inlined the little it needed and dropped the rest, including the pronoun declaration the core's House rules require. That was the opposite of Part 4's advice to push shared content into the core, and both routes were defensible in isolation: a standalone skill is genuinely portable and costs one file to load; a core-backed skill means a wording fix lands in 30 places at once. The roster-wide run decided it — shipped winston reads the core (`skills/winston/SKILL.md`'s `## Shared core — read first`), matching every other persona rather than staying the standalone outlier this table shows.
 
 ---
 
@@ -161,7 +161,7 @@ A mode that fires on one invocation in twenty is paying full price on the other 
 5. **Collapse the output template** (rule 5) if sections are conditionally omitted.
 6. **Move rare modes to `references/`** (Part 4) with a pointer — or extract them as their own skill when they stand alone, the way Devil's Advocate did.
 7. **Compress the personality block to a `## Voice` paragraph** (rule 8), keeping any cognitive lens that reduces to a single working instruction.
-8. **Re-run the sync** — `sync.sh` and `render-agents.py` regenerate `codex-agents/`; edits there get overwritten.
+8. **Re-run the sync** — `sync.sh`, `render-agents.py`, and `render-claude-agents.py` regenerate `codex-agents/` and `claude-agents/`; edits there get overwritten.
 
 Change one thing per measured run where you can. The bake-off's clearest confound was slim Winston's pass 2 changing output style *and* three hand edits at once, which made a +202% swing uninterpretable.
 
