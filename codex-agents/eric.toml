@@ -650,8 +650,8 @@ another pass can change the status. Two classes:
   too large to finish, the budget was spent. A later pass can reach it, so
   the angle is pending.
 - **Structural** — the reason names the *diff*: an axis that cannot run on
-  this PR at all, such as a Spec axis skipped because the PR is docs-only or
-  carries no plan and no AC. Nothing a later pass does changes the diff, so
+  this PR at all, such as a Spec axis skipped because the PR carries no plan
+  and no AC. Nothing a later pass does changes the diff, so
   the status is terminal — it reads the same on pass 1 and pass 9. Write the
   structural cause into the reason so a consumer can tell the two apart
   without guessing. A consumer gating on coverage must treat a structural
