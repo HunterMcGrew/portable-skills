@@ -167,10 +167,19 @@ records. Utilities (handoff, review-loop, devils-advocate) get no agent file,
 by the same persona-declaration gate that governs the tomls.
 
 **Know what this buys before relying on it: skills and subagents have opposite
-precedence.** A personal `~/.claude/skills` entry beats a repo's
-`.claude/skills`, but a repo's `.claude/agents` beats `~/.claude/agents`. So
-these give you the roster as subagents in every repo that ships none of its
-own — and lose to any repo that does.
+precedence.** A repo's `.claude/agents` beats `~/.claude/agents` — read out of
+the shipped Claude Code binary, whose agent dedupe walks built-in, plugin, user
+settings, then project settings, last write winning. The mirror-image half —
+that a personal `~/.claude/skills` entry beats a repo's `.claude/skills` — is
+**observed but unverified**: it matches how the roster has behaved in practice,
+but it could not be located in the binary, so don't build on it without
+re-checking. On the verified half: these give you the roster as subagents in
+every repo that ships none of its own, and lose to any repo that does.
+
+This paragraph is the only copy of the precedence claim. It is vendor-owned and
+no `--check` covers prose, so `sync.sh` and `render-claude-agents.py` point here
+instead of restating it — three hand-maintained copies is the drift the
+renderers exist to prevent.
 
 Neither renderer is wired into `sync.sh`: rendering is a build step that
 mutates tracked files, syncing only copies committed ones.

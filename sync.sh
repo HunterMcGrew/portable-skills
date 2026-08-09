@@ -43,11 +43,8 @@ done
 # deployed here rather than by the renderer for the same reason: rendering is a
 # build step that mutates tracked files, syncing only copies committed ones.
 #
-# Worth knowing what this does and does not buy you. Skills and subagents have
-# OPPOSITE precedence: a personal ~/.claude/skills entry beats a repo's
-# .claude/skills, but a repo's .claude/agents beats ~/.claude/agents. So these
-# give you the roster as subagents in every repo that ships none of its own,
-# and lose to any repo that does (thrive generates sixteen locally via hooks).
+# What this does and does not buy you turns on skills-vs-subagents precedence,
+# stated once in README.md § The claude-agents subagent surface.
 # Same per-file, no-delete semantics as the loops above: a profile-only agent
 # nobody here knows about survives the sync.
 # EXCLUDE_WORK applies here too, and it has to: an agent file is a shim whose

@@ -19,10 +19,8 @@
 # right place. A generated file that silently becomes a no-op is worse than a
 # slightly redundant one.
 #
-# What this buys, precisely: skills and subagents have OPPOSITE precedence.
-# A personal ~/.claude/skills entry beats a repo's .claude/skills, but a repo's
-# .claude/agents beats ~/.claude/agents. So these give the roster as subagents
-# in every repo that ships none of its own, and lose to any repo that does.
+# What this buys, precisely, turns on skills-vs-subagents precedence, stated
+# once in README.md § The claude-agents subagent surface.
 #
 # Build step (skills/ -> claude-agents/), not a deploy step (repo -> profiles);
 # sync.sh does the latter. Deliberately not wired together, same as
