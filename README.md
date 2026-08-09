@@ -45,7 +45,7 @@ construction rather than by a maintained exclusion list.
 
 Some skills live in a profile without living here — vendored ones, plugin ones,
 experiments, and anything tied to a machine rather than a workflow: `graphify`
-(both profiles), `humanizer` (work profile only — both are named at `sync.sh:6`),
+(both profiles), `humanizer` (work profile only — both are named at `sync.sh:5`),
 and the `grill-*` trio.
 
 They are **deliberately out of scope**: not tracked in this repo, not synced by
@@ -170,11 +170,20 @@ by the same persona-declaration gate that governs the tomls.
 precedence.** A repo's `.claude/agents` beats `~/.claude/agents` — read out of
 the shipped Claude Code binary, whose agent dedupe walks built-in, plugin, user
 settings, then project settings, last write winning. The mirror-image half —
-that a personal `~/.claude/skills` entry beats a repo's `.claude/skills` — is
-**observed but unverified**: it matches how the roster has behaved in practice,
-but it could not be located in the binary, so don't build on it without
-re-checking. On the verified half: these give you the roster as subagents in
-every repo that ships none of its own, and lose to any repo that does.
+that a personal `~/.claude/skills` entry beats a repo's `.claude/skills` — was
+confirmed by experiment: a same-named throwaway skill with distinguishable
+marker bodies was planted in both `~/.claude/skills/` and a scratch repo's
+`.claude/skills/`, and a nested headless session invoked from inside the
+scratch repo resolved the personal body, twice, reproducibly. The skill
+appeared in the listing exactly once, not twice — the load-bearing detail,
+since it means an override, not a merge. So: the skills half is
+experiment-verified, the agents half is verified by reading the binary's own
+dedupe logic — different evidence classes, both load-bearing. On the verified
+half: these give you the roster as subagents in every repo that ships none of
+its own, and lose to any repo that does. One caveat holds regardless of how
+it was checked: this is vendor-owned behavior and can change on any Claude
+Code release — a release that changes skill resolution is this claim's
+reopening signal.
 
 This paragraph is the only copy of the precedence claim. It is vendor-owned and
 no `--check` covers prose, so `sync.sh` and `render-claude-agents.py` point here
