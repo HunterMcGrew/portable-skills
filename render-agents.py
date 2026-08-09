@@ -227,6 +227,20 @@ def check_all(root=ROOT):
                           literal in one of them ships just as far. Scanning
                           the whole tree also means adding an inlinable file
                           cannot silently shrink this check's coverage.
+
+                          Deliberately does not scan output-styles/*.md, even
+                          though sync.sh deploys those files to both profiles
+                          too. The failure mode this check guards against is a
+                          literal riding silently into a generated toml or
+                          shim via inlining — render() never reads
+                          output-styles/ at all, so a path literal there
+                          can't hitch that ride. sync.sh itself already names
+                          both profile paths openly (SRC, the dst list), so
+                          it isn't a roster meant to travel in the same sense
+                          skills/ is. A portability guard for output-styles/
+                          is a legitimate idea, but it's a different check
+                          against a different failure mode, not a wider glob
+                          on this one.
       orphan-toml       — a toml with no persona behind it
     """
     v = []
