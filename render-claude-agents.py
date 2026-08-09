@@ -15,9 +15,10 @@
 # The shim carries the skill reference two ways on purpose: the frontmatter
 # `skills:` field, and a body instruction naming the same skill. If the field
 # is honored the body is redundant reinforcement; if it is ever ignored or
-# dropped from the schema, the body alone still routes the subagent to the
-# right place. A generated file that silently becomes a no-op is worse than a
-# slightly redundant one.
+# dropped from the schema, the body's job is not to route anywhere — it
+# instructs the subagent to say plainly that the skill is missing rather than
+# improvise a persona from the stub. A generated file that silently guesses
+# is worse than one that fails loud.
 #
 # What this buys, precisely, turns on skills-vs-subagents precedence, stated
 # once in README.md § The claude-agents subagent surface.
