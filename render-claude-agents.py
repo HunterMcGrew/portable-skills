@@ -33,7 +33,6 @@
 import importlib.util, os, sys, glob
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(ROOT, 'claude-agents')
 
 # Reuse render-agents.py's parsing rather than reimplementing it. The hyphen in
 # the filename blocks a plain import, so load it by path — duplicating

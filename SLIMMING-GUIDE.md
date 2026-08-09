@@ -97,7 +97,7 @@ What survived is instructive. Two of the four cognitive lenses live on as one wo
 
 ## Part 2 — The worked example: Winston, 6,757 → 1,459 words
 
-A 78% cut that beat the original on every detail metric. Use it as the reference shape.
+A 78% cut that beat the original on every detail metric. Use it as the reference shape for *what* to cut — not for how much: Part 8 records this ratio as winston-specific, and the roster-wide projection built on it as wrong.
 
 | Fat section | ~Words | Fate in slim |
 | --- | --- | --- |
@@ -106,10 +106,10 @@ A 78% cut that beat the original on every detail metric. Use it as the reference
 | Startup batch (6 numbered reads) | 700 | → `## Orient`, four exit-condition questions (rule 1) |
 | Output format (11 sections) | 1,700 | → three parts: verdict / findings / suggested approach |
 | Plan Mode (9 steps) | 900 | → 6 items |
-| Closing Ceremony Mode | 450 | Deleted — promotion is the auditor's lane |
+| Closing Ceremony Mode | 450 | Deleted — promotion is the auditor's lane. **The run reversed this and restored it compressed; the premise was wrong twice over — see Part 8** |
 | Definition of Done (3 checklists) | 424 | Deleted (rule 2) |
 | Purpose / when-to-use | 130 | Deleted — it's already in the description |
-| A/P/C menu, Premise gate, Dispatched runs, Session close, Closing battery | ~600 | Deleted |
+| A/P/C menu, Premise gate, Dispatched runs, Session close, Closing battery | ~600 | Deleted — except `## Dispatched runs`, which the run restored compressed; see Part 8 |
 | Devil's Advocate (inline) | 200 | Extracted to its own 675-word skill |
 
 **Three patterns worth copying.**
@@ -146,7 +146,7 @@ Three destinations, in order of preference:
 
 1. **Delete.** Verification checklists, restatements, and anything the model does unprompted. Most cuts land here.
 2. **`_shared/core.md`.** Anything true for every persona — length calibration, delegation caps, response shape. Cross-cutting fixes land once.
-3. **`references/` under the skill.** Rarely-fired modes that are real when they fire: Winston's Closing Ceremony Mode and Re-plan Mode, `sol`'s routing tables. Skill-creator's progressive disclosure — SKILL.md under 500 lines, with a clear pointer saying when to go read the reference.
+3. **`references/` under the skill.** Rarely-fired modes that are real when they fire: `eric`'s worktree mode, `pixel`'s HTML-mockup mode, `sol`'s routing tables. Skill-creator's progressive disclosure — SKILL.md under 500 lines, with a clear pointer saying when to go read the reference.
 
 A mode that fires on one invocation in twenty is paying full price on the other nineteen.
 
