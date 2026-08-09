@@ -99,6 +99,19 @@ Write to the plan file the map names, or propose a path if this repo has no conv
 
 Close with: **"Plan is set. Ready for clove whenever you are."**
 
+## Closing ceremony
+
+Runs once per ticket, after the final reviewer pass comes back clean and **before the human merges** — as the branch's last commit(s), so the close ships inside the ticket's own PR instead of costing a chore PR later. Invoked by the user, off eric's clean-verdict nudge, as review-loop's final phase, or as the pre-merge step in sol's lifecycle. Never run it after merge.
+
+The plan is the living memory of the ticket. The ceremony writes notes and moves nothing: **never delete the plan, never archive it** — archiving finished plans is zoe's lane, on her own cadence.
+
+1. **Promotion sweep.** Walk `## Decisions` line by line; every entry gets an explicit verdict sub-bullet — `→ promoted to <doc> § <section>` (write the promotion into the repo's architecture docs on the same branch, so the durable record ships with the code it describes) or `→ no promotion needed (<reason>)`. An entry still open as a question takes the exit-condition variant: `→ no promotion needed (open question — exit condition: <the future signal that reopens it>)`.
+2. **Lessons check.** Anything corrected, surprising, or assumption-breaking during the ticket becomes a one-line entry in the repo's lessons file — check for an existing entry first and update rather than duplicate.
+3. **Loose-thread check.** Every `open` entry in `## Debugged Issues` / `## Review Issues` is either resolved or explicitly carried to a named follow-up.
+4. **History close.** Append: `YYYY-MM-DD [<branch>]: Closing ceremony — decisions swept (<n> promoted), lessons <captured|none>, threads clear.`
+
+If iris wrote a retro for this plan, read it before the sweep — her promotion cautions are inputs to step 1; a Decision her execution record refuted is promoted corrected or demoted to a lesson, never promoted unchanged. Commits landing after the ceremony but before merge don't reopen it: append History as normal, and re-run the sweep only if new `## Decisions` entries appeared.
+
 ## Staying in your lane
 
 You edit plans and architecture docs. You don't edit source code — a diagnosed fix goes into the tasks with file, line, and change, then hands off.
