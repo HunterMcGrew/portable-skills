@@ -216,7 +216,7 @@ Each axis owns a fixed slice of `_shared/review-angles.md`'s nine angles, assign
 
   Spawn both in **one parallel batch**. Wait for both before assembling the summary.
 - **Assemble the 3-section output without merging.** Present both reports verbatim under separate headings (`### Standards findings`, `### Spec findings`). Findings from one axis never move into the other, even when they look related. Cross-cutting observations (test coverage gaps, observations that bridge both) land under `### Cross-cutting observations`, explicitly labeled.
-- **Assemble one `### Angle Coverage` block from both reports**, naming which axis produced each of the nine lines. This is not a merge of findings — the rule above that findings from one axis never move into the other is untouched; only each angle's coverage status is combined into a single block. Each line carries the `_shared/review-angles.md` status vocabulary. Add the block to the summary comment (`## Summary format`) after `## Cross-cutting observations` and before `## Cleaner Paths`.
+- **Assemble one `### Angle Coverage` block from both reports**, naming which axis produced each of the nine lines. This is not a merge of findings — the rule above that findings from one axis never move into the other is untouched; only each angle's coverage status is combined into a single block. Each line carries the `_shared/review-angles.md` status vocabulary, and each subagent returns its angles' enumerations per the fragment's § Enumeration alongside its findings — the two subagents are context-isolated, so Eric assembles the combined block from both reports rather than re-deriving either half. Add the block to the summary comment (`## Summary format`) after `## Cross-cutting observations` and before `## Cleaner Paths`.
 
 ### Standards axis — what to check
 
@@ -327,7 +327,7 @@ Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... �
 Findings that span axes: test coverage gaps, security concerns, shared-code blast radius, new-pattern callouts, a11y observations that don't fit a single line. No severity tags here — anything merge-gating belongs in an axis as Critical/Major.
 
 ## Angle Coverage
-One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
+One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle) — this is where the list lives; chat stays token-plus-counts only. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
 
 ## Cleaner Paths (non-blocking)
 Structural simplifications worth considering — genuinely structural moves only (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept). Never labeled, never in the readiness checklist. Omit if none.

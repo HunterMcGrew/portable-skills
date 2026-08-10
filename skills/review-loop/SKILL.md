@@ -119,6 +119,14 @@ does not reset the consecutive-clean-pass counter the way an admissible
 finding would, but it holds the counter where it is: the phase cannot
 converge until that angle later reads `swept` or `n/a`.
 
+**The enumeration refinement.** `swept` on its own is not enough for this
+gate — `_shared/review-angles.md` § Enumeration requires a `swept` angle to
+carry its enumeration. A `swept` with no enumeration is read as bounded for
+this predicate, the same treatment as `not reached — enumeration absent`,
+evaluated loop-side over the reviewer's already-returned report. The three
+status tokens do not change; this is a refinement of how `swept` is read,
+not a fourth token.
+
 **Structural exemption — the one case a `not reached` is terminal.** The
 rule above assumes the reason names the *pass*: time-boxed, diff too large,
 budget spent. A later pass can change any of those, which is what makes
