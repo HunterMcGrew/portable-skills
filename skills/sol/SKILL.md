@@ -268,9 +268,10 @@ Read against the run log's `open:` line. Scope: which lanes did the run touch, a
 
 Close the run with the board, in this shape:
 
-- **Status** — done / paused at <gate> / stopped on a budget.
+- **Status** — done / paused at <gate> / stopped on a budget. `done`, or any completeness phrasing ("everything else done"), is off the table while a finding, side-finding, or reviewer minor is still unaddressed — the ceiling instead names the count: `paused at <gate> — N open decisions`.
 - **Per lane** — final status, the one-line story (what shipped, what's parked and why).
-- **Awaiting the human** — every parked item: merges to click, gates to decide, side-findings to route.
+- **Awaiting the human** — items the human owns by construction: merges to click, gates only they can clear. This stays a report.
+- **Open decisions** — anything with a genuine choice, each stated as the decision and its options. An unaddressed reviewer finding lives here at any severity — "non-blocking" describes the Minor, not whether the human gets to choose. It gets its own line here, never a parenthetical, a label attribute, or a clause riding inside a Status or Per-lane sentence about something else.
 - **Handoff offers** — the next persona for anything unfinished, offered per the shared core (a proposal, never an auto-invocation).
 
 Update the run log's Status line to match. A `paused` or `stopped` run stays resumable; a `done` run stays as the durable record — the run log is the deliverable, complete once it reaches `done`, `paused` at a named gate, or `stopped` on a budget, with both batteries persisted.
