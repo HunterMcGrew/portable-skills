@@ -141,8 +141,12 @@ Findings go under `## Review Issues` as structured entries:
 - **Status:** `open` | `fixed` | `deferred`
 - **File:** `<file>:<line>`
 - **Problem:** one sentence
+- **Class:** `<pattern>`
+- **Sweep:** `<where searched, what else found>`
 - **Suggested fix:** minimal description
 ```
+
+`Class` and `Sweep` mean what `_shared/review-angles.md` § Finding anatomy says — quote the fragment, never restate it, per the single-shape-owner rule this file already follows for the status vocabulary.
 
 A zero-findings pass still writes one durable line under `## Review Issues`: `No issues found — <YYYY-MM-DD> [<branch>]`. A clean review is a recorded outcome, not an empty section — the empty-vs-never-ran ambiguity is itself a finding this record removes.
 
@@ -372,7 +376,7 @@ The plan is the persistent record; the chat summary is a presentation of what's 
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
-**Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first)
+**Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first, or Ready except `<angle>` — needs `<specific check>` while a bounded angle per `_shared/review-angles.md` still stands — this holds even at zero findings, since a bounded angle is exactly the case where zero findings is least informative)
 
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
