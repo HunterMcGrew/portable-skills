@@ -318,10 +318,10 @@ The two-axis structure is load-bearing: findings under `### Standards findings` 
 One paragraph: what this branch does and readiness. On a clean re-review, state how many prior threads were resolved.
 
 ## Standards findings
-**Critical**, **Major**, **Minor** within the Standards axis — file + line, problem, suggested fix. Each finding names the standard or concern it violates.
+**Critical**, **Major**, **Minor** within the Standards axis — file + line, problem, suggested fix. Each finding names the standard or concern it violates, and carries `Class:`/`Sweep:` sub-lines per `_shared/review-angles.md` § Finding anatomy — quote the fragment, never restate it. These ride the single composed finding here, never the per-thread inline comment (§ Phase 4) — one anatomy per root cause, not one per posted location.
 
 ## Spec findings
-Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... — implementation does W instead", "Decision [N] — diff at `<file>:<line>` undoes this decision"). When the Spec axis is skipped, this section contains the explicit skip line instead.
+Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... — implementation does W instead", "Decision [N] — diff at `<file>:<line>` undoes this decision"), with the same `Class:`/`Sweep:` sub-lines. When the Spec axis is skipped, this section contains the explicit skip line instead.
 
 ## Cross-cutting observations
 Findings that span axes: test coverage gaps, security concerns, shared-code blast radius, new-pattern callouts, a11y observations that don't fit a single line. No severity tags here — anything merge-gating belongs in an axis as Critical/Major.
@@ -370,7 +370,7 @@ If a label doesn't exist in the repo, create it first: `gh label create "<name>"
 
 1. **Critical or major issues exist** (either axis) — skip labels entirely. No labels signals "not ready — dev needs to fix first."
 2. **Unaddressed minors remain** — apply **effort + `review:has-minors`**.
-3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**: `confidence:high` when both axes ran clean; `confidence:needs-judgment` when a judgment call remains; `confidence:standards-only` when the Spec axis was skipped and Standards cleared. Treated as state #3 for the ready-flip.
+3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**: `confidence:high` when both axes ran clean; `confidence:needs-judgment` when a judgment call remains; `confidence:standards-only` when the Spec axis was skipped and Standards cleared. Treated as state #3 for the ready-flip. **While any angle from `_shared/review-angles.md` is pass-bounded, state #3 may not resolve to `confidence:high`** — it resolves to `confidence:needs-judgment` instead, and the ready-flip does not fire; a pass-bounded angle is precisely an unfinished check, which is what `confidence:needs-judgment` already means ("behavior Eric couldn't verify"). A **structurally** bounded angle is unaffected by this rule — `confidence:standards-only` already exists for exactly that case and is honest as written.
 
 Every labeled PR gets exactly two labels. Never one, never three.
 
@@ -395,7 +395,7 @@ If critical or major issues came up, the PR isn't ready for labels yet. Say: "I'
 
 If only minor issues remain and the dev hasn't addressed them yet, apply effort + `review:has-minors`. Say: "I've flagged a few minor items on PR #<pr-number>. Take a look and either fix them or reply on the threads if you're good with them — once they're all addressed, run me again and I'll mark it ready for human review."
 
-If everything looks good — zero issues, or all minors addressed — apply effort + confidence and say which: ready for human review (`confidence:high`), technically sound with a named judgment call (`confidence:needs-judgment`), or Standards-clean with the Spec axis skipped (`confidence:standards-only` — the human decides whether the missing spec matters). On a clean re-review, append the resolved-thread count.
+If everything looks good — zero issues, or all minors addressed — apply effort + confidence and say which: ready for human review (`confidence:high`, only when no angle is pass-bounded), technically sound with a named judgment call (`confidence:needs-judgment` — also the label a pass-bounded angle forces, naming the angle and the specific check still owed), or Standards-clean with the Spec axis skipped (`confidence:standards-only` — the human decides whether the missing spec matters). On a clean re-review, append the resolved-thread count.
 
 On that clean verdict, add one more line — the plan-close nudge: "Before you merge — want winston to run the closing ceremony on the plan? (Decisions promotion sweep, lessons check, loose threads.)" The ceremony is pre-merge by design: it lands as the branch's final commit so the close ships inside this PR instead of costing a chore PR later. Eric only nudges — winston runs it, and nobody deletes or archives the plan (archive is zoe's lane).
 
