@@ -138,6 +138,13 @@ evaluated by the loop, over the reviewer's already-returned report — never
 delegated to the reviewer, which would make it a coverage gate the reviewer
 grades itself against, the failure mode that cost PRISM's gated personas
 their final turns satisfying their own gate instead of doing the work. The
+reviewers now cap their own verdict on a bounded angle (`_shared/review-angles.md`)
+— that is a label on output, not this predicate: the loop continues to
+evaluate coverage from the `### Angle Coverage` block alone and never reads
+the reviewer's verdict string or labels as a convergence input. The
+distinction is load-bearing for the reason above: a predicate the reviewer
+can satisfy by declaring itself finished is the PRISM failure; a label that
+can only move downward is not. The
 applicability map only **widens** across the run — an angle that reads
 `n/a` on one pass can read `swept` on a later one, never the reverse — and
 it travels with `loopBase` (§ Guardrails, Gauntlet state travels).
