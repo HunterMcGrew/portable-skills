@@ -5,16 +5,28 @@
 # that's what lets graphify (both profiles) and humanizer (work profile only)
 # ride alongside the synced roster untouched.
 #
-# ~/.claude-work takes the full canonical set: the thrive repo's own
-# dev-workflow personas are all `thrive-`-prefixed (thrive-architect,
-# thrive-code-dev, thrive-debugger, thrive-code-review-pr, and so on, under
-# each thrive worktree's own .claude/skills/), so there is no name collision
-# with this roster's `winston`/`clove`/`briar`-style names for either skills
-# or their agent shims — the two sets coexist rather than one shadowing the
-# other. Default-sync semantics otherwise — a new skill under skills/
-# reaches both profiles automatically without a list edit, unless its name
-# is added here. lilac stays excluded from the work profile, a standing
-# decision unrelated to the collision concern above.
+# ~/.claude-work takes the full canonical set despite twelve confirmed
+# persona-name trigger collisions with thrive's own dev-workflow skills:
+# thrive-architect / -code-dev / -code-review-self / -code-review-pr /
+# -debugger / -documentation / -user-stories / -ticket-start / -qa-test-plan
+# / -changelog / -pixel / -standup-summary each carry one of this roster's
+# persona names (Winston, Clove, Briar, Eric, Sasha, Eli, Mira, Nora, Reese,
+# Sage, Pixel, Lilac) in their own `description:`, telling the assistant to
+# invoke that skill whenever the user says that name. Invocation is by
+# trigger word in prose, not by directory name — the `thrive-` prefix on the
+# directory doesn't stop both sets answering to the same spoken name. The
+# skills-precedence rule doesn't resolve this: it dedupes skills that share a
+# *name*, and thrive-architect and winston are different names that both
+# claim "Winston" as a trigger, so both load. The human was shown this
+# collision evidence and the alternatives (retire thrive's twelve, exclude
+# exactly the twelve, rename triggers) and chose to sync the full roster
+# anyway, accepting the ambiguity to get the current slimmed personas
+# everywhere. handoff, iris, ren, review-loop, sol, and zoe have no thrive
+# counterpart and were never part of this tradeoff. Default-sync semantics
+# otherwise — a new skill under skills/ reaches both profiles automatically
+# without a list edit, unless its name is added here. lilac stays excluded
+# from the work profile, a standing decision unrelated to the collision
+# concern above.
 EXCLUDE_WORK="lilac"
 set -euo pipefail
 SRC=~/Documents/portable-skills
