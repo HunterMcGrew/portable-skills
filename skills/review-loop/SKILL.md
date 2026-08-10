@@ -124,13 +124,14 @@ rule above assumes the reason names the *pass*: time-boxed, diff too large,
 budget spent. A later pass can change any of those, which is what makes
 holding the counter the right move. A reason that names the *PR* cannot be
 changed by a later pass — eric's `not reached — Spec axis skipped` on a
-docs-only diff or a PR with no plan and no AC is a property of the diff, so
-it reads identically on pass 1 and pass 9. Treat a structural `not reached`
+PR with no plan and no AC is a property of the PR, not of the pass, so it
+reads identically on pass 1 and pass 9. Treat a structural `not reached`
 as covered for this predicate: it satisfies the gate, records the gap on its
 own scoreboard line, and carries into the phase's closing report so the gap
 stays visible rather than silently absorbed. Without this the eric phase can
-never converge on a docs-only PR — it runs to budget exhaustion (Procedure
-D) every time, on a diff nobody disputes. The two reason classes are named
+never converge on a PR that carries no plan and no AC — it runs to budget
+exhaustion (Procedure D) every time, waiting for a Spec axis that has
+nothing to read. The two reason classes are named
 by the angle fragment the reviewers read — it owns the vocabulary; the loop
 reads the reason, it does not invent the distinction. The predicate is
 evaluated by the loop, over the reviewer's already-returned report — never

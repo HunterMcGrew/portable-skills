@@ -15,9 +15,10 @@
 # The shim carries the skill reference two ways on purpose: the frontmatter
 # `skills:` field, and a body instruction naming the same skill. If the field
 # is honored the body is redundant reinforcement; if it is ever ignored or
-# dropped from the schema, the body alone still routes the subagent to the
-# right place. A generated file that silently becomes a no-op is worse than a
-# slightly redundant one.
+# dropped from the schema, the body's job is not to route anywhere — it
+# instructs the subagent to say plainly that the skill is missing rather than
+# improvise a persona from the stub. A generated file that silently guesses
+# is worse than one that fails loud.
 #
 # What this buys, precisely, turns on skills-vs-subagents precedence, stated
 # once in README.md § The claude-agents subagent surface.
@@ -33,7 +34,6 @@
 import importlib.util, os, sys, glob
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(ROOT, 'claude-agents')
 
 # Reuse render-agents.py's parsing rather than reimplementing it. The hyphen in
 # the filename blocks a plain import, so load it by path — duplicating
@@ -177,6 +177,32 @@ def selftest(root=ROOT):
         ok &= fired and cleared
         print('selftest: %-13s red=%s green-after-restore=%s'
               % ('orphan', 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+
+        # malformed source: a skills/<p>/SKILL.md whose frontmatter has no
+        # parseable `description:` field must make regenerate_all refuse to
+        # write anything (raise ValueError naming the offender), not crash on
+        # a bare AttributeError or silently skip the offender and write
+        # everyone else. Renaming only the `description:` key (not the `---`
+        # fences or the persona body) keeps the file a recognized persona —
+        # breaking the fences instead would drop it from personas() entirely
+        # and the render() call this control targets would never run.
+        sk_path = os.path.join(r, 'skills', ra.personas(r)[0], 'SKILL.md')
+        orig_sk = open(sk_path).read()
+        open(sk_path, 'w').write(orig_sk.replace('description:', 'desc:', 1))
+        try:
+            regenerate_all(r, check=True)
+            fired = False
+        except ValueError:
+            fired = True
+        open(sk_path, 'w').write(orig_sk)
+        try:
+            regenerate_all(r, check=True)
+            cleared = True
+        except ValueError:
+            cleared = False
+        ok &= fired and cleared
+        print('selftest: %-13s red=%s green-after-restore=%s'
+              % ('malformed-src', 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
     return ok
 
 
