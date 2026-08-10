@@ -1,124 +1,108 @@
 #!/usr/bin/env bash
-# Push canonical skills to both Claude profiles + the Downloads backup.
-# Per-skill copy on purpose: profile-only skills (no counterpart in canonical)
-# must survive, so never use --delete semantics against either profile dir —
-# that's what lets graphify (both profiles) and humanizer (work profile only)
-# ride alongside the synced roster untouched.
-#
-# ~/.claude-work takes the full canonical set despite twelve confirmed
-# persona-name trigger collisions with thrive's own dev-workflow skills:
-# thrive-architect / -code-dev / -code-review-self / -code-review-pr /
-# -debugger / -documentation / -user-stories / -ticket-start / -qa-test-plan
-# / -changelog / -pixel / -standup-summary each carry one of this roster's
-# persona names (Winston, Clove, Briar, Eric, Sasha, Eli, Mira, Nora, Reese,
-# Sage, Pixel, Lilac) in their own `description:`, telling the assistant to
-# invoke that skill whenever the user says that name. Invocation is by
-# trigger word in prose, not by directory name — the `thrive-` prefix on the
-# directory doesn't stop both sets answering to the same spoken name. The
-# skills-precedence rule doesn't resolve this: it dedupes skills that share a
-# *name*, and thrive-architect and winston are different names that both
-# claim "Winston" as a trigger, so both load. The human was shown this
-# collision evidence and the alternatives (retire thrive's twelve, exclude
-# exactly the twelve, rename triggers) and chose to sync the full roster
-# anyway, accepting the ambiguity to get the current slimmed personas
-# everywhere. handoff, iris, ren, review-loop, sol, and zoe have no thrive
-# counterpart and were never part of this tradeoff. Default-sync semantics
-# otherwise — a new skill under skills/ reaches both profiles automatically
-# without a list edit, unless its name is added here. lilac stays excluded
-# from the work profile, a standing decision unrelated to the collision
-# concern above.
-EXCLUDE_WORK="lilac"
+# Push this repo's skills, agent shims, and output styles into a Claude
+# profile. Per-file copy on purpose: profile-only skills/agents/styles (no
+# counterpart in this repo) must survive, so the loops below never use
+# --delete semantics against a destination directory.
 set -euo pipefail
-SRC=~/Documents/portable-skills
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Defaults: one destination, no exclusions, no backup. This is the whole
+# story for most clones — just run the script.
+#
+# A gitignored sync.local.sh next to this file, if present, is sourced below
+# and can override any of the three: DESTS (profile roots to sync into),
+# EXCLUDES (parallel array — EXCLUDES[i] is a space-separated list of skill/
+# agent names to skip for DESTS[i], "" for none; kept parallel instead of an
+# associative array because the macOS-shipped bash is 3.2, which predates
+# them), and BACKUP_DIR (an optional extra full-tree copy target). Its
+# absence is the normal case, not a degraded one — how you sync is your own
+# affair; see README.md for the override shape and a worked example.
+DESTS=("$HOME/.claude")
+EXCLUDES=("")
+BACKUP_DIR=""
+
+if [ -f "$SRC/sync.local.sh" ]; then
+  # shellcheck source=/dev/null
+  source "$SRC/sync.local.sh"
+fi
 
 # Warn loudly on a stale exclusion (a listed name with no matching skills/
 # dir) before copying anything — a renamed or removed skill silently starts
-# syncing to the work profile under its new name otherwise, and this is the
-# first run where that leak becomes visible.
-for ex in $EXCLUDE_WORK; do
-  [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale exclusion: $ex — renamed or removed? work-profile sync may now include its successor" >&2
-done
-
-for dst in ~/.claude/skills ~/.claude-work/skills; do
-  mkdir -p "$dst"
-  for s in "$SRC"/skills/*/; do
-    name=$(basename "$s")
-    if [ "$dst" = ~/.claude-work/skills ]; then
-      skip=false
-      for ex in $EXCLUDE_WORK; do
-        [ "$name" = "$ex" ] && skip=true && break
-      done
-      [ "$skip" = true ] && continue
-    fi
-    rm -rf "${dst:?}/$name"            # removes old symlink or stale copy
-    cp -R "$s" "$dst/$name"
+# syncing to that destination under its new name otherwise, and this is the
+# first run where that leak becomes visible. Silent when EXCLUDES is empty.
+for i in "${!DESTS[@]}"; do
+  dst="${DESTS[$i]}"
+  for ex in ${EXCLUDES[$i]:-}; do
+    [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale exclusion for $dst: $ex — renamed or removed? sync may now include its successor" >&2
   done
 done
-# Subagent projections ride along to both profiles. Built by
+
+for i in "${!DESTS[@]}"; do
+  dst="${DESTS[$i]}"
+  mkdir -p "$dst/skills"
+  for s in "$SRC"/skills/*/; do
+    name=$(basename "$s")
+    skip=false
+    for ex in ${EXCLUDES[$i]:-}; do
+      [ "$name" = "$ex" ] && skip=true && break
+    done
+    [ "$skip" = true ] && continue
+    rm -rf "${dst:?}/skills/${name:?}"  # removes old symlink or stale copy
+    cp -R "$s" "$dst/skills/$name"
+  done
+done
+
+# Subagent projections ride along to every destination. Built by
 # render-claude-agents.py from the same skills/ sources as codex-agents/, and
-# deployed here rather than by the renderer for the same reason: rendering is a
-# build step that mutates tracked files, syncing only copies committed ones.
+# deployed here rather than by the renderer for the same reason: rendering is
+# a build step that mutates tracked files, syncing only copies committed
+# ones.
 #
-# What this does and does not buy you turns on skills-vs-subagents precedence,
-# stated once in README.md § The claude-agents subagent surface.
-# Same per-file, no-delete semantics as the loops above: a profile-only agent
+# What this does and does not buy you turns on skills-vs-subagents
+# precedence, stated once in README.md § The claude-agents subagent surface.
+# Same per-file, no-delete semantics as the loop above: a profile-only agent
 # nobody here knows about survives the sync.
-# EXCLUDE_WORK applies here too, and it has to: an agent file is a shim whose
-# `skills:` field preloads the same-named skill. Copying winston.md to the work
-# profile while the winston *skill* is excluded from it produces an agent
-# pointing at something that isn't installed — a persona that launches and then
-# has nothing to be.
-for dst in ~/.claude/agents ~/.claude-work/agents; do
-  mkdir -p "$dst"
+# EXCLUDES applies here too, and it has to: an agent file is a shim whose
+# `skills:` field preloads the same-named skill. Copying a persona's agent
+# shim to a destination that excludes that persona's skill produces an agent
+# pointing at something that isn't installed there — a persona that launches
+# and then has nothing to be.
+for i in "${!DESTS[@]}"; do
+  dst="${DESTS[$i]}"
+  mkdir -p "$dst/agents"
   for f in "$SRC"/claude-agents/*.md; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .md)
-    if [ "$dst" = ~/.claude-work/agents ]; then
-      skip=false
-      for ex in $EXCLUDE_WORK; do
-        [ "$name" = "$ex" ] && skip=true && break
-      done
-      [ "$skip" = true ] && continue
-    fi
+    skip=false
+    for ex in ${EXCLUDES[$i]:-}; do
+      [ "$name" = "$ex" ] && skip=true && break
+    done
+    [ "$skip" = true ] && continue
     # rm first, same as the skills loop: cp writes *through* a destination
-    # symlink, clobbering whatever it points at outside the profile directory.
-    rm -f "$dst/$name.md"
-    cp "$f" "$dst/$name.md"
+    # symlink, clobbering whatever it points at outside the profile
+    # directory.
+    rm -f "$dst/agents/$name.md"
+    cp "$f" "$dst/agents/$name.md"
   done
 done
 
-# Output styles ride along to both profiles. This was the sync's real gap: the
-# THR-851 bake-off measured the output style as a *larger* lever on response
-# shape than the entire skill redesign (+113% chat output from the style alone,
-# vs ~500 words for slim-vs-fat), so a profile running the roster without the
-# matching style is running a different experiment than the one that was tuned.
-# Per-file copy with no --delete, same reasoning as the skills loop above:
-# profile-only styles (eli5) must survive a sync that doesn't know about them.
-for dst in ~/.claude/output-styles ~/.claude-work/output-styles; do
-  mkdir -p "$dst"
+# Output styles ride along to every destination, unfiltered — a profile
+# running this roster without the matching style is running a different
+# configuration from the one the roster was tuned against. Per-file copy
+# with no --delete, same reasoning as the loops above: profile-only styles
+# must survive a sync that doesn't know about them.
+for dst in "${DESTS[@]}"; do
+  mkdir -p "$dst/output-styles"
   for f in "$SRC"/output-styles/*.md; do
     [ -e "$f" ] || continue
-    # rm first — see the claude-agents loop above; a symlinked destination
-    # would otherwise be written through.
-    rm -f "$dst/$(basename "$f")"
-    cp "$f" "$dst/$(basename "$f")"
+    rm -f "$dst/output-styles/$(basename "$f")"  # see the agents loop above
+    cp "$f" "$dst/output-styles/$(basename "$f")"
   done
 done
 
-mkdir -p ~/Downloads/portable-skills-backup
-# --exclude protects the guarded copy below: sol-internal-autonomy.md lives in
-# ~/worklogs, outside $SRC, so --delete would remove the previous backup of it
-# on every run *before the guarded cp below runs*. Excluded files are skipped on the receiving
-# side unless --delete-excluded is also passed, so the prior copy survives a run
-# where the source is missing — which is what makes the "skipped" note truthful.
-rsync -a --delete --exclude='sol-internal-autonomy.md' "$SRC/" ~/Downloads/portable-skills-backup/
-# Guarded on purpose: this file is the last statement in the script, after
-# the real sync work above already succeeded. Left bare under set -e, a
-# rename or delete of this one plan file would abort here and misreport a
-# completed sync as a failure — so a miss is noted, not fatal.
-if [ -f ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ]; then
-  cp ~/worklogs/portable-skills/plans/sol-internal-autonomy.md ~/Downloads/portable-skills-backup/
-else
-  echo "sync.sh: sol-internal-autonomy.md not found, skipped (backup otherwise complete)" >&2
+if [ -n "$BACKUP_DIR" ]; then
+  mkdir -p "$BACKUP_DIR"
+  rsync -a --delete "$SRC/" "$BACKUP_DIR/"
 fi
-echo "synced: skills + claude-agents + output-styles -> ~/.claude and ~/.claude-work; full tree -> Downloads backup"
+
+echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]}${BACKUP_DIR:+; full tree -> $BACKUP_DIR}"
