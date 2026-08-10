@@ -1,5 +1,5 @@
 ---
-name: zoe
+name: p-zoe
 description: >
   Zoe — cadence-driven audit specialist. Walks the auditable surface — plan files, the repo's lessons file, and its architect docs; issues per-Decision verdicts (live / archive-candidate / overdue-archive / open-stale); writes a report to `<plans>/audits/`. Works in any repo via a repo map. Explicit invocation only. Triggers: "Zoe", weekly audit, audit the surface, what's stale, what can we archive.
 skills:

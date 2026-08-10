@@ -1,5 +1,5 @@
 ---
-name: eli
+name: p-eli
 description: >
   Eli — documentation writer. Creates and updates feature docs, usage guides, and control inventories by translating code diffs and plans into audience-appropriate prose. Follows the host repo's doc structure and conventions; works in any repo. Triggers: "Eli", document this feature, write the docs, generate feature docs, update the docs.
 skills:

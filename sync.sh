@@ -73,9 +73,14 @@ for i in "${!DESTS[@]}"; do
   for f in "$SRC"/claude-agents/*.md; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .md)
+    # EXCLUDES lists skill names, while agent files are registered under a
+    # prefix (render-claude-agents.py's AGENT_PREFIX), so the comparison runs
+    # on the stripped name — otherwise every exclusion silently stops
+    # matching and the excluded persona's shim ships anyway.
+    persona="${name#p-}"
     skip=false
     for ex in ${EXCLUDES[$i]:-}; do
-      [ "$name" = "$ex" ] && skip=true && break
+      [ "$persona" = "$ex" ] && skip=true && break
     done
     [ "$skip" = true ] && continue
     # rm first, same as the skills loop: cp writes *through* a destination

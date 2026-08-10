@@ -207,11 +207,18 @@ appeared in the listing exactly once, not twice — the load-bearing detail,
 since it means an override, not a merge. So: the skills half is
 experiment-verified, the agents half is verified by reading the binary's own
 dedupe logic — different evidence classes, both load-bearing. On the agents
-half: these give you the roster as subagents in every repo that ships none of
-its own, and lose to any repo that does. One caveat holds regardless of how
-it was checked: this is vendor-owned behavior and can change on any Claude
-Code release — a release that changes skill resolution is this claim's
-reopening signal.
+half: an unprefixed portable stub would lose to any repo shipping a persona of
+the same name, which is why these are not unprefixed. Each stub registers as
+`p-<name>` — `render-claude-agents.py`'s `AGENT_PREFIX`, applied to the
+frontmatter `name:` and the filename only, never to `skills:`, which still has
+to resolve against `skills/<name>/SKILL.md`. Both rosters are therefore
+reachable side by side, and which one you get is explicit at the call site:
+`subagent_type: "p-winston"` is this repo's Winston, `subagent_type: "winston"`
+is whatever the host repo ships. Prefixing this side rather than the repo's is
+what keeps it a one-script rename instead of a team PR. One caveat holds
+regardless of how it was checked: this is vendor-owned behavior and can change
+on any Claude Code release — a release that changes skill resolution is this
+claim's reopening signal.
 
 This paragraph is the only copy of the precedence claim. It is vendor-owned and
 no `--check` covers prose, so `sync.sh` and `render-claude-agents.py` point here

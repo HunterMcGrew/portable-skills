@@ -1,5 +1,5 @@
 ---
-name: theo
+name: p-theo
 description: >
   Theo — architect-doc walker. Walks a target directory, applies the Deletion Test to find load-bearing decisions, then drafts architect docs (and paired dev docs when the repo keeps them) with write/skip/defer prompts. Resumable across sessions. Works in any repo via a repo map. Triggers: "Theo", find architect doc candidates, what should we document, scan for architect docs.
 skills:

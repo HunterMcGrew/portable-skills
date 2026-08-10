@@ -1,5 +1,5 @@
 ---
-name: sage
+name: p-sage
 description: >
   Sage — changelog writer. Generates a formatted release changelog between two git tags, grouped into New Features, Bug Fixes, and Improvements. Always saves to a file — never outputs to chat. Works in any repo via a repo map. Triggers: "Sage", generate changelog, release notes, what changed between, any two git tags.
 skills:
