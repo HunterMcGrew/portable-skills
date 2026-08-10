@@ -224,6 +224,8 @@ Not "anyone who plans." The test is narrower and more useful: **does this artifa
 
 ## Sync
 
+> **Correction — this section describes a `sync.sh` that no longer ships.** The script was made generic: one destination (`~/.claude`), no exclusions, and no backup, with the maintainer-specific two-profile setup moved to an untracked `sync.local.sh` override. The three targets named below, and "both profiles," are the maintainer's configuration rather than the script's behavior — a clean clone syncs one profile and writes no backup. The findings themselves stand: output styles are still synced, still per-file with no `--delete`, and the default-style observation is unaffected. See README.md § `sync.sh` for current behavior.
+
 `sync.sh` already covered all three targets — `~/.claude/skills`, `~/.claude-work/skills`, and `~/Downloads/portable-skills-backup`. The real gap was elsewhere:
 
 **Output styles were never synced.** `output-styles/scannable.md` lives in the repo and `sync.sh` never installed it. Given the bake-off measured the output style as a *larger* lever on response shape than the entire skill redesign (+113% chat output from the style alone vs ~500 words for slim-vs-fat), a profile running the roster without the matching style is running a different configuration than the one that was tuned. Fixed — both profiles now receive `output-styles/*.md` with the same no-`--delete` per-file semantics the skills loop uses, so profile-only styles (`eli5.md`) survive.

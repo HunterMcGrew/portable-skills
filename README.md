@@ -107,6 +107,23 @@ Every copy loop is per-file with no `--delete` semantics against the
 destination, so a skill, agent, or style you keep only in your profile (not
 shipped by this repo) survives a re-sync untouched.
 
+That property has one cost, and it lands on upgrades: **a sync never removes
+anything, so a file this repo renames stays in your profile under its old
+name.** Both copies then resolve. The `p-` prefix on the agent shims is
+exactly such a rename — if you synced before it, `~/.claude/agents/` now
+holds both `winston.md` and `p-winston.md`, and the unprefixed one is the
+silent collision the prefix exists to remove. Prune the superseded names by
+hand, once, per destination:
+
+```bash
+ls ~/.claude/agents | grep -v '^p-'   # look first
+ls ~/.claude/agents | grep -v '^p-' | sed "s|^|$HOME/.claude/agents/|" | xargs rm
+```
+
+The same applies to any future rename of a generated file. `sync.sh` will not
+tell you — nothing compares the destination against the repo — so the release
+note is the only warning you get.
+
 If your setup is more than one profile — say, a personal `~/.claude` and a
 second profile for a specific client or repo that ships its own
 similarly-named personas and shouldn't get this roster's colliding ones —
@@ -120,6 +137,14 @@ EXCLUDES=("" "some-persona-name")   # parallel to DESTS; "" means no exclusions
 BACKUP_DIR="$HOME/Downloads/portable-skills-backup"  # optional; omit or leave "" to skip
 ```
 
+**`BACKUP_DIR` is a mirror, not an additive copy.** It runs
+`rsync -a --delete`, so anything in that directory that this repo doesn't
+ship is deleted on every sync. Give it a directory dedicated to this backup
+and nothing else — never an existing documents, downloads, or cloud-synced
+folder that holds anything you care about. `sync.sh` refuses the three
+targets that would be unrecoverable (`$HOME`, the repo itself, `/`), but it
+cannot detect a directory you merely share with something else.
+
 `EXCLUDES[i]` is a space-separated list of skill/agent names to skip for
 `DESTS[i]` — it's parallel-array rather than an associative array because the
 bash macOS ships (3.2) predates them. An excluded name is skipped for both
@@ -129,6 +154,12 @@ without the skill produces an agent pointing at nothing. `sync.sh` warns on a
 stale exclusion (a listed name with no matching `skills/` dir) so a rename
 doesn't silently start leaking the renamed skill into a profile that meant to
 exclude it.
+
+`./sync-selftest.sh` covers that logic — exclusions, the prefix strip, the
+no-`--delete` guarantee, and the three abort conditions — against a
+fabricated tree in `$TMPDIR` with `HOME` redirected there, so it never
+touches a real profile. Each control also asserts its own broken variant goes
+red, the same way `render-claude-agents.py --selftest` does.
 
 No `sync.local.sh`? The script runs the single-profile default above — that
 absence is the normal case, not a degraded one. How you sync beyond that is

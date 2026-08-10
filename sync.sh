@@ -14,7 +14,8 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # EXCLUDES (parallel array — EXCLUDES[i] is a space-separated list of skill/
 # agent names to skip for DESTS[i], "" for none; kept parallel instead of an
 # associative array because the macOS-shipped bash is 3.2, which predates
-# them), and BACKUP_DIR (an optional extra full-tree copy target). Its
+# them), and BACKUP_DIR (a mirror of this repo, not an additive copy — see
+# the guard above the rsync at the bottom before pointing it anywhere). Its
 # absence is the normal case, not a degraded one — how you sync is your own
 # affair; see README.md for the override shape and a worked example.
 DESTS=("$HOME/.claude")
@@ -26,16 +27,53 @@ if [ -f "$SRC/sync.local.sh" ]; then
   source "$SRC/sync.local.sh"
 fi
 
+# Must equal render-claude-agents.py's AGENT_PREFIX. That file owns the
+# value; this is a copy, and the pre-flight check below is what stops the
+# copy from drifting silently. Not part of the sync.local.sh override
+# contract — it describes the repo's own files, not your setup.
+AGENT_PREFIX="p-"
+
+# EXCLUDES and DESTS are parallel, so a missing slot means an unfiltered
+# destination. Left to ${EXCLUDES[i]:-} that degrades to "no exclusions"
+# without a word, which is the wrong direction to fail in — an override that
+# gained a profile and forgot its slot would ship a full roster to it. An
+# empty EXCLUDES is still legal and means no exclusions anywhere.
+if [ "${#EXCLUDES[@]}" -ne 0 ] && [ "${#EXCLUDES[@]}" -ne "${#DESTS[@]}" ]; then
+  echo "sync.sh: EXCLUDES has ${#EXCLUDES[@]} entries for ${#DESTS[@]} destinations — they must be parallel (use \"\" for a destination with no exclusions)" >&2
+  exit 1
+fi
+
 # Warn loudly on a stale exclusion (a listed name with no matching skills/
 # dir) before copying anything — a renamed or removed skill silently starts
 # syncing to that destination under its new name otherwise, and this is the
 # first run where that leak becomes visible. Silent when EXCLUDES is empty.
+any_exclusions=false
 for i in "${!DESTS[@]}"; do
   dst="${DESTS[$i]}"
   for ex in ${EXCLUDES[$i]:-}; do
+    any_exclusions=true
     [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale exclusion for $dst: $ex — renamed or removed? sync may now include its successor" >&2
   done
 done
+
+# Exclusions match on the agent name with AGENT_PREFIX stripped, so a prefix
+# that no longer matches the files on disk makes every exclusion silently
+# inert and ships the excluded persona's shim anyway. Abort instead: the
+# whole point of an exclusion is that it is not quietly optional. Only
+# checked when an exclusion is configured — with none, the prefix is
+# irrelevant to this script and a mismatch harms nothing.
+if [ "$any_exclusions" = true ]; then
+  for f in "$SRC"/claude-agents/*.md; do
+    [ -e "$f" ] || continue
+    case "$(basename "$f")" in
+      "$AGENT_PREFIX"*) ;;
+      *)
+        echo "sync.sh: $(basename "$f") does not start with AGENT_PREFIX '$AGENT_PREFIX', so exclusions would not match it — set AGENT_PREFIX in this script to render-claude-agents.py's value" >&2
+        exit 1
+        ;;
+    esac
+  done
+fi
 
 for i in "${!DESTS[@]}"; do
   dst="${DESTS[$i]}"
@@ -74,10 +112,10 @@ for i in "${!DESTS[@]}"; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .md)
     # EXCLUDES lists skill names, while agent files are registered under a
-    # prefix (render-claude-agents.py's AGENT_PREFIX), so the comparison runs
-    # on the stripped name — otherwise every exclusion silently stops
-    # matching and the excluded persona's shim ships anyway.
-    persona="${name#p-}"
+    # prefix, so the comparison runs on the stripped name — otherwise every
+    # exclusion silently stops matching and the excluded persona's shim ships
+    # anyway. The pre-flight check above guarantees the strip actually bites.
+    persona="${name#"$AGENT_PREFIX"}"
     skip=false
     for ex in ${EXCLUDES[$i]:-}; do
       [ "$persona" = "$ex" ] && skip=true && break
@@ -105,7 +143,20 @@ for dst in "${DESTS[@]}"; do
   done
 done
 
+# BACKUP_DIR is a mirror, not an additive copy: --delete means anything in it
+# that this repo does not ship is removed on every run. Point it at a
+# directory dedicated to this backup and nothing else. The guard below
+# catches the three targets that would be unrecoverable rather than merely
+# surprising; it cannot catch a merely-shared directory, which is why the
+# sentence above matters more than the check.
 if [ -n "$BACKUP_DIR" ]; then
+  backup_norm="${BACKUP_DIR%/}"
+  case "$backup_norm" in
+    "" | "${HOME%/}" | "${SRC%/}")
+      echo "sync.sh: refusing to use '$BACKUP_DIR' as BACKUP_DIR — rsync --delete would prune everything in it that this repo does not ship; use a directory dedicated to the backup" >&2
+      exit 1
+      ;;
+  esac
   mkdir -p "$BACKUP_DIR"
   rsync -a --delete "$SRC/" "$BACKUP_DIR/"
 fi
