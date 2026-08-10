@@ -83,6 +83,46 @@ the claim didn't hold here. Give the reason, and expect a consumer to record
 it. It does not make the pass incomplete; `not reached` is the status for
 that.
 
+## Enumeration
+
+`swept` is not a verdict on its own; it carries an enumeration — the list of
+items of that angle's unit found in the pinned range, each with its own
+verdict. An item absent from the list is a visible gap; a bare `swept` is
+not. An empty enumeration (`— no items`) is a legitimate and falsifiable
+result; a *missing* enumeration is not.
+
+**The unit, per angle:**
+
+- **Runtime behavior** — each changed entry point whose behavior at runtime
+  differs from before.
+- **Test efficacy** — each new or changed behavior, paired with the test
+  that fails if it regresses.
+- **Spec and doc consistency** — each acceptance criterion and each doc,
+  comment, or config the diff touches.
+- **Citation integrity** — each cited line number, sha, path, or quoted
+  rule.
+- **External-system claims** — each external identifier the diff introduces
+  or relies on: hook names, screen or route URLs, capabilities, CSS custom
+  properties, API signatures, config keys. This is the unit the bake-off's
+  missed major sat in; state it in full and do not compress it, on the same
+  grounds this fragment already gives this angle.
+- **Repo writing rules** — verdict-only; no natural enumerable unit. Its
+  absence here is decided, not forgotten.
+- **Security** — each trust boundary the diff touches.
+- **Docs impact** — each changed feature, component, or module with a
+  matching docs file.
+- **Accessibility** — each interactive or focusable element the diff adds
+  or changes.
+
+**Where it goes.** To the reviewer's off-chat surface — briar's plan
+`### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
+section. The chat-side line carries the token plus counts, never the list.
+
+**Status interaction.** The three tokens are unchanged. A `swept` with no
+enumeration is not a fourth status — it is an incomplete report, and a
+consumer gating on coverage (review-loop's convergence predicate) reads it
+as bounded, the same treatment `not reached` already gets.
+
 ## Finding anatomy
 
 Every finding carries two fields beyond its existing ones:
