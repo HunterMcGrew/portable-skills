@@ -5,13 +5,17 @@
 # that's what lets graphify (both profiles) and humanizer (work profile only)
 # ride alongside the synced roster untouched.
 #
-# ~/.claude-work excludes the dev-workflow skills on purpose, not by
-# oversight: the thrive repo (worked from that profile) provides its own
-# dev-workflow personas, so the work profile takes only the business-layer/
-# canonical set. Default-sync semantics otherwise — a new skill under
-# skills/ reaches both profiles automatically without a list edit, unless
-# its name is added here.
-EXCLUDE_WORK="briar clove eli eric handoff iris lilac mira nora pixel reese ren review-loop sage sasha sol winston zoe"
+# ~/.claude-work takes the full canonical set: the thrive repo's own
+# dev-workflow personas are all `thrive-`-prefixed (thrive-architect,
+# thrive-code-dev, thrive-debugger, thrive-code-review-pr, and so on, under
+# each thrive worktree's own .claude/skills/), so there is no name collision
+# with this roster's `winston`/`clove`/`briar`-style names for either skills
+# or their agent shims — the two sets coexist rather than one shadowing the
+# other. Default-sync semantics otherwise — a new skill under skills/
+# reaches both profiles automatically without a list edit, unless its name
+# is added here. lilac stays excluded from the work profile, a standing
+# decision unrelated to the collision concern above.
+EXCLUDE_WORK="lilac"
 set -euo pipefail
 SRC=~/Documents/portable-skills
 
