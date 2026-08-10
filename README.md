@@ -157,11 +157,14 @@ stale exclusion (a listed name with no matching `skills/` dir) so a rename
 doesn't silently start leaking the renamed skill into a profile that meant to
 exclude it.
 
-`./sync-selftest.sh` covers that logic — exclusions, the prefix strip, the
-no-`--delete` guarantee, and the three abort conditions — against a
-fabricated tree in `$TMPDIR` with `HOME` redirected there, so it never
-touches a real profile. Each control also asserts its own broken variant goes
-red, the same way `render-claude-agents.py --selftest` does.
+`./sync-selftest.sh` covers that logic in nine controls — exclusions, the
+prefix strip, the no-`--delete` guarantee, an empty `DESTS`, and the three
+abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
+redirected there, so it never touches a real profile. Two are paired red
+controls: they break the mechanism under test and assert the check goes red,
+so the control it guards cannot pass by testing nothing.
+`render-claude-agents.py --selftest` applies that discipline to all three of
+its own.
 
 No `sync.local.sh`? The script runs the single-profile default above — that
 absence is the normal case, not a degraded one. How you sync beyond that is
@@ -256,7 +259,11 @@ claim's reopening signal.
 This paragraph is the only copy of the precedence claim. It is vendor-owned and
 no `--check` covers prose, so `sync.sh` and `render-claude-agents.py` point here
 instead of restating it — three hand-maintained copies is the drift the
-renderers exist to prevent.
+renderers exist to prevent. `render-claude-agents.py`'s `AGENT_PREFIX` comment
+is the one deliberate near-exception: it names the *consequence* the prefix
+defends against rather than which side wins, so the orderable fact still lives
+only here. A release that changes resolution falsifies both, so that comment is
+the second thing to check when this paragraph reopens.
 
 Neither renderer is wired into `sync.sh`: rendering is a build step that
 mutates tracked files, syncing only copies committed ones.
