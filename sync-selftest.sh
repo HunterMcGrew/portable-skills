@@ -135,8 +135,49 @@ green=true
 [ -e "$work/fakehome/unrelated-file" ] || green=false
 ok backup-guard "$green" "BACKUP_DIR=\$HOME was accepted, or rsync --delete ran (rc=$rc)"
 
+# 8. An empty DESTS is a clean no-op, not a crash. Every array expansion the
+# script performs has to be the index form or :--guarded, because on bash 3.2
+# "${A[@]}" and "${A[*]}" are both unbound-variable errors under set -u when A
+# is empty — so this control covers all of them at once rather than one line.
+scaffold emptydests
+cat >"$src/sync.local.sh" <<'EOF'
+DESTS=()
+EXCLUDES=()
+EOF
+run "$src"
+[ "$rc" -eq 0 ] && green=true || green=false
+ok empty-dests "$green" "an empty DESTS aborted instead of no-opping (rc=$rc): $(tail -1 "$work/err")"
+
+# 9. The same case with the output-styles loop reverted to the value form must
+# go red — otherwise control 8 passes for some reason other than the fix.
+scaffold emptydests-red
+# python3 rather than sed: the loop header is identical across all three arms,
+# so only the following line disambiguates the output-styles one, and matching
+# across lines is what sed makes awkward and this makes obvious.
+python3 - "$src/sync.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+s = s.replace(
+    'for i in "${!DESTS[@]}"; do\n  dst="${DESTS[$i]}"\n  mkdir -p "$dst/output-styles"',
+    'for dst in "${DESTS[@]}"; do\n  mkdir -p "$dst/output-styles"')
+open(p, 'w').write(s)
+PY
+chmod +x "$src/sync.sh"
+cat >"$src/sync.local.sh" <<'EOF'
+DESTS=()
+EXCLUDES=()
+EOF
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok empty-dests-red false "the sed did not match — this control tested nothing"
+else
+  run "$src"
+  [ "$rc" -ne 0 ] && green=true || green=false
+  ok empty-dests-red "$green" "value-form expansion survived an empty DESTS — control 8 proves nothing"
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 7 controls green"
+  echo "selftest: 9 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1

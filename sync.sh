@@ -79,6 +79,7 @@ for i in "${!DESTS[@]}"; do
   dst="${DESTS[$i]}"
   mkdir -p "$dst/skills"
   for s in "$SRC"/skills/*/; do
+    [ -d "$s" ] || continue
     name=$(basename "$s")
     skip=false
     for ex in ${EXCLUDES[$i]:-}; do
@@ -134,7 +135,8 @@ done
 # configuration from the one the roster was tuned against. Per-file copy
 # with no --delete, same reasoning as the loops above: profile-only styles
 # must survive a sync that doesn't know about them.
-for dst in "${DESTS[@]}"; do
+for i in "${!DESTS[@]}"; do
+  dst="${DESTS[$i]}"
   mkdir -p "$dst/output-styles"
   for f in "$SRC"/output-styles/*.md; do
     [ -e "$f" ] || continue
@@ -161,4 +163,7 @@ if [ -n "$BACKUP_DIR" ]; then
   rsync -a --delete "$SRC/" "$BACKUP_DIR/"
 fi
 
-echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]}${BACKUP_DIR:+; full tree -> $BACKUP_DIR}"
+# ${DESTS[*]:-} rather than ${DESTS[*]}: on bash 3.2 an empty array expands to
+# an unbound variable under set -u, which would abort here after every loop had
+# already correctly done nothing.
+echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]:-(none)}${BACKUP_DIR:+; full tree -> $BACKUP_DIR}"

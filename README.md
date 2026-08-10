@@ -145,8 +145,10 @@ folder that holds anything you care about. `sync.sh` refuses the three
 targets that would be unrecoverable (`$HOME`, the repo itself, `/`), but it
 cannot detect a directory you merely share with something else.
 
-`EXCLUDES[i]` is a space-separated list of skill/agent names to skip for
-`DESTS[i]` — it's parallel-array rather than an associative array because the
+`EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
+written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
+its stripped name, so the prefixed form matches nothing. It's parallel-array
+rather than an associative array because the
 bash macOS ships (3.2) predates them. An excluded name is skipped for both
 the skill directory and its `claude-agents/*.md` shim together: the agent
 file's `skills:` field preloads the same-named skill, so shipping the shim
@@ -261,7 +263,7 @@ mutates tracked files, syncing only copies committed ones.
 
 ### Output styles
 
-`output-styles/*.md` sync to both profiles alongside skills and agents.
+`output-styles/*.md` sync to every destination alongside skills and agents.
 
 This was once deliberately excluded, on the reasoning that an output style
 changes a profile-wide conversational default and pushing that silently is a
@@ -370,8 +372,8 @@ compounds instead of adding.
   `_shared/core.md`). Excluded on purpose: onboarding/install personas
   (Atlas, skill-forge) — they configure a specific toolkit repo and have no
   meaning as portable skills.
-- Re-run the copy (`cp -R skills/* ~/.claude/skills/`, or your trimmed
-  `sync.sh`) after adding or editing personas — copies don't self-propagate.
+- Re-run the copy (`cp -R skills/* ~/.claude/skills/`, or `./sync.sh`) after
+  adding or editing personas — copies don't self-propagate.
 - If long sessions still drift despite the re-anchors, a user-level
   PostToolUse hook is the mechanical backstop — layer it on, don't replace
   the skill-level instructions.

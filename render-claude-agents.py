@@ -35,10 +35,12 @@ import importlib.util, os, sys, glob
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# Registered agent names carry a prefix; the persona and its skill do not. A
-# repo's .claude/agents outranks ~/.claude/agents (README.md § The
-# claude-agents subagent surface), so an unprefixed portable stub is
-# unreachable by subagent_type in any repo shipping the same persona name.
+# Registered agent names carry a prefix; the persona and its skill do not.
+# Without it, a portable stub is unreachable by subagent_type inside any repo
+# shipping a stub of the same name. The resolution order that causes that is
+# stated once in README.md § The claude-agents subagent surface — which is
+# also where it gets re-checked when a Claude Code release moves it, so this
+# comment names the consequence and points there rather than restating it.
 # The prefix makes both rosters addressable and makes which one you get
 # explicit at the call site.
 AGENT_PREFIX = 'p-'
