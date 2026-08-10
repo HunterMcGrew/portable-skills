@@ -206,7 +206,7 @@ Each axis owns a fixed slice of `_shared/review-angles.md`'s nine angles, assign
 
   Spawn both in **one parallel batch**. Wait for both before assembling the summary.
 - **Assemble the 3-section output without merging.** Present both reports verbatim under separate headings (`### Standards findings`, `### Spec findings`). Findings from one axis never move into the other, even when they look related. Cross-cutting observations (test coverage gaps, observations that bridge both) land under `### Cross-cutting observations`, explicitly labeled.
-- **Assemble one `### Angle Coverage` block from both reports**, naming which axis produced each of the nine lines. This is not a merge of findings — the rule above that findings from one axis never move into the other is untouched; only each angle's coverage status is combined into a single block. Each line carries the `_shared/review-angles.md` status vocabulary. Add the block to the summary comment (`## Summary format`) after `## Cross-cutting observations` and before `## Cleaner Paths`.
+- **Assemble one `### Angle Coverage` block from both reports**, naming which axis produced each of the nine lines. This is not a merge of findings — the rule above that findings from one axis never move into the other is untouched; only each angle's coverage status is combined into a single block. Each line carries the `_shared/review-angles.md` status vocabulary, and each subagent returns its angles' enumerations per the fragment's § Enumeration alongside its findings — the two subagents are context-isolated, so Eric assembles the combined block from both reports rather than re-deriving either half. Add the block to the summary comment (`## Summary format`) after `## Cross-cutting observations` and before `## Cleaner Paths`.
 
 ### Standards axis — what to check
 
@@ -308,16 +308,16 @@ The two-axis structure is load-bearing: findings under `### Standards findings` 
 One paragraph: what this branch does and readiness. On a clean re-review, state how many prior threads were resolved.
 
 ## Standards findings
-**Critical**, **Major**, **Minor** within the Standards axis — file + line, problem, suggested fix. Each finding names the standard or concern it violates.
+**Critical**, **Major**, **Minor** within the Standards axis — file + line, problem, suggested fix. Each finding names the standard or concern it violates, and carries `Class:`/`Sweep:` sub-lines per `_shared/review-angles.md` § Finding anatomy — quote the fragment, never restate it. These ride the single composed finding here, never the per-thread inline comment (§ Phase 4) — one anatomy per root cause, not one per posted location.
 
 ## Spec findings
-Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... — implementation does W instead", "Decision [N] — diff at `<file>:<line>` undoes this decision"). When the Spec axis is skipped, this section contains the explicit skip line instead.
+Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... — implementation does W instead", "Decision [N] — diff at `<file>:<line>` undoes this decision"), with the same `Class:`/`Sweep:` sub-lines. When the Spec axis is skipped, this section contains the explicit skip line instead.
 
 ## Cross-cutting observations
 Findings that span axes: test coverage gaps, security concerns, shared-code blast radius, new-pattern callouts, a11y observations that don't fit a single line. No severity tags here — anything merge-gating belongs in an axis as Critical/Major.
 
 ## Angle Coverage
-One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
+One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle) — this is where the list lives; chat stays token-plus-counts only. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
 
 ## Cleaner Paths (non-blocking)
 Structural simplifications worth considering — genuinely structural moves only (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept). Never labeled, never in the readiness checklist. Omit if none.
@@ -360,7 +360,7 @@ If a label doesn't exist in the repo, create it first: `gh label create "<name>"
 
 1. **Critical or major issues exist** (either axis) — skip labels entirely. No labels signals "not ready — dev needs to fix first."
 2. **Unaddressed minors remain** — apply **effort + `review:has-minors`**.
-3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**: `confidence:high` when both axes ran clean; `confidence:needs-judgment` when a judgment call remains; `confidence:standards-only` when the Spec axis was skipped and Standards cleared. Treated as state #3 for the ready-flip.
+3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**: `confidence:high` when both axes ran clean; `confidence:needs-judgment` when a judgment call remains; `confidence:standards-only` when the Spec axis was skipped and Standards cleared. Treated as state #3 for the ready-flip. **While any angle from `_shared/review-angles.md` is pass-bounded, state #3 may not resolve to `confidence:high`** — it resolves to `confidence:needs-judgment` instead, and the ready-flip does not fire; a pass-bounded angle is precisely an unfinished check, which is what `confidence:needs-judgment` already means ("behavior Eric couldn't verify"). A **structurally** bounded angle is unaffected by this rule — `confidence:standards-only` already exists for exactly that case and is honest as written.
 
 Every labeled PR gets exactly two labels. Never one, never three.
 
@@ -385,7 +385,7 @@ If critical or major issues came up, the PR isn't ready for labels yet. Say: "I'
 
 If only minor issues remain and the dev hasn't addressed them yet, apply effort + `review:has-minors`. Say: "I've flagged a few minor items on PR #<pr-number>. Take a look and either fix them or reply on the threads if you're good with them — once they're all addressed, run me again and I'll mark it ready for human review."
 
-If everything looks good — zero issues, or all minors addressed — apply effort + confidence and say which: ready for human review (`confidence:high`), technically sound with a named judgment call (`confidence:needs-judgment`), or Standards-clean with the Spec axis skipped (`confidence:standards-only` — the human decides whether the missing spec matters). On a clean re-review, append the resolved-thread count.
+If everything looks good — zero issues, or all minors addressed — apply effort + confidence and say which: ready for human review (`confidence:high`, only when no angle is pass-bounded), technically sound with a named judgment call (`confidence:needs-judgment` — also the label a pass-bounded angle forces, naming the angle and the specific check still owed), or Standards-clean with the Spec axis skipped (`confidence:standards-only` — the human decides whether the missing spec matters). On a clean re-review, append the resolved-thread count.
 
 On that clean verdict, add one more line — the plan-close nudge: "Before you merge — want winston to run the closing ceremony on the plan? (Decisions promotion sweep, lessons check, loose threads.)" The ceremony is pre-merge by design: it lands as the branch's final commit so the close ships inside this PR instead of costing a chore PR later. Eric only nudges — winston runs it, and nobody deletes or archives the plan (archive is zoe's lane).
 
@@ -645,6 +645,13 @@ another pass can change the status. Two classes:
   `not reached` as terminal rather than pending, or it waits forever for a
   status that cannot move.
 
+A bounded angle — any angle whose status is not `swept` or `n/a` — caps the
+reviewer's own verdict: the reviewer may not report an unqualified ready
+state while one stands, and the best available verdict names the angle and
+the specific check still owed. This is a label on output already produced,
+not a gate on whether the review continues, and no consumer branches control
+flow on it.
+
 A `n/a` on one of the six always-on angles is a legal status and a
 discrepancy at the same time — always-on is this file's claim that the angle
 applies to every diff, so a pass declaring it inapplicable is reporting that
@@ -652,11 +659,79 @@ the claim didn't hold here. Give the reason, and expect a consumer to record
 it. It does not make the pass incomplete; `not reached` is the status for
 that.
 
+## Enumeration
+
+`swept` is not a verdict on its own; it carries an enumeration — the list of
+items of that angle's unit found in the pinned range, each with its own
+verdict. An item absent from the list is a visible gap; a bare `swept` is
+not. An empty enumeration (`— no items`) is a legitimate and falsifiable
+result; a *missing* enumeration is not.
+
+**The unit, per angle:**
+
+- **Runtime behavior** — each changed entry point whose behavior at runtime
+  differs from before.
+- **Test efficacy** — each new or changed behavior, paired with the test
+  that fails if it regresses.
+- **Spec and doc consistency** — each acceptance criterion and each doc,
+  comment, or config the diff touches.
+- **Citation integrity** — each cited line number, sha, path, or quoted
+  rule.
+- **External-system claims** — each external identifier the diff introduces
+  or relies on: hook names, screen or route URLs, capabilities, CSS custom
+  properties, API signatures, config keys. This is the unit the bake-off's
+  missed major sat in; state it in full and do not compress it, on the same
+  grounds this fragment already gives this angle.
+- **Repo writing rules** — verdict-only; no natural enumerable unit. Its
+  absence here is decided, not forgotten.
+- **Security** — each trust boundary the diff touches.
+- **Docs impact** — each changed feature, component, or module with a
+  matching docs file.
+- **Accessibility** — each interactive or focusable element the diff adds
+  or changes.
+
+**Where it goes.** To the reviewer's off-chat surface — briar's plan
+`### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
+section. The chat-side line carries the token plus counts, never the list.
+
+**Status interaction.** The three tokens are unchanged. A `swept` with no
+enumeration is not a fourth status — it is an incomplete report, and a
+consumer gating on coverage (review-loop's convergence predicate) reads it
+as bounded, the same treatment `not reached` already gets.
+
+## Finding anatomy
+
+Every finding carries two fields beyond its existing ones:
+
+- **`Class: <pattern>`** — the defect pattern in general terms, stated so it
+  can be searched for (e.g. "plan-supplied external identifier asserted but
+  never resolved against its source"), never the instance restated.
+- **`Sweep: <where searched, what else found>`** — where the reviewer looked
+  for other instances of that class and what turned up, including
+  `— none found` and `— NOT swept: <reason>` as legitimate, visible values.
+
+This does not fork `_shared/review-exhaustiveness.md`'s sibling-arm coverage —
+the two sweep different things. Sibling-arm coverage is the *intra-construct*
+sweep: other arms of the one switch, if/elif chain, or dispatch table the
+finding sits in. Class/Sweep is the *cross-diff* sweep: other instances of the
+same defect pattern anywhere in the pinned range, regardless of construct. A
+finding on a multi-arm construct carries both, and neither substitutes for the
+other.
+
 ## Reporting
 
 The coverage block is exempt from conditional-emit: report all nine angles'
 statuses every pass, including a clean pass with zero findings. A gap typed
 into the output is harder to skip than a gap only implied by silence.
+
+## Re-sweep obligation
+
+On any pass after the first, the angles that were bounded, or whose
+enumeration was thinnest, are re-run in full against the subject surface —
+not merely checked for whether the prior pass's findings were fixed.
+Verifying a fix is a different act from sweeping an angle: a pass that only
+does the former inherits the prior pass's gaps while reporting a fresh
+status.
 
 ---
 ## review-exhaustiveness reference (inlined for subagent self-containment)
