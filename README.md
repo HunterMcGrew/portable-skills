@@ -312,11 +312,12 @@ printf '.repo-map.md\n' >> ~/.gitignore_global
 **Prefer the interview over hand-filling.** In a new repo's first session, invoke
 any persona and say "no repo map yet — interview me." The skill runs a discovery
 pass, asks you to confirm where each role lives (rules, architect docs, docs,
-lessons, plans, verification), and writes `.repo-map.md` itself. Front-loading
-this interview beats mid-task questions — make it the first thing you do in a
-new repo. Roles you leave out are opt-outs (no `lessons` line → no lesson
-capture), and skills will offer to append locations they discover mid-session
-back into the map.
+lessons, plans, verification, ticket pattern), and writes `.repo-map.md` itself.
+Front-loading this interview beats mid-task questions — make it the first thing
+you do in a new repo. Roles you leave out are opt-outs (no `lessons` line → no
+lesson capture; no `ticket pattern` → Nora and Briar's Spec subagent fall back
+to a generic ticket shape), and skills will offer to append locations they
+discover mid-session back into the map.
 
 ## How work leaves the repo
 

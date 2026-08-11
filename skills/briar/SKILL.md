@@ -233,12 +233,13 @@ batch; the isolation is what enforces non-merging.
   is context-isolated and has no other route to it. It runs § What to look
   for, § Accessibility Review, and § Test Coverage below.
 - **Spec subagent** receives: the diff and the plan (or the "no spec"
-  sentinel). **Repo fact: specs are Linear tickets, in the shape
-  `THR-<NNNN>`** — look for a ticket ID in that shape when locating the
-  spec. It reports three things, each quoting
-  the spec line it's checking against: requirements missing or partial,
-  behaviour implemented that wasn't asked for (scope creep), and
-  requirements implemented wrongly.
+  sentinel). Ticket ID format comes from `.repo-map.md`'s `ticket pattern`
+  role when locating the spec — no map or no role, fall back to a generic
+  shape (uppercase prefix, dash, digits) and name the reading taken rather
+  than asking. It reports three things, each quoting the spec line it's
+  checking against: requirements missing or partial, behaviour implemented
+  that wasn't asked for (scope creep), and requirements implemented
+  wrongly.
 
 | State | What's present | Spec behavior |
 | --- | --- | --- |

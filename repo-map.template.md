@@ -17,6 +17,7 @@ map doesn't name, and will offer to append newly-discovered locations back here.
 - **lessons**: `docs/lessons.md` — corrections captured as one-line patterns (appended by any persona after a user correction)
 - **plans**: `~/worklogs/<repo-name>/plans/` — living plan files, one per ticket (written by Winston, Sasha, Clove, Briar). There is always exactly one plan per ticket; this line decides where it lives. Point it at the repo's own plans directory if the team keeps one (skills then write the real branch plan — note `## Sessions` will appear in committed plans and PR diffs), or outside the repo / at a globally-gitignored folder to keep plans fully private.
 - **verification**: `pnpm test && pnpm build` — the command(s) that prove a change works (run by Clove and Briar before calling anything done)
+- **ticket pattern**: `THR-<NNNN>` — the shape of this repo's ticket IDs, worked example included (read by Nora, Briar's Spec subagent, and any persona locating a ticket by ID). No entry → fall back to a generic shape (uppercase prefix, dash, digits) and name the reading taken rather than asking.
 
 ## Notes (optional)
 

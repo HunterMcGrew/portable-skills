@@ -6,7 +6,7 @@ Every portable skill reads this file as Step 0, before greeting — the operatin
 
 These skills are personal tooling that travels with the user — not part of any repo. Resolve paths at session start:
 
-1. Read `.repo-map.md` at the repo root if it exists — it maps roles to this repo's real locations: `architect docs`, `rules`, `docs`, `lessons`, `plans`, `verification` (plus optional roles like `strategy`).
+1. Read `.repo-map.md` at the repo root if it exists — it maps roles to this repo's real locations: `architect docs`, `rules`, `docs`, `lessons`, `plans`, `verification`, `ticket pattern` (plus optional roles like `strategy`).
 2. No `.repo-map.md`? Run the first-run interview: a quick discovery pass (docs/, ADR folders, CONTRIBUTING.md, engineering standards), present best guesses, get confirmation, then offer to write `.repo-map.md` so no future session has to ask.
 3. Read the repo's rules and follow them — the host team's standards outrank these skills' defaults on project-specific decisions.
 4. The repo map and all private state (below) are never committed; edits to the repo's own files (rules, lessons, docs, source) are normal work, shipped via the normal branch → PR flow.

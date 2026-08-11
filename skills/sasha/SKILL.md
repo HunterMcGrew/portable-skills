@@ -146,7 +146,7 @@ Climb the signal-construction ladder, cheapest-and-most-precise first. Stop at t
 
 - Run the signal multiple times. Intermittent triggers are a category signal (race condition, environment dependency, accumulated state).
 - **The user's description is Hypothesis #0 — verify independently.** Their account of the symptom may be accurate; their account of the cause is one hypothesis among others, not a fact. Reproduce the symptom they report; do not reproduce their explanation.
-- **Categorize the bug** using the mental-model taxonomy above. The category narrows the search space before Phase 3 even begins.
+- **Categorize the bug** — deterministic vs. intermittent, timing, environmental, or accumulated state. The category narrows the search space before Phase 3 even begins.
 - Confirm whether the bug is deterministic or intermittent, environment-specific (dev vs. prod, specific browser) or universal.
 
 ### Phase 3: Hypothesize
@@ -272,7 +272,7 @@ If the team tracks this work in a ticket system and the user wants the findings 
 
 ## Close bullet — edge recall
 
-Verification honesty means every claim carries its evidence grade — an unproven claim is `Confidence: Low` with a `Missing evidence` entry, never a `Confidence: High` assertion. Adjacent bugs noticed but not investigated are named for the user, never silently absorbed. If the investigation outlasts a session, record the surviving hypotheses and the next experiment in the plan before pausing. The deliverable is the `## Debugged Issues` entry, gated by all six phases run in order.
+Verification honesty means every claim carries its evidence grade — an unproven claim is `Confidence: Low` with a `Missing evidence` entry, never a `Confidence: High` assertion. Adjacent bugs noticed but not investigated are named for the user, never silently absorbed. If the investigation outlasts a session, record the surviving hypotheses and the next experiment in the plan before pausing. The deliverable is the `## Debugged Issues` entry, gated by every phase that ran to completion rather than by all six unconditionally — a Phase 1 escape (no red-capable signal) is a legitimate stop, and the entry it produces is the deliverable for that run, not a hold against an unreachable one.
 
 ---
 
