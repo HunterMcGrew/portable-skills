@@ -204,6 +204,217 @@ def regenerate_all(root=ROOT):
     return out, orphans
 
 
+# W2-T9: the `§`-resolver. No check before this one reads prose cross-
+# references — all five checks verify *structure* (tomls match, paths
+# exist, frontmatter parses, fragments inline) and are blind to whether a
+# `§ X` citation actually resolves to content. That gap is what let a Wave 1
+# defect ship: a definition deleted out from under a surviving `§` pointer,
+# with every structural check green. This check closes the dangling-pointer
+# half of that class.
+#
+# Scope, stated plainly rather than oversold: this catches a citation that
+# fails to *resolve* — no heading or bold-label anywhere in its resolvable
+# set starts with (or is a prefix of) the cited text. It does NOT catch a
+# citation that resolves to a heading whose *content* was hollowed out from
+# under it — that is the other half of the defect class, and it is not
+# mechanically checkable the same way; a human read is what caught it.
+#
+# A `§ X` citation's resolvable target set is: the citing file's own
+# `^#{1,4}` headings and bold list-item labels (`- **Label** —`, e.g.
+# `_shared/review-angles.md`'s `§ External-system claims`, which is the
+# repo's deliberate convention for citing a named angle that lives as a
+# bullet, not a heading); its `references/` siblings' headings/labels if
+# it's a persona SKILL.md; `_shared/core.md`'s headings/labels always (every
+# persona reads core.md, so a bare `§ Session close` et al. must resolve
+# regardless of which file cites it); and, per blank-line-delimited
+# paragraph, the headings/labels of any `_shared/*.md` or `references/*.md`
+# file explicitly named in that same paragraph — this is what lets a
+# cross-file citation like `` `_shared/review-angles.md` § Finding anatomy ``
+# resolve against review-angles.md rather than the citing file's own
+# headings. An early pass that skipped this cross-file handling produced 59
+# false positives on exactly this shape; all 59 were noise, not real
+# citation breaks.
+#
+# Matching is a bidirectional word-boundary prefix check, not equality,
+# because citation text and heading text disagree in both directions in
+# real usage: `§ Phases 1–2` cites a heading titled
+# `### Phases 1–2: Setup + context gathering` (citation shorter than
+# heading), while `§ Enumeration owns that verification` over-captures past
+# the heading `## Enumeration` because prose continues without a clean
+# delimiter (citation longer than heading). Either direction resolves, so
+# long as the boundary after the shorter string is a non-word character —
+# a `§ Assessment` citing a real `§ Assessment frameworks` heading would NOT
+# resolve, because `frameworks` is still a word character at that boundary.
+# A hard newline inside a paragraph is a soft wrap, not a sentence end —
+# markdown reflows it — so it is deliberately NOT a terminator here; only
+# the blank-line paragraph boundary (`_citation_paragraphs`, and this
+# pattern's own `\Z` against a paragraph-scoped search string) stops a
+# citation that runs to the end of its paragraph. An earlier version
+# stopped at `\n`, which truncated every citation split across a wrapped
+# line (e.g. `review-loop/SKILL.md`'s own wrapped prose) into a false
+# unresolved fragment.
+CITATION_RE = re.compile(
+    r'§[ \t]+([A-Z][^)]*?)(?=[)]|,\s|\.\s|\.\Z|—|;\s|\s§|\+\s*§|\Z)')
+HEADING_RE = re.compile(r'^#{1,4}[ \t]+(.+?)[ \t]*$', re.M)
+BOLD_LABEL_RE = re.compile(r'^[ \t]*(?:[-*][ \t]+)?\*\*([^*\n]+)\*\*', re.M)
+CITED_FILE_RE = re.compile(
+    r'((?:skills/[\w-]+/)?(?:_shared|references)/[\w-]+\.md)')
+
+
+def _norm_citation_text(s):
+    return re.sub(r'\s+', ' ', s.strip(' `"\'.,;:)')).strip()
+
+
+def _citation_targets(text):
+    """Every heading and bold list-item label in `text`, normalized — the
+    resolvable-target vocabulary a `§` citation is checked against."""
+    out = set()
+    for m in HEADING_RE.finditer(text):
+        out.add(_norm_citation_text(m.group(1)))
+    for m in BOLD_LABEL_RE.finditer(text):
+        out.add(_norm_citation_text(m.group(1)))
+    out.discard('')
+    return out
+
+
+def _citation_paragraphs(text):
+    """(start, end) byte offsets of blank-line-delimited paragraphs — the
+    unit a cross-file mention's scope is bounded to, so a file named in one
+    paragraph doesn't silently license a citation three paragraphs away."""
+    out, start = [], 0
+    for m in re.finditer(r'\n[ \t]*\n', text):
+        out.append((start, m.start()))
+        start = m.end()
+    out.append((start, len(text)))
+    return out
+
+
+def _resolves_exact(citation, targets):
+    for t in targets:
+        if not t:
+            continue
+        if citation == t:
+            return True
+        if t.startswith(citation) and (len(t) == len(citation)
+                                        or not t[len(citation)].isalnum()):
+            return True
+        if citation.startswith(t) and (len(citation) == len(t)
+                                        or not citation[len(t)].isalnum()):
+            return True
+    return False
+
+
+def _resolves(citation, targets):
+    """`_resolves_exact`, retried over right-truncated word-prefixes of
+    `citation` when the full string doesn't resolve.
+
+    `CITATION_RE` deliberately over-captures — it has no way to know where
+    a heading name actually ends, so it runs until the next hard delimiter
+    (`)`, a comma, a sentence end, `Z`), which is frequently past the real
+    target when the citation is followed by unpunctuated prose. `§ Phase 1
+    already does` and `§ Decompose chains (winston -> ... -> park at merge`
+    are both live examples (`eric:97`, `sol/references/fleet-runs.md:5`):
+    neither the raw capture nor its target is a prefix of the other, but
+    dropping the trailing words one at a time reaches `Phase 1` and
+    `Decompose`, both of which resolve cleanly. Truncating is safe in this
+    direction only — a heading name is never split across an earlier stop
+    point than the real one, since `_resolves_exact` already tries citation-
+    is-prefix-of-target for the untruncated string first."""
+    words = citation.split(' ')
+    for n in range(len(words), 0, -1):
+        if _resolves_exact(' '.join(words[:n]), targets):
+            return True
+    return False
+
+
+def check_citations(root=ROOT):
+    """Every `§ X` citation under `skills/` that fails to resolve against
+    its resolvable target set, as `('citation-unresolved', detail)` pairs —
+    see the block comment above `CITATION_RE` for the resolution rules and
+    this check's stated bound."""
+    v = []
+    md = sorted(glob.glob(root + '/skills/**/*.md', recursive=True))
+    text_by_path = {f: open(f).read() for f in md}
+    targets_by_path = {f: _citation_targets(t) for f, t in text_by_path.items()}
+    core_path = os.path.join(root, 'skills', '_shared', 'core.md')
+    core_targets = targets_by_path.get(core_path, set())
+
+    # Persona (and utility-skill) directory names, longest first so a
+    # search never matches "eric" inside a longer name before trying the
+    # longer one — the roster has no such collision today, but the check
+    # shouldn't depend on that staying true. Read by name only: a mention
+    # of "review-loop's § Admissibility…" or "briar's § Phase 1…" cites a
+    # DIFFERENT persona's own SKILL.md heading directly, the identical
+    # pattern `_shared/*.md` and `references/*.md` mentions cover one
+    # directory over — verified live at `eric:97` and `eric:303`/
+    # `briar:133`, so it is a real repo convention, not a hypothetical.
+    persona_dirs = sorted(
+        (os.path.basename(os.path.dirname(f))
+         for f in glob.glob(root + '/skills/*/SKILL.md')),
+        key=len, reverse=True)
+    persona_name_re = {
+        p: re.compile(r'(?<![\w-])' + re.escape(p) + r'(?![\w-])')
+        for p in persona_dirs}
+
+    for f in md:
+        text = text_by_path[f]
+        rel = os.path.relpath(f, root)
+        parts = rel.split(os.sep)
+        owner = parts[1] if len(parts) >= 2 and parts[0] == 'skills' else None
+
+        default_targets = set(targets_by_path[f])
+        if owner and owner != '_shared':
+            pdir = os.path.join(root, 'skills', owner)
+            for rf in sorted(glob.glob(os.path.join(pdir, 'references', '*.md'))):
+                default_targets |= targets_by_path.get(
+                    rf, _citation_targets(open(rf).read()))
+            # A references/ file's own citations resolve against its
+            # OWNING persona's SKILL.md too, not just its reference
+            # siblings — the relationship the loop above builds runs
+            # SKILL.md -> references/*, and this is the reverse edge.
+            if len(parts) >= 3 and parts[2] == 'references':
+                owner_skill = os.path.join(pdir, 'SKILL.md')
+                default_targets |= targets_by_path.get(
+                    owner_skill, _citation_targets(open(owner_skill).read())
+                    if os.path.exists(owner_skill) else set())
+        if os.path.abspath(f) != os.path.abspath(core_path):
+            default_targets |= core_targets
+
+        for pstart, pend in _citation_paragraphs(text):
+            para = text[pstart:pend]
+            extra_targets = set()
+            for m in CITED_FILE_RE.finditer(para):
+                mentioned = m.group(1)
+                candidates = [os.path.join(root, 'skills', mentioned),
+                              os.path.join(root, mentioned)]
+                if owner:
+                    candidates.append(
+                        os.path.join(root, 'skills', owner, mentioned))
+                for c in candidates:
+                    if os.path.exists(c):
+                        extra_targets |= targets_by_path.get(
+                            c, _citation_targets(open(c).read()))
+            for p in persona_dirs:
+                if p == owner:
+                    continue  # already in default_targets
+                if persona_name_re[p].search(para):
+                    other = os.path.join(root, 'skills', p, 'SKILL.md')
+                    if os.path.exists(other):
+                        extra_targets |= targets_by_path.get(
+                            other, _citation_targets(open(other).read()))
+            targets = default_targets | extra_targets
+
+            for m in CITATION_RE.finditer(para):
+                cite = _norm_citation_text(m.group(1))
+                if not cite:
+                    continue
+                if not _resolves(cite, targets):
+                    line = text.count('\n', 0, pstart + m.start()) + 1
+                    v.append(('citation-unresolved',
+                              '%s:%d § %s' % (rel, line, cite)))
+    return v
+
+
 PROFILE_PATH_RE = re.compile(r'~/\.claude[\w.-]*/skills')
 
 
@@ -216,7 +427,7 @@ def check_all(root=ROOT):
     a check whose denominator is zero because it looked in the wrong place
     reports exactly the same green as one that looked everywhere.
 
-    Five checks:
+    Six checks:
       toml-drift        — a toml differs from render() of its own source. This
                           proves the tomls agree with their generator, not that
                           the generator is right — it catches hand-edits and
@@ -285,8 +496,19 @@ def check_all(root=ROOT):
                           would also outlaw that legitimate cross-persona
                           citation; this check only flags the case where the
                           named owner is the citing file's own persona.
+      citation-unresolved — a `§ X` prose citation that resolves against
+                          neither its own file's headings/bold-labels, its
+                          `references/` siblings', `_shared/core.md`'s, nor
+                          those of any `_shared/*.md` or `references/*.md`
+                          file named in the same paragraph. See the block
+                          comment above `CITATION_RE` (W2-T9) for the
+                          resolution rules and this check's stated bound —
+                          it catches a citation that fails to resolve, not
+                          one that resolves to a heading whose content was
+                          hollowed out from under it.
     """
     v = []
+    v.extend(check_citations(root))
     ps = personas(root)
     for p in ps:
         t = '%s/codex-agents/%s.toml' % (root, p)
@@ -492,6 +714,34 @@ def selftest(root=ROOT):
               % ('citation-inlined', 'yes' if fired else 'NO',
                  'yes' if cleared else 'NO',
                  'yes' if drift_stayed_green else 'NO'))
+
+        # citation-unresolved (W2-T9): plant a `§` citation whose target
+        # heading exists nowhere in the tree, into a file `check_citations`
+        # actually reads (`skills/_shared/core.md`, unioned into every
+        # other file's resolvable set too, so this also proves the plant
+        # is reachable from a persona file's citation, not just core's
+        # own). The trap this guards against, named in this run's brief: a
+        # control that plants its failure somewhere the checked code path
+        # never touches passes green while testing nothing. `Zzyzx9…` is
+        # deliberately not a prefix of any real heading or bold label in
+        # the tree — the whole point of the word-truncation retry in
+        # `_resolves` is that it can accidentally over-forgive down to a
+        # short common word, so the planted string is chosen long and
+        # singular enough that no such accident is plausible.
+        core_path = '%s/skills/_shared/core.md' % r
+        orig_core = open(core_path).read()
+        open(core_path, 'w').write(
+            orig_core
+            + '\n\nSee § Zzyzx9Unresolvable Selftest Marker Heading for '
+              'details.\n')
+        red = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved']
+        open(core_path, 'w').write(orig_core)
+        green = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved']
+        fired, cleared = bool(red), not green
+        ok &= fired and cleared
+        print('selftest: %-22s red=%s green-after-restore=%s'
+              % ('citation-unresolved', 'yes' if fired else 'NO',
+                 'yes' if cleared else 'NO'))
 
         # orphan-toml: a toml whose skill dir is gone
         p = personas(r)[0]
