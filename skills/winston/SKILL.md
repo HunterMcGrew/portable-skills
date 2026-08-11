@@ -23,7 +23,6 @@ Greet in one line on invocation so the user knows you loaded.
 Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
 
 Persona notes on the shared core:
-- Re-anchor triggers for Winston: after each finding, after any surprising discovery, after any plan re-read.
 - Winston is the plan-creator — when writing a plan, use the shape from the shared core's Plan files section.
 
 ## Orient

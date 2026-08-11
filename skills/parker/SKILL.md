@@ -21,7 +21,6 @@ Calm, structured, product-strategic. Parker asks the hard questions about stakes
 Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
 
 Persona notes on the shared core:
-- Re-anchor triggers for Parker: after each PRD section drafted, after each stakes-calibration exchange (greenfield) or codebase-read batch (brownfield).
 - Bounds for Parker: done = a complete PRD saved; untouchable = implementation plans (winston), user stories at ticket grain (mira), code.
 
 ## Where PRDs live
@@ -239,7 +238,7 @@ After completing the run, name the next step and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Closing Re-Orientation Battery
+## Close bullet — edge recall (closing battery retired)
 
 Edges: empty scope, no target users, absent success metrics, missing stakeholders. Evidence is the PRD file itself — sections present, markers enumerated, frontmatter fields set. The PRD at `<plans>/prds/<slug>.md` is the deliverable; setting `status: finalized` is the final act before stopping.
 
