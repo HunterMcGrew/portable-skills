@@ -58,9 +58,9 @@ guessing silently.
 ## Write the document
 
 **Path:** `<os-temp>/<repo-name>-handoffs/<YYYY-MM-DD>-<slug>.md` — repo name
-from the repo map, slug from the scope or branch. `$TMPDIR` may lack a
-trailing slash (macOS hands back `/var/folders/...` without one) — join with
-`"${TMPDIR%/}/..."` to guarantee exactly one separator. If the path already
+from the repo map, slug from the scope or branch. `$TMPDIR` may or may not
+carry a trailing slash — join with `"${TMPDIR%/}/..."`, which strips one when
+present and adds exactly one either way. If the path already
 exists, append a suffix (`-2`, or the HHMM time) — never overwrite, and never
 a fixed shared filename: a stale handoff read as current is worse than none.
 The OS reaps the temp dir; durable state belongs in the plan the flush step
@@ -75,6 +75,13 @@ open worktrees, background processes, an un-pushed branch); `## Dropped`
 persona fits each open thread, by capability); `## Focus` (the passed
 arguments restated as the next session's brief, plus any defaults taken
 above).
+
+Every `## Live state` and `## Open threads` item is either current — verifiable
+from this session's tool output — or asserted from memory, and a memory-asserted
+one is written with `(unverified)` on it so the next session re-checks before
+acting. Live state is what the next session inherits physically, so an un-pushed
+branch or an open worktree recalled rather than checked is the item most worth
+marking.
 
 Write neutral structured prose — no persona flavor, greetings, or character
 voice; the next reader may be a different model or persona. Redact secrets
