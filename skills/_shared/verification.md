@@ -10,6 +10,8 @@ A check that cannot fail still prints a number, and the number reads exactly lik
 
 **A check that derives its expectation from the thing under test proves agreement, not correctness.** Byte-comparing a generated file against a fresh call to its own generator passes at 27/27 however wrong the generator is — it satisfies both rules above and is still blind. Where the check and the artifact share a code path, only an independent re-derivation carries the weight: a different parser, a hand-computed expectation, a second tool.
 
+**A control is written against the failure, not against the fix.** Whoever just wrote the fix plants, by default, the failure that fix already handles — a length floor calibrated against the tree it validates, a selftest whose planted string is chosen long enough that truncation can't over-forgive it, a sync-selftest covering five guards and not the property that actually broke, a red arm asserting polarity only. Each passes on day one and carries no information afterward, because the control is shaped like the repair instead of shaped like what got through — and a control shaped to miss a class of failure looks identical, at a glance, to one that catches it, until that class recurs. When a check cannot cover a named class of failure at all, that bound is reported where the check reports its result — never left standing only in a comment nobody re-reads.
+
 ## Controls that prove nothing
 
 A control has to keep the thing under test *in scope* while making it false. Two mutations look like controls and aren't:

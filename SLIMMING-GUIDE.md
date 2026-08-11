@@ -416,19 +416,31 @@ split ``), and `render-agents.py`'s `CITATION_RE` block comment records that as 
 narrower version was rejected. Reimplementing from a description that omits these two rules
 rebuilds the version already measured as broken.
 
-The check closes the dangling-pointer half of the class — a citation that fails to *resolve*, not
-one that resolves to the wrong heading. Two known bounds beyond that, both worth stating rather
-than discovering the hard way. It does **not** catch a citation that resolves to a heading whose
-*content* was hollowed out from under it — the heading still exists, so this reads clean by
-design; that half stays a human-read finding. It also floors how far a citation is allowed to
-truncate before matching — `render-agents.py`'s `_resolves` docstring and
-`MIN_SINGLE_WORD_MATCH_LEN` carry the current bound and the mutation evidence behind it — because
-an unfloored truncation retry let a genuinely deleted heading resolve silently against an
-unrelated surviving sibling that happened to share its first word. Don't oversell the check when
-citing it as evidence a rewrite is safe; read `CITATION_RE`'s block comment for the authoritative,
-current rule set rather than restating it here.
+The check answers *is this citation nonsense* — a citation that fails to resolve against anything
+in its resolvable set. It is deliberately permissive in the citation-longer direction (a citation
+that over-captures past its real target still resolves, on purpose — see `CITATION_RE`'s block
+comment for why). A length floor was tried against that same permissiveness and failed twice: it
+can only compare string length against the tree it's calibrated on, and a coincidental short-word
+collision is not distinguishable *as a string* from a legitimate short citation or from a citation
+whose real target was deleted by the change under review. **The floor is gone.** `citation-
+unresolved` no longer tries to bound that direction at all; `citation-orphaned` (a seventh check,
+added in the re-sweep this Part's own evidence forced) answers the different question *did this
+change delete a heading someone cites* — diff-scoped against `git merge-base HEAD main`, exact in
+the target-longer direction only, with nothing to tune because provenance is diff information the
+tree-wide check never had. With no git repo or no merge-base it prints
+`citation-orphaned: skipped (<reason>)` rather than a silent green. Neither check catches a
+citation that resolves to a heading whose *content* was hollowed out from under it — that half
+stays a human-read finding. The live measure of the residue — how many citations match more than
+one target, the population no single deletion can turn red — prints on every `--check` run rather
+than being restated here as a number that will drift; read `render-agents.py`'s `check_all()`
+docstring and `CITATION_RE`'s block comment for the authoritative, current rule set.
 
 **The generalizable lesson, restated for the next slimming pass:** a deletion that removes a
 definition must sweep for every instruction that cites the term, in the same commit — and green
 checks are evidence the generated surface didn't drift, never evidence the prose still says
 what it claims to.
+
+**A second, later lesson from the same arc's re-sweep:** four of that re-sweep's five Majors were
+a control shaped like the fix it was written beside rather than like the failure it was meant to
+catch — this file's own truncation floor among them. `_shared/verification.md` now carries that
+as a standing rule rather than a lesson this repo relearns a fifth time.
