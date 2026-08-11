@@ -1,5 +1,5 @@
 ---
-name: lilac
+name: p-lilac
 description: >
   Lilac — standup scribe. Composes a 4-section Slack standup (Project / Yesterday / Today / Blockers) from your GitHub PR activity plus interactive prompts, then posts via a connected Slack MCP (after confirmation) or returns a pasteable block. Works in any repo via `gh`. Triggers: "Lilac", standup, daily sync, summarize my PRs, generate my standup.
 skills:

@@ -35,6 +35,16 @@ import importlib.util, os, sys, glob
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
+# Registered agent names carry a prefix; the persona and its skill do not.
+# Without it, a portable stub is unreachable by subagent_type inside any repo
+# shipping a stub of the same name. The resolution order that causes that is
+# stated once in README.md § The claude-agents subagent surface — which is
+# also where it gets re-checked when a Claude Code release moves it, so this
+# comment names the consequence and points there rather than restating it.
+# The prefix makes both rosters addressable and makes which one you get
+# explicit at the call site.
+AGENT_PREFIX = 'p-'
+
 # Reuse render-agents.py's parsing rather than reimplementing it. The hyphen in
 # the filename blocks a plain import, so load it by path — duplicating
 # has_persona_line() or frontmatter_desc() here would create a second surface
@@ -46,7 +56,7 @@ _spec.loader.exec_module(ra)
 
 
 def render(p, root=ROOT):
-    """claude-agents/<p>.md — frontmatter plus a two-sentence body.
+    """claude-agents/<AGENT_PREFIX><p>.md — frontmatter plus a two-sentence body.
 
     The description is copied verbatim from the skill's frontmatter, never
     rewritten or shortened: it is the trigger surface for both mechanisms, and
@@ -66,7 +76,7 @@ def render(p, root=ROOT):
     art = 'an' if n[0] in 'AEIOU' else 'a'
     return (
         '---\n'
-        'name: %s\n' % p
+        'name: %s\n' % (AGENT_PREFIX + p)
         + 'description: >\n  %s\n' % desc
         + 'skills:\n  - %s\n' % p
         + '---\n\n'
@@ -93,7 +103,9 @@ def regenerate_all(root=ROOT, check=False):
     the line is the signal, exactly as it is for the toml projection.
 
     An orphan is a claude-agents/*.md with no matching persona in skills/ — a
-    skill renamed, removed, or demoted to a utility. Reported by name and left
+    skill renamed, removed, or demoted to a utility. The comparison is against
+    the prefixed names, so a leftover unprefixed file reports as an orphan
+    rather than being read as its persona's current output. Reported by name and left
     untouched rather than deleted, so a rename is a visible warning instead of
     a silent disappearance.
 
@@ -121,16 +133,17 @@ def regenerate_all(root=ROOT, check=False):
 
     written = []
     for p, text in sorted(rendered.items()):
-        path = os.path.join(out_dir, p + '.md')
+        path = os.path.join(out_dir, AGENT_PREFIX + p + '.md')
         if not os.path.exists(path) or open(path).read() != text:
             written.append(p)
             if not check:
                 os.makedirs(out_dir, exist_ok=True)
                 open(path, 'w').write(text)
 
+    expected = set(AGENT_PREFIX + p for p in names)
     orphans = sorted(
         os.path.basename(f) for f in glob.glob(out_dir + '/*.md')
-        if os.path.basename(f)[:-3] not in names)
+        if os.path.basename(f)[:-3] not in expected)
     return written, orphans
 
 
@@ -156,7 +169,7 @@ def selftest(root=ROOT):
 
         # drift: a hand-edited agent file no longer matches render() of its source
         p = ra.personas(r)[0]
-        path = os.path.join(r, 'claude-agents', p + '.md')
+        path = os.path.join(r, 'claude-agents', AGENT_PREFIX + p + '.md')
         orig = open(path).read()
         open(path, 'w').write(orig + '\n<!-- drift -->\n')
         red = regenerate_all(r, check=True)[0]

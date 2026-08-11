@@ -69,6 +69,13 @@ another pass can change the status. Two classes:
   `not reached` as terminal rather than pending, or it waits forever for a
   status that cannot move.
 
+A bounded angle — any angle whose status is not `swept` or `n/a` — caps the
+reviewer's own verdict: the reviewer may not report an unqualified ready
+state while one stands, and the best available verdict names the angle and
+the specific check still owed. This is a label on output already produced,
+not a gate on whether the review continues, and no consumer branches control
+flow on it.
+
 A `n/a` on one of the six always-on angles is a legal status and a
 discrepancy at the same time — always-on is this file's claim that the angle
 applies to every diff, so a pass declaring it inapplicable is reporting that
@@ -76,8 +83,76 @@ the claim didn't hold here. Give the reason, and expect a consumer to record
 it. It does not make the pass incomplete; `not reached` is the status for
 that.
 
+## Enumeration
+
+`swept` is not a verdict on its own; it carries an enumeration — the list of
+items of that angle's unit found in the pinned range, each with its own
+verdict. An item absent from the list is a visible gap; a bare `swept` is
+not. An empty enumeration (`— no items`) is a legitimate and falsifiable
+result; a *missing* enumeration is not.
+
+**The unit, per angle:**
+
+- **Runtime behavior** — each changed entry point whose behavior at runtime
+  differs from before.
+- **Test efficacy** — each new or changed behavior, paired with the test
+  that fails if it regresses.
+- **Spec and doc consistency** — each acceptance criterion and each doc,
+  comment, or config the diff touches.
+- **Citation integrity** — each cited line number, sha, path, or quoted
+  rule.
+- **External-system claims** — each external identifier the diff introduces
+  or relies on: hook names, screen or route URLs, capabilities, CSS custom
+  properties, API signatures, config keys. This is the unit the bake-off's
+  missed major sat in; state it in full and do not compress it, on the same
+  grounds this fragment already gives this angle.
+- **Repo writing rules** — verdict-only; no natural enumerable unit. Its
+  absence here is decided, not forgotten.
+- **Security** — each trust boundary the diff touches.
+- **Docs impact** — each changed feature, component, or module with a
+  matching docs file.
+- **Accessibility** — each interactive or focusable element the diff adds
+  or changes.
+
+**Where it goes.** To the reviewer's off-chat surface — briar's plan
+`### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
+section. The chat-side line carries the token plus counts, never the list.
+
+**Status interaction.** The three tokens are unchanged. A `swept` with no
+enumeration is not a fourth status — it is an incomplete report, and a
+consumer gating on coverage (review-loop's convergence predicate) reads it
+as bounded, the same treatment `not reached` already gets.
+
+## Finding anatomy
+
+Every finding carries two fields beyond its existing ones:
+
+- **`Class: <pattern>`** — the defect pattern in general terms, stated so it
+  can be searched for (e.g. "plan-supplied external identifier asserted but
+  never resolved against its source"), never the instance restated.
+- **`Sweep: <where searched, what else found>`** — where the reviewer looked
+  for other instances of that class and what turned up, including
+  `— none found` and `— NOT swept: <reason>` as legitimate, visible values.
+
+This does not fork `_shared/review-exhaustiveness.md`'s sibling-arm coverage —
+the two sweep different things. Sibling-arm coverage is the *intra-construct*
+sweep: other arms of the one switch, if/elif chain, or dispatch table the
+finding sits in. Class/Sweep is the *cross-diff* sweep: other instances of the
+same defect pattern anywhere in the pinned range, regardless of construct. A
+finding on a multi-arm construct carries both, and neither substitutes for the
+other.
+
 ## Reporting
 
 The coverage block is exempt from conditional-emit: report all nine angles'
 statuses every pass, including a clean pass with zero findings. A gap typed
 into the output is harder to skip than a gap only implied by silence.
+
+## Re-sweep obligation
+
+On any pass after the first, the angles that were bounded, or whose
+enumeration was thinnest, are re-run in full against the subject surface —
+not merely checked for whether the prior pass's findings were fixed.
+Verifying a fix is a different act from sweeping an angle: a pass that only
+does the former inherits the prior pass's gaps while reporting a fresh
+status.

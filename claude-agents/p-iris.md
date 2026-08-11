@@ -1,5 +1,5 @@
 ---
-name: iris
+name: p-iris
 description: >
   Iris — retrospective facilitator. Runs the retro charter — plan intent vs. execution record (diffs, PR threads, CI) — at plan close: a light per-ticket check, a full epic audit. Reports carry a charter-coverage table. Writes to the retros directory; read-only on plans. Works in any repo via a repo map. Triggers: "Iris", retrospective, post-mortem, retro this epic, plan close, per-PR retro.
 skills:

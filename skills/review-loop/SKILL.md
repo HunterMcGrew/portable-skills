@@ -119,6 +119,14 @@ does not reset the consecutive-clean-pass counter the way an admissible
 finding would, but it holds the counter where it is: the phase cannot
 converge until that angle later reads `swept` or `n/a`.
 
+**The enumeration refinement.** `swept` on its own is not enough for this
+gate — `_shared/review-angles.md` § Enumeration requires a `swept` angle to
+carry its enumeration. A `swept` with no enumeration is read as bounded for
+this predicate, the same treatment as `not reached — enumeration absent`,
+evaluated loop-side over the reviewer's already-returned report. The three
+status tokens do not change; this is a refinement of how `swept` is read,
+not a fourth token.
+
 **Structural exemption — the one case a `not reached` is terminal.** The
 rule above assumes the reason names the *pass*: time-boxed, diff too large,
 budget spent. A later pass can change any of those, which is what makes
@@ -138,6 +146,13 @@ evaluated by the loop, over the reviewer's already-returned report — never
 delegated to the reviewer, which would make it a coverage gate the reviewer
 grades itself against, the failure mode that cost PRISM's gated personas
 their final turns satisfying their own gate instead of doing the work. The
+reviewers now cap their own verdict on a bounded angle (`_shared/review-angles.md`)
+— that is a label on output, not this predicate: the loop continues to
+evaluate coverage from the `### Angle Coverage` block alone and never reads
+the reviewer's verdict string or labels as a convergence input. The
+distinction is load-bearing for the reason above: a predicate the reviewer
+can satisfy by declaring itself finished is the PRISM failure; a label that
+can only move downward is not. The
 applicability map only **widens** across the run — an angle that reads
 `n/a` on one pass can read `swept` on a later one, never the reverse — and
 it travels with `loopBase` (§ Guardrails, Gauntlet state travels).

@@ -44,9 +44,10 @@ construction rather than by a maintained exclusion list.
 ### Local-only skills stay local
 
 Some skills live in a profile without living here — vendored ones, plugin ones,
-experiments, and anything tied to a machine rather than a workflow: `graphify`
-(both profiles), `humanizer` (work profile only — both are named at `sync.sh:5`),
-and the `grill-*` trio.
+experiments, and anything tied to a machine rather than a workflow. This repo
+doesn't know their names — `sync.sh` never lists them, because its copy loops
+are per-file with no `--delete`, so anything already in a destination that
+this repo doesn't ship simply survives a sync untouched.
 
 They are **deliberately out of scope**: not tracked in this repo, not synced by
 `sync.sh`, and not covered by the audit in [ROSTER-AUDIT.md](ROSTER-AUDIT.md) or
@@ -94,18 +95,81 @@ Two things the copy must get right:
 User-level skills load in **every** repo you open with that profile and live
 in **no** repo's tree.
 
-### The owner's sync script
+### sync.sh
 
-`sync.sh` in the repo root is the owner's personal install path: it copies the
-roster into `~/.claude/skills` and keeps a backup under `~/Downloads/`, and it
-references a plan file at a hardcoded `~/worklogs/...` path specific to the
-owner's machine — guarded, so a missing file is skipped with a stderr note
-rather than aborting the sync. Treat it as a reference, not a turnkey
-installer: it's wired to the owner's own profile dir and personal backup
-location, not yours — either retarget the copy loop, or just use the manual
-`cp -R` above. Its one design point worth keeping if you adapt it: per-skill
-copy with no `--delete` semantics against the profile dir, so skills you keep
-only in your profile survive a re-sync.
+`sync.sh` in the repo root does what the manual `cp -R` above does, plus the
+agent shims and output styles, minus the parts you'd have to remember: run it
+with no setup and it copies `skills/`, `claude-agents/`, and `output-styles/`
+into `~/.claude`. That's the whole story for one profile — no exclusions, no
+backup, nothing to configure.
+
+Every copy loop is per-file with no `--delete` semantics against the
+destination, so a skill, agent, or style you keep only in your profile (not
+shipped by this repo) survives a re-sync untouched.
+
+That property has one cost, and it lands on upgrades: **a sync never removes
+anything, so a file this repo renames stays in your profile under its old
+name.** Both copies then resolve. The `p-` prefix on the agent shims is
+exactly such a rename — if you synced before it, `~/.claude/agents/` now
+holds both `winston.md` and `p-winston.md`, and the unprefixed one is the
+silent collision the prefix exists to remove. Prune the superseded names by
+hand, once, per destination:
+
+```bash
+ls ~/.claude/agents | grep -v '^p-'   # look first
+ls ~/.claude/agents | grep -v '^p-' | sed "s|^|$HOME/.claude/agents/|" | xargs rm
+```
+
+The same applies to any future rename of a generated file. `sync.sh` will not
+tell you — nothing compares the destination against the repo — so the release
+note is the only warning you get.
+
+If your setup is more than one profile — say, a personal `~/.claude` and a
+second profile for a specific client or repo that ships its own
+similarly-named personas and shouldn't get this roster's colliding ones —
+drop a `sync.local.sh` next to `sync.sh`. It's gitignored, sourced before the
+sync runs if present, and sets three things:
+
+```bash
+# sync.local.sh — untracked, not read by anyone else's clone
+DESTS=("$HOME/.claude" "$HOME/.claude-work")
+EXCLUDES=("" "some-persona-name")   # parallel to DESTS; "" means no exclusions
+BACKUP_DIR="$HOME/Downloads/portable-skills-backup"  # optional; omit or leave "" to skip
+```
+
+**`BACKUP_DIR` is a mirror, not an additive copy.** It runs
+`rsync -a --delete`, so anything in that directory that this repo doesn't
+ship is deleted on every sync. Give it a directory dedicated to this backup
+and nothing else — never an existing documents, downloads, or cloud-synced
+folder that holds anything you care about. `sync.sh` refuses the three
+targets that would be unrecoverable (`$HOME`, the repo itself, `/`), but it
+cannot detect a directory you merely share with something else.
+
+`EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
+written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
+its stripped name, so the prefixed form matches nothing. It's parallel-array
+rather than an associative array because the
+bash macOS ships (3.2) predates them. An excluded name is skipped for both
+the skill directory and its `claude-agents/*.md` shim together: the agent
+file's `skills:` field preloads the same-named skill, so shipping the shim
+without the skill produces an agent pointing at nothing. `sync.sh` warns on a
+stale exclusion (a listed name with no matching `skills/` dir) so a rename
+doesn't silently start leaking the renamed skill into a profile that meant to
+exclude it.
+
+`./sync-selftest.sh` covers that logic in nine controls — exclusions, the
+prefix strip, the no-`--delete` guarantee, an empty `DESTS`, and the three
+abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
+redirected there, so it never touches a real profile. Two are paired red
+controls: they break the mechanism under test and assert the check goes red,
+so the control it guards cannot pass by testing nothing.
+`render-claude-agents.py --selftest` applies that discipline to all three of
+its own.
+
+No `sync.local.sh`? The script runs the single-profile default above — that
+absence is the normal case, not a degraded one. How you sync beyond that is
+your own affair; this repo ships the skills and a script that obviously works
+for one profile.
 
 The roster itself never names a profile directory. A dispatch prompt points a
 subagent at "the skills root this skill loaded from" rather than at a literal
@@ -179,23 +243,34 @@ appeared in the listing exactly once, not twice — the load-bearing detail,
 since it means an override, not a merge. So: the skills half is
 experiment-verified, the agents half is verified by reading the binary's own
 dedupe logic — different evidence classes, both load-bearing. On the agents
-half: these give you the roster as subagents in every repo that ships none of
-its own, and lose to any repo that does. One caveat holds regardless of how
-it was checked: this is vendor-owned behavior and can change on any Claude
-Code release — a release that changes skill resolution is this claim's
-reopening signal.
+half: an unprefixed portable stub would lose to any repo shipping a persona of
+the same name, which is why these are not unprefixed. Each stub registers as
+`p-<name>` — `render-claude-agents.py`'s `AGENT_PREFIX`, applied to the
+frontmatter `name:` and the filename only, never to `skills:`, which still has
+to resolve against `skills/<name>/SKILL.md`. Both rosters are therefore
+reachable side by side, and which one you get is explicit at the call site:
+`subagent_type: "p-winston"` is this repo's Winston, `subagent_type: "winston"`
+is whatever the host repo ships. Prefixing this side rather than the repo's is
+what keeps it a one-script rename instead of a team PR. One caveat holds
+regardless of how it was checked: this is vendor-owned behavior and can change
+on any Claude Code release — a release that changes skill resolution is this
+claim's reopening signal.
 
 This paragraph is the only copy of the precedence claim. It is vendor-owned and
 no `--check` covers prose, so `sync.sh` and `render-claude-agents.py` point here
 instead of restating it — three hand-maintained copies is the drift the
-renderers exist to prevent.
+renderers exist to prevent. `render-claude-agents.py`'s `AGENT_PREFIX` comment
+is the one deliberate near-exception: it names the *consequence* the prefix
+defends against rather than which side wins, so the orderable fact still lives
+only here. A release that changes resolution falsifies both, so that comment is
+the second thing to check when this paragraph reopens.
 
 Neither renderer is wired into `sync.sh`: rendering is a build step that
 mutates tracked files, syncing only copies committed ones.
 
 ### Output styles
 
-`output-styles/*.md` sync to both profiles alongside skills and agents.
+`output-styles/*.md` sync to every destination alongside skills and agents.
 
 This was once deliberately excluded, on the reasoning that an output style
 changes a profile-wide conversational default and pushing that silently is a
@@ -304,8 +379,8 @@ compounds instead of adding.
   `_shared/core.md`). Excluded on purpose: onboarding/install personas
   (Atlas, skill-forge) — they configure a specific toolkit repo and have no
   meaning as portable skills.
-- Re-run the copy (`cp -R skills/* ~/.claude/skills/`, or your trimmed
-  `sync.sh`) after adding or editing personas — copies don't self-propagate.
+- Re-run the copy (`cp -R skills/* ~/.claude/skills/`, or `./sync.sh`) after
+  adding or editing personas — copies don't self-propagate.
 - If long sessions still drift despite the re-anchors, a user-level
   PostToolUse hook is the mechanical backstop — layer it on, don't replace
   the skill-level instructions.

@@ -249,18 +249,17 @@ def check_all(root=ROOT):
                           cannot silently shrink this check's coverage.
 
                           Deliberately does not scan output-styles/*.md, even
-                          though sync.sh deploys those files to both profiles
-                          too. The failure mode this check guards against is a
-                          literal riding silently into a generated toml or
-                          shim via inlining — render() never reads
-                          output-styles/ at all, so a path literal there
-                          can't hitch that ride. sync.sh itself already names
-                          both profile paths openly (SRC, the dst list), so
-                          it isn't a roster meant to travel in the same sense
-                          skills/ is. A portability guard for output-styles/
-                          is a legitimate idea, but it's a different check
-                          against a different failure mode, not a wider glob
-                          on this one.
+                          though sync.sh deploys those files to every
+                          destination too. The failure mode this check guards
+                          against is a literal riding silently into a
+                          generated toml or shim via inlining — render()
+                          never reads output-styles/ at all, so a path
+                          literal there cannot hitch that ride. That is the
+                          whole argument, and it stands on the inlining path
+                          alone. A portability guard for output-styles/ is a
+                          legitimate idea, but it's a different check against
+                          a different failure mode, not a wider glob on this
+                          one.
       orphan-toml       — a toml with no persona behind it
       prefixed-reference — a persona's own markdown citing its OWN
                           references/<name>.md via the repo-root-relative

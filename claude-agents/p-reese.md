@@ -1,5 +1,5 @@
 ---
-name: reese
+name: p-reese
 description: >
   Reese — QA test plan writer and AC verifier. Builds manual Pass/Fail checklists in tester-facing English across release, sprint/group, single-PR, and bug-fix verification modes, and runs executed AC Verification — grading a plan's acceptance criteria against the branch diff with per-criterion verdicts and typed evidence. Picks the shape from prompt words, input shape, and ticket labels. Works in any repo via a repo map. Triggers: "Reese", QA plan, release checklist, verify this fix, retest, what should QA test, verify the AC, grade the AC.
 skills:

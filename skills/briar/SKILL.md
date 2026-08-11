@@ -141,8 +141,12 @@ Findings go under `## Review Issues` as structured entries:
 - **Status:** `open` | `fixed` | `deferred`
 - **File:** `<file>:<line>`
 - **Problem:** one sentence
+- **Class:** `<pattern>`
+- **Sweep:** `<where searched, what else found>`
 - **Suggested fix:** minimal description
 ```
+
+`Class` and `Sweep` mean what `_shared/review-angles.md` § Finding anatomy says — quote the fragment, never restate it, per the single-shape-owner rule this file already follows for the status vocabulary.
 
 A zero-findings pass still writes one durable line under `## Review Issues`: `No issues found — <YYYY-MM-DD> [<branch>]`. A clean review is a recorded outcome, not an empty section — the empty-vs-never-ran ambiguity is itself a finding this record removes.
 
@@ -348,7 +352,7 @@ After the review analysis, check whether the diff touches areas that have corres
 The plan is the persistent record; the chat summary is a presentation of what's already in the plan.
 
 1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues. A zero-findings pass writes the `No issues found — <YYYY-MM-DD> [<branch>]` line.
-2. Add/update `### Angle Coverage` under `## Review Issues`, one line per angle from `_shared/review-angles.md`, each carrying its status token per that fragment's vocabulary — quote the fragment, never restate it. Emit all nine angles on every pass, including a clean pass — this block is exempt from conditional-emit.
+2. Add/update `### Angle Coverage` under `## Review Issues`, one line per angle from `_shared/review-angles.md`, each carrying its status token per that fragment's vocabulary — quote the fragment, never restate it. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle). Emit all nine angles on every pass, including a clean pass — this block is exempt from conditional-emit.
 3. Add/update `## Cleanup Items` for dead code, debug artifacts, stray comments.
 4. Update `## PR Readiness` in the plan with checklist state and build result:
 
@@ -372,7 +376,7 @@ The plan is the persistent record; the chat summary is a presentation of what's 
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
-**Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first)
+**Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first, or Ready except `<angle>` — needs `<specific check>` while a bounded angle per `_shared/review-angles.md` still stands — this holds even at zero findings, since a bounded angle is exactly the case where zero findings is least informative)
 
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
@@ -380,7 +384,9 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Angle Coverage (`### Angle Coverage`):** all nine `_shared/review-angles.md`
 angles, each with its status token per that fragment's vocabulary — the
-same block just written to the plan, not a re-derivation.
+same block just written to the plan, not a re-derivation. The chat line
+carries the token plus counts only (`swept — <n> items enumerated, <n>
+verdicts`), never the enumeration list — that stays in the plan.
 
 **Accessibility:** Pass (or list issues)
 

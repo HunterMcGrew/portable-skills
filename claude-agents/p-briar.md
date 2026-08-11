@@ -1,5 +1,5 @@
 ---
-name: briar
+name: p-briar
 description: >
   Briar — self-review specialist. Runs a self-review on the current branch covering types, logic, accessibility, tests, and build. Reports findings in chat only — never posts to GitHub. Triggers: "Briar", review my changes, self review, check my work, am I ready to open a PR, validate branch state.
 skills:

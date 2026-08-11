@@ -333,3 +333,33 @@ Keep the evidence class visible in whatever the claim ships as. The README now s
 halves separately — the skills half experiment-verified, the agents half read out of the
 binary's dedupe — because a future reader has to know which half to re-check and how. The
 original defect was not the unverified claim; it was that its evidence class was invisible.
+
+## Part 10 — Measuring reviewer recall
+
+Parts 6, 8, and 9 measure the renderer and the sync path. This section documents the one
+instrument this repo has for scoring a *reviewer* change without independently re-reading the
+repo to check it: run two reviewers on sibling implementations of the same feature, then
+cross-apply each reviewer's finding *classes* — never its literal findings — to the other
+reviewer's code, and score recall against the union of every defect either reviewer found. The
+other reviewer's findings are the ground truth, so no third party has to audit the code to know
+what was there to find.
+
+**What it produced.** A 2026-08-10 bake-off ran two briars (`a2-Briar`, `b1-Briar`) on sibling
+implementations. `b1-Briar` recalled 3 of the 7 applicable defects the union established —
+missing the other 4 — while fully complying with the existing angle-sweep battery: it emitted
+the full nine-angle coverage block and reported `swept` on the angle a missed defect sat in.
+The result is what drove `<plans>/reviewer-recall.md`: a verdict cap on bounded angles, a
+`Class`/`Sweep` pair on every finding, and per-angle enumeration replacing the unfalsifiable
+bare `swept`.
+
+**Two conditions keep it valid.** The implementations under review have to be genuinely
+sibling — comparable scope and shape — or a recall gap could just be one implementation having
+more to find. And the cross-application has to move *classes*, not instances: an instance from
+one reviewer's code literally cannot appear in the other reviewer's code, so cross-applying
+instances would score zero by construction regardless of reviewer quality.
+
+**Its limit.** The technique measures recall against defects *some* reviewer found. A defect
+class both reviewers missed leaves no trace in either reviewer's output, so the union can never
+include it — the method is structurally blind to it. `3 of 7` is a measured lower bound on the
+true miss rate, not the true miss rate; a future run should read it that way rather than as a
+completed measurement.
