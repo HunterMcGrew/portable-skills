@@ -267,14 +267,18 @@ def regenerate_all(root=ROOT):
 # rule themselves, but the repo's own convention is Title Case), so a
 # lowercase `§` mention in the tree today is prose referring back to an
 # earlier citation rather than pointing at a new target — e.g. the `(§
-# below)` idiom (`eric:130`, `eric:131`). Widening the anchor to `[A-Za-z]`
+# below)` idiom (twice, in the Standards- and Spec-axis bullets):
+# stale-reference: "(§ below)" @ skills/eric/SKILL.md
+# Widening the anchor to `[A-Za-z]`
 # would start capturing that idiom as a citation needing its own resolvable
 # target and require carving out an exception for it, for zero live
 # lowercase citations that need resolving. `grep -rn '§[ \t]\+[a-z]'
 # skills/` is the check for whether that trade has changed.
 #
 # `>` is also a stop delimiter, alongside `)`: the repo's own
-# `<appended ...; see § X>` placeholder idiom (`sol:248`, `core.md:63`)
+# `<appended ...; see § X>` placeholder idiom —
+# stale-reference: "see § Run close>" @ skills/sol/SKILL.md
+# stale-reference: "see § Session close>" @ skills/_shared/core.md
 # closes a citation the same way a parenthetical does, and without it the
 # capture over-runs into the placeholder's own closing bracket (`Run
 # close>` instead of `Run close`) — harmless for `citation-unresolved`,
@@ -363,7 +367,9 @@ def _resolves(citation, targets):
     (`)`, a comma, a sentence end, `Z`), which is frequently past the real
     target when the citation is followed by unpunctuated prose. `§ Phase 1
     already does` and `§ Decompose chains (winston -> ... -> park at merge`
-    are both live examples (`eric:97`, `sol/references/fleet-runs.md:5`):
+    are both live examples:
+    stale-reference: "briar's § Phase 1 already does" @ skills/eric/SKILL.md
+    stale-reference: "§ Decompose chains (winston" @ skills/sol/references/fleet-runs.md
     neither the raw capture nor its target is a prefix of the other, but
     dropping the trailing words one at a time reaches `Phase 1` and
     `Decompose`, both of which resolve cleanly. Truncating is safe in this
@@ -434,8 +440,10 @@ def _iter_citation_sites(root=ROOT):
     # mention of "review-loop's § Admissibility…" or "briar's § Phase 1…"
     # cites a DIFFERENT persona's own SKILL.md heading directly, the
     # identical pattern `_shared/*.md` and `references/*.md` mentions cover
-    # one directory over — verified live at `eric:97` and `eric:303`/
-    # `briar:133`, so it is a real repo convention, not a hypothetical.
+    # one directory over — verified live, so it is a real repo convention,
+    # not a hypothetical:
+    # stale-reference: "its § Admissibility on" @ skills/eric/SKILL.md
+    # stale-reference: "review-loop's § Admissibility on the repair surface" @ skills/briar/SKILL.md
     persona_dirs = sorted(os.path.basename(os.path.dirname(f))
                            for f in glob.glob(root + '/skills/*/SKILL.md'))
     persona_name_re = {
@@ -658,6 +666,43 @@ def check_orphaned_citations(removed_targets, root=ROOT):
 
 PROFILE_PATH_RE = re.compile(r'~/\.claude[\w.-]*/skills')
 
+# W2-T40 (D49): a cross-reference in these renderers' own block comments
+# used to be a persona name, a colon, and a line number — a pointer that
+# rots silently the moment the named file is edited. Two such references
+# went stale in the same commit that left a third, sibling reference in
+# the same block updated, which is the tell that the mechanism holding it
+# accurate was human diligence, not anything mechanical. A quoted phrase
+# is self-verifying and greppable instead: every cross-reference in
+# `render-agents.py` and `render-claude-agents.py` is now a marker of the
+# shape `stale-reference:` a quoted phrase, `@`, a path, one per line so
+# line-wrap can never split a phrase from its file, and
+# `check_stale_references` asserts every phrase is still findable,
+# verbatim, in the file it names.
+STALE_REF_RE = re.compile(r'stale-reference:\s*"([^"]+)"\s*@\s*(\S+)')
+
+
+def check_stale_references(root=ROOT):
+    """`('stale-reference', 'stale-reference', detail)` for every
+    marker (`stale-reference:` a quoted phrase, `@`, a path) in `render-agents.py` or
+    `render-claude-agents.py` whose phrase no longer appears verbatim in
+    the file it names — a comment pointing at another file that stopped
+    pointing at the right place after that file was edited."""
+    v = []
+    for fn in ('render-agents.py', 'render-claude-agents.py'):
+        src_path = os.path.join(root, fn)
+        if not os.path.exists(src_path):
+            continue
+        src = open(src_path, encoding='utf-8').read()
+        for phrase, rel_path in STALE_REF_RE.findall(src):
+            target = os.path.join(root, rel_path)
+            content = (open(target, encoding='utf-8').read()
+                       if os.path.exists(target) else None)
+            if content is None or phrase not in content:
+                v.append(('stale-reference', 'stale-reference',
+                          '%s cites "%s" @ %s, which no longer contains it '
+                          'verbatim' % (fn, phrase, rel_path)))
+    return v
+
 
 # ARMS / CONTROLS (D46). Five findings from the pass-3 sweep — skipped-is-
 # loud calling the producer instead of grading through check_all;
@@ -729,6 +774,9 @@ ARMS = {
         kind='skip', reachable='direct', variance=None, bound=''),
     'skip/git-diff-failed': dict(
         kind='skip', reachable='direct', variance=None, bound=''),
+    'stale-reference': dict(
+        kind='stale-reference', reachable='check_all', variance=None,
+        bound=''),
 }
 
 
@@ -748,7 +796,8 @@ def _g1_code_arms(root=ROOT):
     import ast
     src = open(os.path.join(root, 'render-agents.py'), encoding='utf-8').read()
     tree = ast.parse(src)
-    target_fns = {'check_all', 'check_citations', 'check_orphaned_citations'}
+    target_fns = {'check_all', 'check_citations', 'check_orphaned_citations',
+                  'check_stale_references'}
     found = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name in target_fns:
@@ -796,7 +845,7 @@ def check_all(root=ROOT):
     never a violation and never a gate — the citation-orphaned skip reason
     when git isn't available, and the ungradeable-population count (D35).
 
-    Seven checks:
+    Eight checks:
       toml-drift        — a toml differs from render() of its own source. This
                           proves the tomls agree with their generator, not that
                           the generator is right — it catches hand-edits and
@@ -887,9 +936,14 @@ def check_all(root=ROOT):
                           check contributes nothing to `violations` and the
                           reason is reported in `notes` instead — never a
                           silent green standing in for "didn't run."
+      stale-reference    — a marker of the shape `stale-reference:` a quoted phrase, `@`, a path,
+                          in `render-agents.py` or `render-claude-agents.py`
+                          whose quoted phrase no longer appears verbatim in
+                          the file it names (W2-T40, D49).
     """
     v = []
     v.extend(check_citations(root))
+    v.extend(check_stale_references(root))
     ps = personas(root)
     for p in ps:
         t = '%s/codex-agents/%s.toml' % (root, p)
@@ -1415,6 +1469,21 @@ def _build_controls(r):
         bool(gdf_reason) and gdf_reason.startswith('git diff failed')
         and gdf_removed == set(),
         note='skip-reason=%r' % gdf_reason)
+
+    # stale-reference, via check_all (W2-T40): corrupt one character of a
+    # live `stale-reference:` marker's quoted phrase in the copy's own
+    # `render-agents.py`, so it no longer appears verbatim in the file it
+    # names.
+    ra_path = '%s/render-agents.py' % r
+    orig = open(ra_path, encoding='utf-8').read()
+    mutated = orig.replace('"(§ below)"', '"(§ nowhere)"', 1)
+    sr_ok_setup = mutated != orig
+    open(ra_path, 'w', encoding='utf-8').write(mutated)
+    fired = bool([x for x in check_all(r)[0] if x[0] == 'stale-reference'])
+    open(ra_path, 'w', encoding='utf-8').write(orig)
+    cleared = not [x for x in check_all(r)[0] if x[0] == 'stale-reference']
+    add('stale-reference/renderer', 'stale-reference', 'stale-reference/renderer',
+        'check_all', sr_ok_setup and fired and cleared)
 
     # orphan-toml: a toml whose skill dir is gone. No restore — the temp
     # copy is discarded, and this control runs last for exactly that reason.
