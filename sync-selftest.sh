@@ -39,9 +39,12 @@ EOF
 
 # Runs a scaffolded tree with HOME pointed inside it, so the script's own
 # \$HOME default cannot resolve to a real profile. Sets rc; never aborts.
+# Extra args after $1 pass straight through to sync.sh — control 10 uses
+# this to exercise the argument guard without deploying.
 run() {
+  dir="$1"; shift
   rc=0
-  HOME="$work/fakehome" "$1/sync.sh" >"$work/out" 2>"$work/err" || rc=$?
+  HOME="$work/fakehome" "$dir/sync.sh" "$@" >"$work/out" 2>"$work/err" || rc=$?
 }
 
 ok() {
@@ -176,8 +179,34 @@ else
   ok empty-dests-red "$green" "value-form expansion survived an empty DESTS — control 8 proves nothing"
 fi
 
+# 10. Argument guard: the script writes to the user's live ~/.claude
+# profile, and this guard is the only thing standing between a typo'd flag
+# (`--selftest`, expecting a read-only pass that doesn't exist) and a full
+# deploy running silently instead. Same isolation as every other control —
+# HOME points inside $work, so even if the guard failed and fell through to
+# the write arm, nothing outside the scratch directory would be touched.
+scaffold argguard
+run "$src" --anything
+green=true
+[ "$rc" -eq 2 ] || green=false
+[ ! -e "$src/dest-all/skills" ] || green=false
+ok arg-guard "$green" "an unrecognized argument did not exit 2, or a write happened anyway (rc=$rc)"
+
+# 11. The same case with the guard removed must go red — otherwise control
+# 10 passes for some reason other than the guard.
+scaffold argguard-red
+sed '/^if \[ "\$#" -gt 0 \]; then$/,/^fi$/d' "$src/sync.sh" >"$src/sync.tmp" && mv "$src/sync.tmp" "$src/sync.sh"
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok arg-guard-red false "the guard removal did not match — this control tested nothing"
+else
+  run "$src" --anything
+  [ "$rc" -ne 2 ] && green=true || green=false
+  ok arg-guard-red "$green" "guard removed and an unrecognized argument still exited 2 — control 10 proves nothing"
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 9 controls green"
+  echo "selftest: 11 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1
