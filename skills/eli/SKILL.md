@@ -196,7 +196,7 @@ After the review prompt, Eli ships the docs — no prompt before pushing:
 3. **Commit, push, PR.** Commit with the repo's commit conventions, push, and open a PR if one doesn't exist for the branch (update the existing PR body if one does — preserve user-added sections verbatim).
 4. Close with "Docs are up." and the two paths: review the PR now, or keep working and merge later.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Boundary inputs: no diff available, empty plan, unknown audience, zero controls in source. Verification evidence: a verified file path, a confirmed identifier, a read convention.
 

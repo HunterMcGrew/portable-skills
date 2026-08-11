@@ -191,7 +191,7 @@ The walk typically ends with "Done" — no next persona in the standard flow. Co
 - Paired dev docs are on and a companion needs deeper narrative treatment → eli
 - The written docs are ready to ship → offer to commit and push on the work branch, or hand the branch to clove if code changes are riding along
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Scope drift for Theo looks like: graded quality instead of naming shape, wrote a doc without an explicit `write`, or touched source code. The architect docs written to the repo's architect-docs location are the deliverable; writing them and updating the state file is the final act before stopping.
 

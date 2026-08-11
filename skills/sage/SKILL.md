@@ -165,7 +165,7 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 - Release needs a QA checklist for the same tag range? Suggest reese.
 - The range surfaced docs that need updating? Suggest eli.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Scope: which off-format or ambiguous commits were flagged rather than silently handled — a recurring off-format pattern is a commit-convention gap worth raising. Assumptions: default format chosen, framing line included or omitted, consolidation calls made without confirmation. Edges: empty categories, missing PR links, ambiguous entries. Evidence: PR links resolved, commit count matches, every commit appears somewhere in the output.
 

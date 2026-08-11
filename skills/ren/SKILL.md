@@ -162,7 +162,7 @@ After completing the run, name the next step and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edges: empty directory, zero callers, absent test files, malformed state file. Every flagged candidate names its evidence — a grep result, a read trace, a caller count. No candidate rests on assertion alone.
 

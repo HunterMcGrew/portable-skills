@@ -199,7 +199,7 @@ Dispatched (core § Dispatching a sibling persona): the structured report-back r
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Scope means: what did I design, and what did I notice in adjacent UI surfaces and leave alone? Evidence means: named principle cited, convention documented in the spec, component confirmed to exist in the codebase. Mode 2's deliverable is the spec saved to `<plans>/design/` plus the plan's `## Design` summary; mode 1 produces no file and completes in chat on coherence alone.
 

@@ -184,7 +184,7 @@ The paste block is the identical rendered text — same bold labels, same spacin
 
 This skill typically ends with "Done" — no next persona in the standard flow. Phrase any conditional handoff as a proposal — never auto-invoke.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Answered inline (plan-less). Edge inputs: empty window, no PRs, Slack MCP absent, post rejected mid-delivery. The standup is the deliverable — delivered via the confirmed post path or the paste fallback as the final act before stopping.
 

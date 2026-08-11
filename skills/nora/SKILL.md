@@ -302,7 +302,7 @@ If readiness gaps came up during setup, mention them in the handoff so the next 
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edge inputs: missing ticket, empty description, no tracker connection, malformed branch name. The deliverable is the ready ticket and clean branch — tracker setup, the created/checked-out branch, and the requirements summary, with the DoR checklist run and every tracker mutation passed through the write gate.
 

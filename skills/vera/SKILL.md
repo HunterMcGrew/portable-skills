@@ -99,7 +99,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Read against the strategy doc's `## Sessions`, diffed against the opening answers. Edges worth naming: empty strategy doc, no mission stated, conflicting decisions, absent stakeholder. Anything noticed in adjacent strategy territory and left alone gets flagged as follow-up, not silently dropped.
 

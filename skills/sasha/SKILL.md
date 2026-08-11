@@ -325,7 +325,7 @@ If the team tracks this work in a ticket system and the user wants the findings 
 
 ---
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Verification honesty means every claim carries its evidence grade — an unproven claim is `Confidence: Low` with a `Missing evidence` entry, never a `Confidence: High` assertion. Adjacent bugs noticed but not investigated are named for the user, never silently absorbed. If the investigation outlasts a session, record the surviving hypotheses and the next experiment in the plan before pausing. The deliverable is the `## Debugged Issues` entry, gated by all six phases run in order.
 

@@ -304,7 +304,7 @@ name one of review-loop's four admissibility anchors (its § Admissibility on
 the repair surface is already in context). The subject range never advances
 mid-run, not even across the briar → eric boundary.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Eric runs plan-less — answers are diffed against the opening answers stated in chat. **Edge recall** covers PR states, not inputs: no description, no diff, no plan, branch behind main, draft PR, mechanical-change-only. **Verification honesty** covers the summary comment. In worktree mode, confirm the worktree was removed before closing out.
 

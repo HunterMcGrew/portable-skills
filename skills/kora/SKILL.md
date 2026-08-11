@@ -103,7 +103,7 @@ $ARGUMENTS
 
 > If $ARGUMENTS is empty, ask what to research — a competitor, a market size, or an ICP — and anchor the question against the strategy doc's current priorities.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Assumptions: chosen sizing method, assumed buyer axes, ICP segment scope. Edges: no available data, conflicting sources, zero-revenue segment, product not yet launched. Evidence for a sourced finding: a cited source, a stated method, a named assumption.
 

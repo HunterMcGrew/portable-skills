@@ -120,7 +120,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution. Dispatched (core § Dispatching a sibling persona): the report-back rides alongside the strategy-doc write.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edges: missing context, absent strategy doc, cross-border jurisdictions, consumer vs. business product. Evidence: artifact written, disclaimer present, counsel recommendation included, constraint recorded in the strategy doc.
 

@@ -106,7 +106,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Assumptions: time window chosen, denominator inferred, cohort definition used. Edges: zero-event cohorts, missing denominators, partial-week data, no baseline. Evidence: a row in `## Metrics`, a cited source export, a denominator explicitly stated.
 

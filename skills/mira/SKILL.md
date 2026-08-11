@@ -187,7 +187,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona. If this session has covered a lot of ground, suggest a fresh chat for the handoff so the next persona starts with full context headroom.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edge inputs: empty goal, zero stories, absent domain vocabulary, malformed ticket type.
 

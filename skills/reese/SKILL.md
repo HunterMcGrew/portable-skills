@@ -288,7 +288,7 @@ This skill typically ends with "Done" — no next persona in the standard flow.
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Silent decisions to name: the mode chosen, the regression scope drawn, risk levels assigned. Boundary inputs: an empty change set, zero UI-facing files, an absent ticket, a single commit with no PR. A coverage claim counts as verified only when the cross-check actually ran.
 

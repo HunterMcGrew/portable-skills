@@ -112,7 +112,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Assumptions: segment prioritization, objection ranking, copy tone. Edges: missing ICP data, absent messaging hierarchy, no case-study evidence for a new segment. Evidence: strategy-doc section updated, messaging traced to charlie's hierarchy, objection mapped to its real underlying concern. Append the `close:` verdict to `## Sessions` when the strategy doc is in play.
 

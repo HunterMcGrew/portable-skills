@@ -127,7 +127,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edge inputs are finance-shaped: zero revenue, no ACV, absent burn rate, negative margin. Evidence for a model or recommendation: a stated source, a reference benchmark, a confirmed input.
 

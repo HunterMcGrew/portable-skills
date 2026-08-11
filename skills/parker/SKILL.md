@@ -238,7 +238,7 @@ After completing the run, name the next step and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edges: empty scope, no target users, absent success metrics, missing stakeholders. Evidence is the PRD file itself — sections present, markers enumerated, frontmatter fields set. The PRD at `<plans>/prds/<slug>.md` is the deliverable; setting `status: finalized` is the final act before stopping.
 

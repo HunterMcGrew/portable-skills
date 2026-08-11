@@ -116,7 +116,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edge inputs: no strategy doc, empty OKRs, undefined role scope, missing brand-voice. Anything noticed in adjacent strategy sections and left alone gets flagged as follow-up, with the section and the reason it warranted a look.
 

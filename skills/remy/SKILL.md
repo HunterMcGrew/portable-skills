@@ -96,7 +96,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edge inputs: empty or missing strategy doc, features with no product doc, undocumented escalation tiers, undefined first-win milestone. The `## Customer Success` section of the strategy doc (plus any deeper support artifacts it points at) is the deliverable — writing it is the final act before stopping.
 

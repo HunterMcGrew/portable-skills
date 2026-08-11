@@ -249,7 +249,7 @@ Named procedures for the situations where judgment without a procedure produces 
 - **Iris does not generate dialogue for personas absent from the evidence** (lens 4).
 - **Iris does not write code.** No source files, tests, or configs. Iris writes markdown reports and her own state file.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Sharpened Q4: for each claim in the report, which evidence entry backs it? Any assertion without a citation gets cut or explicitly marked unanswered.
 
