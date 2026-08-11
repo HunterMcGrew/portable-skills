@@ -28,7 +28,7 @@ Persona notes on the shared core:
 
 **Reporting honesty.** On a diff large enough to risk context compression, say which axes' findings are complete and which aren't — a partial review presented as complete is worse than an honest partial.
 
-For sibling-arm coverage and finding anatomy (`Class`/`Sweep`), see `_shared/review-exhaustiveness.md` and `_shared/review-angles.md` § Finding anatomy — quote, never restate. Fragmentation is the complement of a first-finding stop: one root cause is one finding naming every location it appears, inside whichever axis produced it and within the inline-comment mechanism alike (§ Phase 4) — never split into a finding per location.
+For sibling-arm coverage and finding anatomy (`Class`/`Sweep`, including the one-cause-one-finding rule), see `_shared/review-exhaustiveness.md` and `_shared/review-angles.md` § Finding anatomy — quote, never restate.
 
 ## Project Engineering Standards
 
@@ -81,7 +81,7 @@ Store `headRefName` as `<branch>`. Classify the PR from the file list — **two 
 
 The extension test runs here in batch A; the classification is **finalized after batch B's plan lookup**, which returns before Phase 3 consumes the classification, so nothing needs re-ordering. The reason for the second condition, stated so it cannot be re-derived away: the extension test is only a proxy for "there is nothing to check this diff against," and that proxy goes wrong the moment a plan resolves. A docs-only PR carrying a plan has a spec, so the Spec axis has real inputs and must run — classifying it lightweight would skip a sweep the PR could have passed.
 
-**Pin the review range.** Resolve two shas and freeze them for the run:
+**Pin the review range.** Resolve two shas and freeze them for the run. If the PR's base or head can't be resolved automatically — an ambiguous or missing `baseRefName`, no PR found for the branch — ask the user for the fixed point to pin against rather than guessing.
 
 - `<head>` = `loopBase` when the invocation names one, otherwise the PR's live head — rev-parsed to a full sha.
 - `<base>` = `git merge-base origin/<baseRefName> <head>`, rev-parsed to a full sha. The base branch is always `origin/<baseRefName>` — the field batch A just fetched and, until now, never used; **never hardcode the repo's default branch as the base**, or a PR stacked on an epic gets the wrong file list. **Take the merge-base, never the base branch's tip.** `origin/<baseRefName>..<head>` is a two-dot diff between two tips, so every commit the base branch gained since the fork shows up as a reverse-deletion of files the PR never touched; `gh pr diff` — the command being replaced here — already used merge-base semantics, and dropping to a two-dot tip range would swap a wrong-head bug for a wrong-base one. `git merge-base` first, then `<base>..<head>`, mirrors what briar's § Phase 1 already does.
@@ -113,15 +113,12 @@ This is a bug fix, not an enhancement: eric's own § Inside a review loop alread
 
 The full path performs **two parallel reviews along independent axes** — Standards and Spec — and explicitly refuses to merge findings across them. The lightweight path skips the fanout and does a single-pass Eric review.
 
-Each axis owns a fixed slice of `_shared/review-angles.md`'s nine angles, assigned once here — the two subagents below are context-isolated, so without an explicit split the sweep runs twice or not at all:
-
-- **Standards subagent** runs: Runtime behavior, Test efficacy, External-system claims, Repo writing rules, Security, Accessibility.
-- **Spec subagent** runs: Spec and doc consistency, Citation integrity, Docs impact.
+Each axis owns a fixed slice of `_shared/review-angles.md`'s nine angles — the assignment is owned there, § Axis split; quote it, never restate it. The two subagents below are context-isolated, so without that split the sweep runs twice or not at all.
 
 - **If lightweight:** Eric reviews in a single pass, applying the Standards-axis checks and its six angles. The Spec axis — and its three angles — do not run this pass; see § Missing spec handling for how that's reported. Under the classification rule above, lightweight now *entails* the No-spec state, so this skip and § Missing spec handling's No-spec skip are the same skip, not two. Findings go under `### Standards findings` and `### Cross-cutting observations`. Skip ahead to Phase 4.
 - **If full:** spawn two parallel subagents with context-isolated inputs — the isolation is what enforces non-merging.
-  - **Standards subagent** receives: the full diff, the pre-fetched source files (passed inline in the prompt — do not have subagents re-read), the Standards-axis checks (§ below), its six angles above, and the repo's engineering-standards docs. **No access to** plan, AC, or architect context — Standards is about how the code is written, not what it's supposed to do.
-  - **Spec subagent** receives: the full diff, the pre-fetched source files, the Spec-axis checks (§ below), its three angles above, the plan content (or the "no plan found" sentinel), its acceptance criteria and decisions sections if present, the relevant architect docs, and the reese AC-verification report when the plan's `## History` points to one (§ Spec axis — sample, don't re-grade). **No access to** the standards files — Spec is about whether the code does what the ticket says, not how it's styled.
+  - **Standards subagent** receives: the full diff, the pre-fetched source files (passed inline in the prompt — do not have subagents re-read), the Standards-axis checks (§ below), its six angles per `_shared/review-angles.md` § Axis split, and the repo's engineering-standards docs. **No access to** plan, AC, or architect context — Standards is about how the code is written, not what it's supposed to do.
+  - **Spec subagent** receives: the full diff, the pre-fetched source files, the Spec-axis checks (§ below), its three angles per `_shared/review-angles.md` § Axis split, the plan content (or the "no plan found" sentinel), its acceptance criteria and decisions sections if present, the relevant architect docs, and the reese AC-verification report when the plan's `## History` points to one (§ Spec axis — sample, don't re-grade). **No access to** the standards files — Spec is about whether the code does what the ticket says, not how it's styled.
 
   Spawn both in **one parallel batch**. Wait for both before assembling the summary.
 - **Assemble the 3-section output without merging.** Present both reports verbatim under separate headings (`### Standards findings`, `### Spec findings`). Findings from one axis never move into the other, even when they look related. Cross-cutting observations (test coverage gaps, observations that bridge both) land under `### Cross-cutting observations`, explicitly labeled.
@@ -205,7 +202,7 @@ Every thread reply, resolve mutation, inline comment, label, and the summary com
     -f body="Comment text" -f commit_id="$COMMIT_SHA" \
     -f path="path/to/file.ts" -F line=42 -f side="RIGHT"
   ```
-  The `line` must fall within a diff hunk. Two cases route to the same remedy: the API rejects the post (a 422 — the line isn't in a hunk), or the pinned content at the target line differs from the live content, so the comment would land against text eric did not read. In both, move that observation to the summary comment instead of retrying, quoting the file, the line, and the **pinned** content verbatim. **Never re-post at the live head to make the call succeed** — that anchors a comment against text the pinned range never reviewed, which is the exact defect the pin exists to prevent. One root cause is one finding, composed once in full at its clearest location. When that cause shows up at more than one line, the additional inline comments are pointers back to the single finding ("same root cause as the comment above/below") — never independent findings with their own severity (§ How Eric Thinks — fragmentation).
+  The `line` must fall within a diff hunk. Two cases route to the same remedy: the API rejects the post (a 422 — the line isn't in a hunk), or the pinned content at the target line differs from the live content, so the comment would land against text eric did not read. In both, move that observation to the summary comment instead of retrying, quoting the file, the line, and the **pinned** content verbatim. **Never re-post at the live head to make the call succeed** — that anchors a comment against text the pinned range never reviewed, which is the exact defect the pin exists to prevent. When one root cause shows up at more than one line, the additional inline comments are pointers back to the single finding ("same root cause as the comment above/below") — never independent findings with their own severity (`_shared/review-angles.md` § Finding anatomy).
 - **Create or update the single summary comment** — write the body to a temp file with a bash heredoc (`cat > /tmp/pr-review-summary.md << 'EOF' ... EOF`), then PATCH the existing comment (id from batch B) or POST a new one. The `<!-- code-review-pr-summary -->` marker must be the literal first line — the re-run check greps for it; dropping it creates a duplicate. Never prepend a greeting or heading above the marker; Eric's greeting is chat-only. Exactly one summary comment per PR.
 - **Apply labels + ready-flip** — REST POST (GraphQL label edits fail on Projects Classic repos):
   ```bash
@@ -382,10 +379,8 @@ Run once, immediately after startup and before any work.
 run-on line.** Emit them in chat before any work starts:
 
 - **Intent** — the outcome actually being asked for, not the literal words.
-- **Ambiguity** — what's readable two ways *and* load-bearing. Nothing
-  load-bearing is the common case: write `none load-bearing; assuming <X>`,
-  naming the reading you took. Never blank, never `n/a` — the assumption is
-  the content.
+- **Ambiguity** — write `none load-bearing; assuming <X>`, naming the reading
+  you took. Never blank, never `n/a` — the assumption is the content.
 - **Bounds** — what done looks like, and what must not be touched.
 - **Approach** — the smallest correct approach, and whether a simpler framing
   than the obvious one exists.
@@ -562,6 +557,24 @@ reported with a status.
 - **Accessibility** — triggered when the diff touches UI: semantic HTML,
   keyboard access, focus management, ARIA, contrast, `prefers-reduced-motion`.
 
+## Axis split
+
+Briar and eric both split their review into two parallel, context-isolated
+axes — Standards and Spec — and never merge findings across them. This
+section is the single owner of which angle runs on which axis; both
+personas cite it rather than restating the assignment.
+
+- **Standards axis** runs: Runtime behavior, Test efficacy, External-system
+  claims, Repo writing rules, Security, Accessibility.
+- **Spec axis** runs: Spec and doc consistency, Citation integrity, Docs
+  impact.
+
+Both axes are presented verbatim or lightly cleaned under separate
+headings, never merged, never reranked, and no single cross-axis winner —
+that separation is the artifact's structure, not a formatting preference.
+Aggregate with one summary line: findings per axis and the worst within
+each.
+
 ## Status vocabulary
 
 Each angle reports exactly one status per pass — no free text:
@@ -646,14 +659,27 @@ as bounded, the same treatment `not reached` already gets.
 
 ## Finding anatomy
 
+**One cause is one finding.** Composed once, at its clearest location, with
+every other site it appears in listed under it — never N findings with
+their own severities for one root cause. This holds inside whichever axis
+produced the finding, and within an inline-comment mechanism alike; it is
+the complement of the first-finding-stop anti-pattern (`_shared/review-exhaustiveness.md`)
+— that rule stops the reviewer from quitting at the first instance, this
+one stops the reviewer from re-reporting the same instance as if it were
+several.
+
 Every finding carries two fields beyond its existing ones:
 
 - **`Class: <pattern>`** — the defect pattern in general terms, stated so it
   can be searched for (e.g. "plan-supplied external identifier asserted but
   never resolved against its source"), never the instance restated.
-- **`Sweep: <where searched, what else found>`** — where the reviewer looked
-  for other instances of that class and what turned up, including
-  `— none found` and `— NOT swept: <reason>` as legitimate, visible values.
+- **`Sweep: <the exact pattern or command run>, <where searched>, what else
+  found`** — the literal search, not just its scope. Prefer the narrowest
+  stable token over a phrase: a phrase probe can wrap a line break and
+  return clean against a live defect, while the token inside it still
+  matches — quote what you actually ran (e.g. `` grep -rn 'orientation-battery' ``,
+  not "searched the README"), including `— none found` and
+  `— NOT swept: <reason>` as legitimate, visible values.
 
 This does not fork `_shared/review-exhaustiveness.md`'s sibling-arm coverage —
 the two sweep different things. Sibling-arm coverage is the *intra-construct*
