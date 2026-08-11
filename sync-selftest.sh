@@ -261,8 +261,58 @@ else
   ok symlink-clobber-red "$green" "rm-before-cp removed and the outside file was not clobbered — control 12 proves nothing"
 fi
 
+# 14. Stale-exclusion warning: an EXCLUDES entry naming a skill directory
+# that does not exist warns on stderr and does not abort — sync.sh:58-68.
+# The other destination's files still land, proving the warning doesn't
+# quietly turn into a partial or skipped sync.
+scaffold stale
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all" "$src/dest-filtered")
+EXCLUDES=("" "ghost-persona")
+EOF
+run "$src"
+green=true
+[ "$rc" -eq 0 ] || green=false
+grep -q "stale exclusion for .*ghost-persona" "$work/err" || green=false
+[ -e "$src/dest-filtered/skills/winston" ] || green=false
+[ -e "$src/dest-filtered/skills/clove" ] || green=false
+ok stale-exclusion "$green" "stale exclusion did not warn, aborted, or the sync did not complete (rc=$rc)"
+
+# 15. The same case with the warning line stripped must go red — otherwise
+# control 14 passes for some reason other than the warning. cmp against the
+# real file per control 9/13's own precedent, so a non-matching edit reports
+# "tested nothing" instead of a false green.
+scaffold stale-red
+python3 - "$src/sync.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+old = ('    [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale exclusion for '
+       '$dst: $ex — renamed or removed? sync may now include its '
+       'successor" >&2\n')
+assert old in s, 'not found: %r' % old
+s = s.replace(old, '', 1)
+open(p, 'w').write(s)
+PY
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok stale-exclusion-red false "the strip did not match — this control tested nothing"
+else
+  cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all" "$src/dest-filtered")
+EXCLUDES=("" "ghost-persona")
+EOF
+  run "$src"
+  if grep -q "stale exclusion" "$work/err"; then
+    green=false
+  else
+    green=true
+  fi
+  ok stale-exclusion-red "$green" "warning line removed and the warning still appeared — control 14 proves nothing"
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 13 controls green"
+  echo "selftest: 15 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1
