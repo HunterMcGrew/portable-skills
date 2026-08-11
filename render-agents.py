@@ -1006,11 +1006,288 @@ def check_all(root=ROOT):
                          'tomls': len(tomls)}, notes
 
 
+def _mutate_and_grade(r, kind, path, mutate):
+    """Shared shape behind most CONTROLS rows (D46/W2-T38): mutate `path`,
+    grade `kind` through `check_all(r)`, restore, grade again. Returns
+    (fired, cleared) — both booleans, never combined here, because a
+    `never-fires` row (G5) reads `fired` alone and a `fires` row reads
+    both."""
+    orig = open(path, encoding='utf-8').read()
+    open(path, 'w', encoding='utf-8').write(mutate(orig))
+    fired = bool([x for x in check_all(r)[0] if x[0] == kind])
+    open(path, 'w', encoding='utf-8').write(orig)
+    cleared = not [x for x in check_all(r)[0] if x[0] == kind]
+    return fired, cleared
+
+
+def _build_controls(r):
+    """Runs every control against the throwaway copy `r` and returns the
+    CONTROLS rows (D46/W2-T38) as a list of result dicts: `id`, `arm` (FK
+    into ARMS), `label`, `via` ('check_all' | 'direct'), `payload`,
+    `corpus_kind`, `expect` ('fires' | 'never-fires'), `twin` (an `id`,
+    required when `expect == 'never-fires'`), and `ok`/`note` — the graded
+    outcome.
+
+    A module-level table of pre-built rows can't hold these: every row's
+    grading needs the live throwaway copy `r`, created fresh per
+    `--selftest` run. What is static is `ARMS` — each row here names a real
+    `ARMS` key, and G2 checks that both directions hold. This function IS
+    the table: one call, one entry per control, closed against `ARMS`
+    exactly like a static table would be, just built against `r` instead of
+    read off disk."""
+    import shutil
+    rows = []
+
+    def add(id_, arm, label, via, ok, payload=None, corpus_kind=None,
+             expect='fires', twin=None, note=None):
+        rows.append(dict(id=id_, arm=arm, label=label, via=via, ok=ok,
+                          payload=payload, corpus_kind=corpus_kind,
+                          expect=expect, twin=twin, note=note))
+
+    plant = lambda payload: (lambda s: s + '\nSee `%s/_shared/core.md`.\n' % payload)
+
+    # toml-drift/differs, via check_all: a toml edited directly, out of
+    # sync with render() of its own source.
+    fired, cleared = _mutate_and_grade(
+        r, 'toml-drift', '%s/codex-agents/%s.toml' % (r, personas(r)[0]),
+        lambda s: s + '\n# drift\n')
+    add('toml-drift', 'toml-drift/differs', 'toml-drift', 'check_all',
+        fired and cleared)
+
+    # profile-path, via check_all, corpus_kind variance: plant the literal
+    # in one file of every kind check_all's md glob reaches — persona body,
+    # reference file, non-core fragment, and core.md itself — so a future
+    # narrowing of that glob shows up as a missing corpus_kind rather than
+    # a green check over a surface it stopped reading.
+    bodies = sorted(glob.glob(r + '/skills/*/SKILL.md'))
+    refs = sorted(glob.glob(r + '/skills/*/references/*.md'))
+    frags = sorted(f for f in glob.glob(r + '/skills/_shared/*.md')
+                   if os.path.basename(f) not in ('core.md',))
+    for id_, corpus_kind, found, payload in (
+            ('profile-path/core', 'core', ['%s/skills/_shared/core.md' % r],
+             '~/.claude-work/skills'),
+            ('profile-path/skill', 'skill', bodies, '~/.claude-work/skills'),
+            ('profile-path/reference', 'reference', refs,
+             '~/.claude-work/skills'),
+            ('profile-path/fragment', 'fragment', frags,
+             '~/.claude-work/skills')):
+        if not found:
+            add(id_, 'profile-path', id_, 'check_all', False,
+                payload=payload, corpus_kind=corpus_kind,
+                note='NO FILE — nothing of this kind in the tree to plant in')
+            continue
+        fired, cleared = _mutate_and_grade(r, 'profile-path', found[0],
+                                            plant(payload))
+        add(id_, 'profile-path', id_, 'check_all', fired and cleared,
+            payload=payload, corpus_kind=corpus_kind)
+
+    # prefixed-reference: a persona's SKILL.md gains a self-citation written
+    # in the repo-root-relative form. Cites a references/ file that
+    # actually exists (reusing `refs`) so render() — which toml-drift's
+    # arm also calls — resolves the citation instead of raising, and stays
+    # on personas() (a broken '---' fence would drop it from that set and
+    # no check would ever see it).
+    if refs:
+        pref_owner = os.path.basename(os.path.dirname(os.path.dirname(refs[0])))
+        pref_name = os.path.basename(refs[0])[:-3]
+        fired, cleared = _mutate_and_grade(
+            r, 'prefixed-reference', '%s/skills/%s/SKILL.md' % (r, pref_owner),
+            lambda s, _o=pref_owner, _n=pref_name: s + (
+                '\nSee `skills/%s/references/%s.md`.\n' % (_o, _n)))
+        add('prefixed-reference/self', 'prefixed-reference',
+            'prefixed-reference/self', 'check_all', fired and cleared)
+    else:
+        add('prefixed-reference/self', 'prefixed-reference',
+            'prefixed-reference/self', 'check_all', False,
+            note='NO FILE — nothing of this kind in the tree to plant in')
+
+    # citation-inlined/reference, via check_all: prove this check is
+    # independent of toml-drift's oracle, not a second copy of it.
+    # Monkey-patch the module-level render() to drop the tail of its own
+    # output, then write the toml using that SAME buggy render — toml-drift,
+    # which also calls render() to get its expectation, sees the buggy toml
+    # match the buggy render exactly and stays green. citation-inlined never
+    # calls render(): it reads the cited source files and the toml's raw
+    # bytes directly, so it still catches the bug toml-drift missed.
+    #
+    # This control's arm is 'reference', not 'body' — render() puts the
+    # body first, so the `[:-500]` tail truncation only ever reaches the
+    # LAST inlined section, which for personas()[0] (briar) is
+    # references/smell-baseline.md. A control shaped like this cannot reach
+    # 'body' or 'shared-fragment' no matter how it's tuned; W2-T39 adds
+    # those as their own rows.
+    p = personas(r)[0]
+    t = '%s/codex-agents/%s.toml' % (r, p)
+    orig_toml = open(t, encoding='utf-8').read()
+    real_render = globals()['render']
+    buggy_render = (lambda pp, rroot=r:
+                     real_render(pp, rroot)[:-500] if pp == p
+                     else real_render(pp, rroot))
+    globals()['render'] = buggy_render
+    try:
+        open(t, 'w', encoding='utf-8').write(buggy_render(p))
+        violations = check_all(r)[0]
+        drift_stayed_green = not [x for x in violations if x[0] == 'toml-drift']
+        fired = bool([x for x in violations if x[0] == 'citation-inlined'])
+    finally:
+        globals()['render'] = real_render
+        open(t, 'w', encoding='utf-8').write(orig_toml)
+    cleared = not [x for x in check_all(r)[0] if x[0] == 'citation-inlined']
+    add('citation-inlined/reference', 'citation-inlined/reference',
+        'citation-inlined/reference', 'check_all',
+        fired and cleared and drift_stayed_green)
+
+    # citation-unresolved/no-target, via check_all, corpus_kind variance:
+    # plant a `§` citation whose target exists nowhere in the tree.
+    # `Zzyzx9…` is deliberately not a prefix of any real heading or bold
+    # label, so this proves the wholly-absent-target case only.
+    core_path = '%s/skills/_shared/core.md' % r
+    fired, cleared = _mutate_and_grade(
+        r, 'citation-unresolved', core_path,
+        lambda s: s + '\n\nSee § Zzyzx9Unresolvable Selftest Marker '
+                       'Heading for details.\n')
+    add('citation-unresolved/no-target', 'citation-unresolved',
+        'citation-unresolved/no-target', 'check_all', fired and cleared,
+        corpus_kind='core')
+
+    # citation-orphaned. check_orphaned_citations() directly with a
+    # removed-target set — no git, no commit, no diff plumbing, exactly
+    # because the signature takes `removed_targets` as a parameter. `r` has
+    # no `.git` (copytree excludes it), which the skipped-is-loud control
+    # below leans on.
+    hits = check_orphaned_citations({'Run close'}, r)
+    fired_named = any(k == 'citation-orphaned' and 'Run close' in d
+                       for k, a, d in hits)
+    clean_empty = not check_orphaned_citations(set(), r)
+    add('citation-orphaned/named', 'citation-orphaned',
+        'citation-orphaned/named', 'direct', fired_named and clean_empty)
+
+    hits = check_orphaned_citations(
+        {'Phase 4: GitHub writes (one batch — all writes together'}, r)
+    fired_abbrev = any(k == 'citation-orphaned' and 'eric' in d
+                        and 'Phase 4' in d for k, a, d in hits)
+    add('citation-orphaned/abbreviated', 'citation-orphaned',
+        'citation-orphaned/abbreviated', 'direct', fired_abbrev)
+
+    # citation-orphaned/never-reverse: pass the SHORT target. Today this
+    # passes vacuously (AC-50) — `### Accessibility Review` is still a live
+    # heading at briar's own SKILL.md, so the suppression path forgives the
+    # citation whichever direction the hit test uses, and this control
+    # never actually exercises the direction it's named for. W2-T39
+    # rebuilds it on a synthetic fixture with a declared twin (G5); left
+    # as-is here so this migration commit changes no control's behaviour.
+    hits = check_orphaned_citations({'Accessibility'}, r)
+    never_reversed = not any(
+        k == 'citation-orphaned' and 'Accessibility Review' in d
+        for k, a, d in hits)
+    add('citation-orphaned/never-reverse', 'citation-orphaned',
+        'citation-orphaned/never-reverse', 'direct', never_reversed)
+
+    removed, reason = removed_targets_from_git(r)
+    skip_loud = reason is not None and removed == set()
+    add('citation-orphaned/skipped-is-loud', 'skip/not-a-git-repo',
+        'citation-orphaned/skipped-is-loud', 'direct', skip_loud,
+        note='skip-reason=%r' % reason)
+
+    # orphan-toml: a toml whose skill dir is gone. No restore — the temp
+    # copy is discarded, and this control runs last for exactly that reason.
+    shutil.rmtree('%s/skills/%s' % (r, p))
+    red = bool([x for x in check_all(r)[0] if x[0] == 'orphan-toml'])
+    add('orphan-toml', 'orphan-toml', 'orphan-toml', 'check_all', red,
+        note='skill dir removed; not restored — temp copy is discarded')
+
+    return rows
+
+
+def _g2_coverage(rows):
+    """G2 (D46): every `ARMS` row has >=1 `CONTROLS` row grading it through
+    the path its `reachable` field promises — a `check_all`-reachable arm
+    needs a `via='check_all'` control (a `direct` control is admissible in
+    addition, never instead, per G3's own separate statement of this — see
+    that gate's docstring for why the two overlap on purpose); a `direct`
+    (skip-reason) arm needs any control at all. And every control names a
+    real arm. This is the gate that makes "an arm with no control" a line
+    in the output instead of something a reviewer has to notice."""
+    missing = []
+    for arm, row in sorted(ARMS.items()):
+        matches = [c for c in rows if c['arm'] == arm]
+        if row['reachable'] == 'check_all':
+            covered = any(c['via'] == 'check_all' for c in matches)
+            # Print "<arm> via check_all" (not the bare arm) when direct
+            # controls already exist for it — that is the shape D46's
+            # citation-orphaned finding actually is: 4 direct controls, 0
+            # exercising the check_all integration path the mutation proof
+            # walks through.
+            label = ('%s via check_all' % arm) if matches else arm
+        else:
+            covered = bool(matches)
+            label = arm
+        if not covered:
+            missing.append(label)
+    unknown = sorted(c['id'] for c in rows if c['arm'] not in ARMS)
+    return (not missing and not unknown), missing, unknown
+
+
+def _g3_integration(rows):
+    """G3 (D46): every arm reachable through `check_all` has >=1 control
+    with `via='check_all'`. Deliberately the same predicate G2 already
+    applies to `check_all`-reachable arms — this is the gate D46 names for
+    "the integration path" specifically, and the mutation AC-48 walks
+    (deleting the line that runs a check inside `check_all`) is what a
+    `via='check_all'` control catches and a `via='direct'` control cannot:
+    a direct call to `check_orphaned_citations` never executes the line in
+    `check_all` that wires it in."""
+    missing = [arm for arm, row in sorted(ARMS.items())
+               if row['reachable'] == 'check_all'
+               and not any(c['arm'] == arm and c['via'] == 'check_all'
+                           for c in rows)]
+    return (not missing), missing
+
+
+def _g4_variance(rows):
+    """G4 (D46): an arm declaring a `variance` dimension needs >=2 controls
+    spanning distinct values of it — `payload` for a pattern-driven arm
+    (profile-path's regex: four controls planting the identical literal
+    can't tell a correct regex from one narrowed to that one string),
+    `corpus_kind` for a glob-driven arm (the citation checks: a control
+    that only ever plants into one kind of file can't tell a correct glob
+    from one that silently stopped covering another kind)."""
+    failing = []
+    for arm, row in sorted(ARMS.items()):
+        dim = row['variance']
+        if not dim:
+            continue
+        vals = {c[dim] for c in rows if c['arm'] == arm and c.get(dim)}
+        if len(vals) < 2:
+            failing.append(arm)
+    return (not failing), failing
+
+
+def _g5_twins(rows):
+    """G5 (D46): a control asserting something is *not* flagged
+    (`expect='never-fires'`) proves nothing about a fixture that never
+    reached the check in the first place — it needs a named `twin` control
+    on the same fixture whose `expect='fires'`, and both have to actually
+    have run. Every row in `rows` already ran (`_build_controls` executes
+    every control unconditionally), so this checks only that the twin
+    relationship is declared and resolves."""
+    by_id = {c['id']: c for c in rows}
+    broken = []
+    for c in rows:
+        if c['expect'] != 'never-fires':
+            continue
+        twin = by_id.get(c['twin']) if c['twin'] else None
+        if not twin or twin['expect'] != 'fires':
+            broken.append(c['id'])
+    return (not broken), broken
+
+
 def selftest(root=ROOT):
     """Positive control for each check: break one input, confirm that check
     goes red, restore, confirm green. Runs against a throwaway copy so the
     real tree is never mutated. Prints red/green for each and returns True
-    only if every check both fired and cleared."""
+    only if every check both fired and cleared, and G1 through G5 (D46) all
+    hold."""
     import shutil, tempfile
     ok = True
     with tempfile.TemporaryDirectory() as tmp:
@@ -1040,207 +1317,40 @@ def selftest(root=ROOT):
         print('selftest: baseline green over %s'
               % ', '.join('%d %s' % (n, k) for k, n in counts.items()))
 
-        plant = lambda s: s + "\nSee `~/.claude-work/skills/_shared/core.md`.\n"
-        cases = [
-            ('toml-drift', 'toml-drift',
-             '%s/codex-agents/%s.toml' % (r, personas(r)[0]),
-             lambda s: s + "\n# drift\n"),
-            ('profile-path', 'profile-path/core',
-             '%s/skills/_shared/core.md' % r, plant),
-        ]
-        # profile-path is only as wide as the file list check_all builds, and
-        # that list is the thing that silently fell behind when the tree gained
-        # reference files and fragments. Plant the literal in one file of every
-        # kind the glob reaches — persona body, reference file, non-core
-        # fragment — so a future narrowing of the glob shows up here as a NO
-        # instead of as a green check over a surface it stopped reading. Each
-        # label names the kind it actually plants in: a control whose name and
-        # target disagree reports coverage of a class nobody is testing.
-        bodies = sorted(glob.glob(r + '/skills/*/SKILL.md'))
-        refs = sorted(glob.glob(r + '/skills/*/references/*.md'))
-        frags = sorted(f for f in glob.glob(r + '/skills/_shared/*.md')
-                       if os.path.basename(f) not in ('core.md',))
-        for label, found in (('profile-path/skill', bodies),
-                             ('profile-path/reference', refs),
-                             ('profile-path/fragment', frags)):
-            if found:
-                cases.append(('profile-path', label, found[0], plant))
-            else:
-                ok = False
-                print('selftest: %-22s NO FILE — nothing of this kind in the '
-                      'tree to plant in' % label)
+        rows = _build_controls(r)
+        for c in rows:
+            ok &= c['ok']
+            print('selftest: %-32s %s%s'
+                  % (c['label'], 'ok' if c['ok'] else 'NO',
+                     '' if not c['note'] else ' (%s)' % c['note']))
+        print('selftest: %d controls run' % len(rows))
 
-        # prefixed-reference: a persona's SKILL.md gains a self-citation
-        # written in the repo-root-relative form instead of the bare form.
-        # Cites a references/ file that actually exists (reusing `refs` from
-        # the profile-path setup above) so render() — which check_all()'s
-        # toml-drift arm also calls this same pass — resolves the citation
-        # instead of raising on a made-up path; the point is to prove this
-        # specific check fires, not to also exercise render()'s missing-file
-        # error path. The persona keeps its frontmatter and body otherwise
-        # intact — only a sentence is appended — so it stays on personas()
-        # and this reaches the same check_all() pass every other citation is
-        # read from, rather than the vacuous-fence trap (a broken '---'
-        # fence drops the persona from personas() entirely and no check ever
-        # sees it).
-        if refs:
-            pref_owner = os.path.basename(os.path.dirname(os.path.dirname(refs[0])))
-            pref_name = os.path.basename(refs[0])[:-3]
-            cases.append((
-                'prefixed-reference', 'prefixed-reference/self',
-                '%s/skills/%s/SKILL.md' % (r, pref_owner),
-                lambda s, _o=pref_owner, _n=pref_name: s + (
-                    '\nSee `skills/%s/references/%s.md`.\n' % (_o, _n))))
-        else:
-            ok = False
-            print('selftest: %-22s NO FILE — nothing of this kind in the '
-                  'tree to plant in' % 'prefixed-reference/self')
+        g2_ok, g2_missing, g2_unknown = _g2_coverage(rows)
+        ok &= g2_ok
+        print('selftest: G2/arms-covered     %s%s'
+              % ('ok' if g2_ok else 'NO',
+                 '' if g2_ok else ' (uncovered arms: %s%s)'
+                 % (g2_missing, '; unknown arm in control: %s' % g2_unknown
+                    if g2_unknown else '')))
 
-        for kind, label, path, mutate in cases:
-            orig = open(path, encoding='utf-8').read()
-            open(path, 'w', encoding='utf-8').write(mutate(orig))
-            red = [x for x in check_all(r)[0] if x[0] == kind]
-            open(path, 'w', encoding='utf-8').write(orig)
-            green = [x for x in check_all(r)[0] if x[0] == kind]
-            fired, cleared = bool(red), not green
-            ok &= fired and cleared
-            print('selftest: %-22s red=%s green-after-restore=%s'
-                  % (label, 'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+        g3_ok, g3_missing = _g3_integration(rows)
+        ok &= g3_ok
+        print('selftest: G3/integration-path %s%s'
+              % ('ok' if g3_ok else 'NO',
+                 '' if g3_ok else ' (no via=check_all control: %s)' % g3_missing))
 
-        # citation-inlined: prove this check is independent of toml-drift's
-        # oracle, not a second copy of it. Monkey-patch the module-level
-        # render() to drop the tail of its own output (the last inlined
-        # section), then write the toml using that SAME buggy render — so
-        # toml-drift, which also calls render() to get its expectation, sees
-        # the buggy toml match the buggy render exactly and stays green. That
-        # is the AC-16/AC-18 trap named verbatim: a renderer bug that is
-        # wrong in the same direction on both sides of toml-drift's
-        # comparison. citation-inlined never calls render() — it reads the
-        # cited source files and the toml's raw bytes directly — so it still
-        # catches the same bug toml-drift missed.
-        p = personas(r)[0]
-        t = '%s/codex-agents/%s.toml' % (r, p)
-        orig_toml = open(t, encoding='utf-8').read()
-        real_render = globals()['render']
-        # Only p's own render is buggy — every other persona's render() must
-        # stay correct, or their toml-drift would fire too and the control
-        # would no longer isolate what it's testing.
-        buggy_render = (lambda pp, rroot=r:
-                         real_render(pp, rroot)[:-500] if pp == p
-                         else real_render(pp, rroot))
-        globals()['render'] = buggy_render
-        try:
-            open(t, 'w', encoding='utf-8').write(buggy_render(p))
-            violations = check_all(r)[0]
-            drift_stayed_green = not [x for x in violations if x[0] == 'toml-drift']
-            fired = bool([x for x in violations if x[0] == 'citation-inlined'])
-        finally:
-            globals()['render'] = real_render
-            open(t, 'w', encoding='utf-8').write(orig_toml)
-        cleared = not [x for x in check_all(r)[0] if x[0] == 'citation-inlined']
-        ok &= fired and cleared and drift_stayed_green
-        print('selftest: %-22s red=%s green-after-restore=%s '
-              '(toml-drift stayed green=%s, proving independence)'
-              % ('citation-inlined', 'yes' if fired else 'NO',
-                 'yes' if cleared else 'NO',
-                 'yes' if drift_stayed_green else 'NO'))
+        g4_ok, g4_missing = _g4_variance(rows)
+        ok &= g4_ok
+        print('selftest: G4/variance         %s%s'
+              % ('ok' if g4_ok else 'NO',
+                 '' if g4_ok else ' (needs >=2 distinct values: %s)' % g4_missing))
 
-        # citation-unresolved/no-target (W2-T9): plant a `§` citation whose
-        # target heading exists nowhere in the tree, into a file
-        # `check_citations` actually reads (`skills/_shared/core.md`,
-        # unioned into every other file's resolvable set too, so this also
-        # proves the plant is reachable from a persona file's citation, not
-        # just core's own). The trap this guards against, named in this
-        # run's brief: a control that plants its failure somewhere the
-        # checked code path never touches passes green while testing
-        # nothing. `Zzyzx9…` is deliberately not a prefix of any real
-        # heading or bold label in the tree, so this control proves the
-        # wholly-absent-target case only — it says nothing about a citation
-        # whose real target WAS deleted while a same-first-word sibling
-        # survives (`Run close` -> `Run report`); that class is no longer
-        # `_resolves`'s job (D34 removed the floor that tried and failed to
-        # cover it) — `citation-orphaned`'s controls below are what cover
-        # it now, with diff information instead of a string-length guess.
-        core_path = '%s/skills/_shared/core.md' % r
-        orig_core = open(core_path, encoding='utf-8').read()
-        open(core_path, 'w', encoding='utf-8').write(
-            orig_core
-            + '\n\nSee § Zzyzx9Unresolvable Selftest Marker Heading for '
-              'details.\n')
-        red = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved']
-        open(core_path, 'w', encoding='utf-8').write(orig_core)
-        green = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved']
-        fired, cleared = bool(red), not green
-        ok &= fired and cleared
-        print('selftest: %-22s red=%s green-after-restore=%s'
-              % ('citation-unresolved/no-target', 'yes' if fired else 'NO',
-                 'yes' if cleared else 'NO'))
+        g5_ok, g5_broken = _g5_twins(rows)
+        ok &= g5_ok
+        print('selftest: G5/never-fires-twin %s%s'
+              % ('ok' if g5_ok else 'NO',
+                 '' if g5_ok else ' (no live twin: %s)' % g5_broken))
 
-        # citation-orphaned (W2-T18/W2-T20, D34). Calls check_orphaned_
-        # citations() directly with a removed-target set — no git, no
-        # commit, no diff plumbing, exactly because the signature takes
-        # `removed_targets` as a parameter. `r` has no `.git` (copytree
-        # excludes it), which is also what the skipped-is-loud control
-        # below leans on.
-
-        # citation-orphaned/named: {'Run close'} should flag sol's own
-        # `§ Run close`  — `## Run close` is a real heading there, and
-        # nothing else in the tree resolves it forward once it's "removed".
-        hits = check_orphaned_citations({'Run close'}, r)
-        fired_named = any(k == 'citation-orphaned' and 'Run close' in d
-                           for k, a, d in hits)
-        clean_empty = not check_orphaned_citations(set(), r)
-        ok &= fired_named and clean_empty
-        print('selftest: %-22s red=%s clean-with-empty-set=%s'
-              % ('citation-orphaned/named', 'yes' if fired_named else 'NO',
-                 'yes' if clean_empty else 'NO'))
-
-        # citation-orphaned/abbreviated: the removed target is the FULL
-        # heading text and the citation is its abbreviation — eric's
-        # `§ Phase 4` citing `## Phase 4: GitHub writes (one batch — all
-        # writes together)` should flag in the abbreviation direction
-        # (`T.startswith(C)`).
-        hits = check_orphaned_citations(
-            {'Phase 4: GitHub writes (one batch — all writes together'}, r)
-        fired_abbrev = any(k == 'citation-orphaned' and 'eric' in d
-                            and 'Phase 4' in d for k, a, d in hits)
-        ok &= fired_abbrev
-        print('selftest: %-22s red=%s'
-              % ('citation-orphaned/abbreviated', 'yes' if fired_abbrev else 'NO'))
-
-        # citation-orphaned/never-reverse: pass the SHORT target. This is
-        # the control the whole re-sweep exists to add — the deleted floor
-        # forgave briar's `§ Accessibility Review` via the opposite
-        # (citation-longer) direction when only a surviving bold
-        # `**Accessibility**` label remained; this proves
-        # check_orphaned_citations doesn't reintroduce that hole from the
-        # removed-target side. `Accessibility Review` must NOT be flagged
-        # when `Accessibility` (13 chars, shorter) is the "removed" target.
-        hits = check_orphaned_citations({'Accessibility'}, r)
-        never_reversed = not any(
-            k == 'citation-orphaned' and 'Accessibility Review' in d
-            for k, a, d in hits)
-        ok &= never_reversed
-        print('selftest: %-22s never-flagged=%s'
-              % ('citation-orphaned/never-reverse',
-                 'yes' if never_reversed else 'NO'))
-
-        # citation-orphaned/skipped-is-loud: a non-git root must return a
-        # skip reason, never a bare empty set standing in for "ran cleanly,
-        # found nothing" — `r` has no `.git` (copytree excludes it).
-        removed, reason = removed_targets_from_git(r)
-        skip_loud = reason is not None and removed == set()
-        ok &= skip_loud
-        print('selftest: %-22s skip-reason=%r'
-              % ('citation-orphaned/skipped-is-loud', reason))
-
-        # orphan-toml: a toml whose skill dir is gone
-        p = personas(r)[0]
-        shutil.rmtree('%s/skills/%s' % (r, p))
-        red = [x for x in check_all(r)[0] if x[0] == 'orphan-toml']
-        ok &= bool(red)
-        print('selftest: %-22s red=%s (skill dir removed; not restored — '
-              'temp copy is discarded)' % ('orphan-toml', 'yes' if red else 'NO'))
     return ok
 
 
