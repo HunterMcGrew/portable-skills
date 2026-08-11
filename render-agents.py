@@ -65,7 +65,7 @@ REFERENCE_RE = re.compile(r'(?<![\w/.-])(?:skills/([\w-]+)/)?references/([\w-]+)
 
 
 def skill_body(path_or_text, is_text=False):
-    s = path_or_text if is_text else open(path_or_text).read()
+    s = path_or_text if is_text else open(path_or_text, encoding='utf-8').read()
     m = re.match(r'^---\n.*?\n---\n', s, re.S)
     return s[m.end():] if m else s
 
@@ -96,14 +96,14 @@ def render(p, root=ROOT):
     Verified byte-exact: re-rendering each of the 27 tomls from its own current
     parts reproduces the file exactly, 27/27 — so every difference between
     render(p) and the file on disk is content drift, never assembly churn."""
-    sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
-    core = open('%s/skills/_shared/core.md' % root).read()
-    verif = open('%s/skills/_shared/verification.md' % root).read()
+    sk = open('%s/skills/%s/SKILL.md' % (root, p), encoding='utf-8').read()
+    core = open('%s/skills/_shared/core.md' % root, encoding='utf-8').read()
+    verif = open('%s/skills/_shared/verification.md' % root, encoding='utf-8').read()
     body = skill_body(sk, is_text=True).strip('\n')
 
     extra = ''
     for name in sorted(set(m for m in EXTRA_SHARED_RE.findall(body) if m not in EXTRA_SHARED_SKIP)):
-        content = open('%s/skills/_shared/%s.md' % (root, name)).read()
+        content = open('%s/skills/_shared/%s.md' % (root, name), encoding='utf-8').read()
         mark = '## %s reference (inlined for subagent self-containment)' % name
         extra += MARK_HR + mark + '\n\n' + content.strip('\n')
 
@@ -113,7 +113,7 @@ def render(p, root=ROOT):
         if not os.path.exists(ref):
             raise ValueError('cites references/%s.md, which does not exist at '
                              'skills/%s/references/' % (name, owner))
-        content = open(ref).read()
+        content = open(ref, encoding='utf-8').read()
         mark = ('## references/%s.md (inlined for subagent self-containment)'
                 % name)
         extra += MARK_HR + mark + '\n\n' + content.strip('\n')
@@ -155,7 +155,7 @@ def personas(root=ROOT):
     out = []
     for f in sorted(glob.glob(root + '/skills/*/SKILL.md')):
         p = os.path.basename(os.path.dirname(f))
-        if has_persona_line(open(f).read()):
+        if has_persona_line(open(f, encoding='utf-8').read()):
             out.append(p)
     return out
 
@@ -185,9 +185,9 @@ def regenerate_all(root=ROOT):
     out = []
     for p, new in rendered.items():
         t = root + '/codex-agents/%s.toml' % p
-        cur = open(t).read() if os.path.exists(t) else None
+        cur = open(t, encoding='utf-8').read() if os.path.exists(t) else None
         if new != cur:
-            with open(t, 'w') as fh:
+            with open(t, 'w', encoding='utf-8') as fh:
                 fh.write(new)
             out.append(p)
     valid = set(personas(root))
@@ -243,8 +243,13 @@ def regenerate_all(root=ROOT):
 # the heading `## Enumeration` because prose continues without a clean
 # delimiter (citation longer than heading). Either direction resolves, so
 # long as the boundary after the shorter string is a non-word character —
-# a `§ Assessment` citing a real `§ Assessment frameworks` heading would NOT
-# resolve, because `frameworks` is still a word character at that boundary.
+# a `§ Assessment` citing a real `Assessment frameworks` heading DOES
+# resolve: the character actually tested at that boundary is the space
+# separating the two words, not `frameworks` itself (D40). This direction
+# is deliberately permissive with no floor — see `_resolves`'s docstring
+# for why that permissiveness cannot be tightened without a diff to tell a
+# coincidence apart from a real deletion, and `citation-orphaned` (W2-T18)
+# for the check that covers the deletion case instead.
 # A hard newline inside a paragraph is a soft wrap, not a sentence end —
 # markdown reflows it — so it is deliberately NOT a terminator here; only
 # the blank-line paragraph boundary (`_citation_paragraphs`, and this
@@ -267,8 +272,17 @@ def regenerate_all(root=ROOT):
 # target and require carving out an exception for it, for zero live
 # lowercase citations that need resolving. `grep -rn '§[ \t]\+[a-z]'
 # skills/` is the check for whether that trade has changed.
+#
+# `>` is also a stop delimiter, alongside `)`: the repo's own
+# `<appended ...; see § X>` placeholder idiom (`sol:248`, `core.md:63`)
+# closes a citation the same way a parenthetical does, and without it the
+# capture over-runs into the placeholder's own closing bracket (`Run
+# close>` instead of `Run close`) — harmless for `citation-unresolved`,
+# which resolves it anyway via the permissive citation-longer direction,
+# but exactly the over-capture `citation-orphaned` (W2-T18) cannot forgive
+# by design, since it only ever matches in the target-longer direction.
 CITATION_RE = re.compile(
-    r'§[ \t]+([A-Z][^)]*?)(?=[)]|,\s|\.\s|\.\Z|—|;\s|\s§|\+\s*§|\Z)')
+    r'§[ \t]+([A-Z][^)>]*?)(?=[)>]|,\s|\.\s|\.\Z|—|;\s|\s§|\+\s*§|\Z)')
 HEADING_RE = re.compile(r'^#{1,4}[ \t]+(.+?)[ \t]*$', re.M)
 BOLD_LABEL_RE = re.compile(r'^[ \t]*(?:[-*][ \t]+)?\*\*([^*\n]+)\*\*', re.M)
 CITED_FILE_RE = re.compile(
@@ -279,9 +293,31 @@ def _norm_citation_text(s):
     return re.sub(r'\s+', ' ', s.strip(' `"\'.,;:)')).strip()
 
 
+FENCE_RE = re.compile(r'^([ \t]*)(`{3,}|~{3,}).*?\n.*?^\1\2[ \t]*$\n?',
+                       re.M | re.S)
+
+
+def _strip_fences(text):
+    """`text` with every fenced code block's interior blanked to newlines,
+    opening fence to matching close (D41). A `#`-prefixed line or a
+    `**bold**` label quoted verbatim inside a fence (a worked example, a
+    template snippet) is not a real heading or label in the file it
+    appears in — it donates a target no live citation was ever written
+    against, so a heading deleted from prose can still "resolve" against
+    its own quoted-then-removed copy inside a fence, or a fence full of
+    invented headings can silently pad the resolvable set. Blanking to
+    the same number of newlines (not deleting the block) keeps every
+    surrounding line number stable for the callers that report `file:line`
+    against this same text."""
+    return FENCE_RE.sub(lambda m: '\n' * m.group(0).count('\n'), text)
+
+
 def _citation_targets(text):
     """Every heading and bold list-item label in `text`, normalized — the
-    resolvable-target vocabulary a `§` citation is checked against."""
+    resolvable-target vocabulary a `§` citation is checked against. Fenced
+    code blocks are stripped first (D41) — a heading or label quoted
+    inside a fence is not a live target in the file it appears in."""
+    text = _strip_fences(text)
     out = set()
     for m in HEADING_RE.finditer(text):
         out.add(_norm_citation_text(m.group(1)))
@@ -318,30 +354,6 @@ def _resolves_exact(citation, targets):
     return False
 
 
-# Floor for a single retained word after truncation (or for an
-# already-one-word citation) in `_resolves`. Calibrated against briar's
-# Wave-2-review Major, not chosen in the abstract: deleting a heading and
-# re-running `--check` stayed green because the truncation retry forgave
-# the deletion against an unrelated sibling sharing only its FIRST word —
-# `Run close` -> `Run` (3 chars) matching `Run report`; `PR Label` -> `PR`
-# (2) matching `PR Readiness`; `AC Verification Mode` -> `AC` (2) matching
-# `AC conformance`; `How Tess Thinks` -> `How` (3) matching `How Briar
-# Thinks`; `Mode selection` -> `Mode` (4) matching the bold label `Mode
-# gate`. Every one of those collisions is a short, common English word or
-# acronym — exactly the shape that turns up as an unrelated heading's first
-# word by coincidence. Contrast the two live citations that legitimately
-# need this same truncation retry to resolve at all: `Phase 1 already does`
-# -> `Phase 1` (`eric:97`, two words, unaffected by a single-word floor) and
-# `Decompose chains (winston -> ... -> park at merge` -> `Decompose`
-# (`sol/references/fleet-runs.md:5`, one word, 9 characters). 5 is the
-# threshold that rejects every collision above while keeping both live
-# single/short matches (`Decompose` at 9 chars, and `references/fleet-
-# runs.md:10`'s `Budgets` at 7 chars) — verified against the full live
-# citation population, not just these examples (see `_resolves`'s
-# docstring).
-MIN_SINGLE_WORD_MATCH_LEN = 5
-
-
 def _resolves(citation, targets):
     """`_resolves_exact`, retried over right-truncated word-prefixes of
     `citation` when the full string doesn't resolve.
@@ -359,52 +371,73 @@ def _resolves(citation, targets):
     point than the real one, since `_resolves_exact` already tries citation-
     is-prefix-of-target for the untruncated string first.
 
-    A candidate of exactly one word is rejected below
-    `MIN_SINGLE_WORD_MATCH_LEN` characters, truncated or not. Without this
-    floor, a genuinely deleted heading resolves silently against any
-    surviving sibling that happens to start with the same short leading
-    word — the retry has no way to tell a real single-word heading name
-    (`Decompose`) apart from a common word a deleted multi-word heading
-    used to start with (`Run`, from a deleted `Run close` matching a
-    surviving `Run report`). See `MIN_SINGLE_WORD_MATCH_LEN` above for the
-    calibration evidence. Multi-word candidates carry no such floor — two
-    or more words in agreement is specific enough on its own; the failure
-    mode this guards against is single-word-only."""
+    No length floor on a truncated or single-word candidate (D34). A floor
+    here was tried and failed: it can only compare string length against
+    the tree it's calibrated on, and a coincidental short-word collision
+    (`Run` matching an unrelated `Run report`) is not distinguishable *as a
+    string* from a legitimate short citation (`Decompose`, `Budgets`) or
+    from a citation whose real target was deleted by the change under
+    review — the same three characters arise from all three causes. The
+    real bound: prefix matching in the target-shorter direction cannot
+    tell an over-captured citation apart from a citation naming a heading
+    that no longer exists, at any length. `citation-orphaned` (W2-T18) is
+    what actually covers the deletion case — it has diff information this
+    function does not, and needs no threshold because of it."""
     words = citation.split(' ')
     for n in range(len(words), 0, -1):
         candidate = ' '.join(words[:n])
-        if n == 1 and len(candidate) < MIN_SINGLE_WORD_MATCH_LEN:
-            continue
         if _resolves_exact(candidate, targets):
             return True
     return False
 
 
-def check_citations(root=ROOT):
-    """Every `§ X` citation under `skills/` that fails to resolve against
-    its resolvable target set, as `('citation-unresolved', detail)` pairs —
-    see the block comment above `CITATION_RE` for the resolution rules and
-    this check's stated bound."""
-    v = []
+def _resolves_forward(citation, targets):
+    """The one-directional half of `_resolves_exact`: true when `citation`
+    equals a target, or a target starts with `citation` at a clean
+    boundary — never the reverse (`citation` starting with a shorter
+    target). `citation-orphaned` (W2-T18) uses this, not `_resolves_exact`,
+    on purpose: the reverse direction is exactly what let a deleted
+    `### Accessibility Review` heading escape detection while a surviving
+    bold `**Accessibility**` label forgave the citation through
+    `citation.startswith(target)` — 13 characters, so no floor on
+    `_resolves` could ever have caught it. This direction is the only one
+    a removed-heading check can safely use: a target *longer than or equal
+    to* the citation is a plausible match a change could have deleted; a
+    target *shorter than* the citation is not evidence of anything — a
+    long citation isn't "for" a short substring just because it starts
+    with it."""
+    for t in targets:
+        if not t:
+            continue
+        if citation == t:
+            return True
+        if t.startswith(citation) and (len(t) == len(citation)
+                                        or not t[len(citation)].isalnum()):
+            return True
+    return False
+
+
+def _iter_citation_sites(root=ROOT):
+    """Every `§ X` citation under `skills/`, yielded as `(rel, line, cite,
+    targets)` — `targets` is the resolvable set at that citation's
+    paragraph, built exactly once here so `check_citations` (grades against
+    it with `_resolves`) and `check_orphaned_citations` (grades against it
+    with `_resolves_forward`) share one extraction pass instead of two that
+    could quietly drift apart on what counts as "resolvable"."""
     md = sorted(glob.glob(root + '/skills/**/*.md', recursive=True))
-    text_by_path = {f: open(f).read() for f in md}
+    text_by_path = {f: open(f, encoding='utf-8').read() for f in md}
     targets_by_path = {f: _citation_targets(t) for f, t in text_by_path.items()}
     core_path = os.path.join(root, 'skills', '_shared', 'core.md')
     core_targets = targets_by_path.get(core_path, set())
 
-    # Persona (and utility-skill) directory names, longest first so a
-    # search never matches "eric" inside a longer name before trying the
-    # longer one — the roster has no such collision today, but the check
-    # shouldn't depend on that staying true. Read by name only: a mention
-    # of "review-loop's § Admissibility…" or "briar's § Phase 1…" cites a
-    # DIFFERENT persona's own SKILL.md heading directly, the identical
-    # pattern `_shared/*.md` and `references/*.md` mentions cover one
-    # directory over — verified live at `eric:97` and `eric:303`/
+    # Persona (and utility-skill) directory names. Read by name only: a
+    # mention of "review-loop's § Admissibility…" or "briar's § Phase 1…"
+    # cites a DIFFERENT persona's own SKILL.md heading directly, the
+    # identical pattern `_shared/*.md` and `references/*.md` mentions cover
+    # one directory over — verified live at `eric:97` and `eric:303`/
     # `briar:133`, so it is a real repo convention, not a hypothetical.
-    persona_dirs = sorted(
-        (os.path.basename(os.path.dirname(f))
-         for f in glob.glob(root + '/skills/*/SKILL.md')),
-        key=len, reverse=True)
+    persona_dirs = sorted(os.path.basename(os.path.dirname(f))
+                           for f in glob.glob(root + '/skills/*/SKILL.md'))
     persona_name_re = {
         p: re.compile(r'(?<![\w-])' + re.escape(p) + r'(?![\w-])')
         for p in persona_dirs}
@@ -420,7 +453,7 @@ def check_citations(root=ROOT):
             pdir = os.path.join(root, 'skills', owner)
             for rf in sorted(glob.glob(os.path.join(pdir, 'references', '*.md'))):
                 default_targets |= targets_by_path.get(
-                    rf, _citation_targets(open(rf).read()))
+                    rf, _citation_targets(open(rf, encoding='utf-8').read()))
             # A references/ file's own citations resolve against its
             # OWNING persona's SKILL.md too, not just its reference
             # siblings — the relationship the loop above builds runs
@@ -428,7 +461,8 @@ def check_citations(root=ROOT):
             if len(parts) >= 3 and parts[2] == 'references':
                 owner_skill = os.path.join(pdir, 'SKILL.md')
                 default_targets |= targets_by_path.get(
-                    owner_skill, _citation_targets(open(owner_skill).read())
+                    owner_skill,
+                    _citation_targets(open(owner_skill, encoding='utf-8').read())
                     if os.path.exists(owner_skill) else set())
         if os.path.abspath(f) != os.path.abspath(core_path):
             default_targets |= core_targets
@@ -446,7 +480,7 @@ def check_citations(root=ROOT):
                 for c in candidates:
                     if os.path.exists(c):
                         extra_targets |= targets_by_path.get(
-                            c, _citation_targets(open(c).read()))
+                            c, _citation_targets(open(c, encoding='utf-8').read()))
             for p in persona_dirs:
                 if p == owner:
                     continue  # already in default_targets
@@ -454,17 +488,149 @@ def check_citations(root=ROOT):
                     other = os.path.join(root, 'skills', p, 'SKILL.md')
                     if os.path.exists(other):
                         extra_targets |= targets_by_path.get(
-                            other, _citation_targets(open(other).read()))
+                            other,
+                            _citation_targets(open(other, encoding='utf-8').read()))
             targets = default_targets | extra_targets
 
             for m in CITATION_RE.finditer(para):
                 cite = _norm_citation_text(m.group(1))
                 if not cite:
                     continue
-                if not _resolves(cite, targets):
-                    line = text.count('\n', 0, pstart + m.start()) + 1
-                    v.append(('citation-unresolved',
-                              '%s:%d § %s' % (rel, line, cite)))
+                line = text.count('\n', 0, pstart + m.start()) + 1
+                yield rel, line, cite, targets
+
+
+def check_citations(root=ROOT):
+    """Every `§ X` citation under `skills/` that fails to resolve against
+    its resolvable target set, as `('citation-unresolved', detail)` pairs —
+    see the block comment above `CITATION_RE` for the resolution rules and
+    this check's stated bound."""
+    v = []
+    for rel, line, cite, targets in _iter_citation_sites(root):
+        if not _resolves(cite, targets):
+            v.append(('citation-unresolved', '%s:%d § %s' % (rel, line, cite)))
+    return v
+
+
+def _citation_multi_match_stats(root=ROOT):
+    """`(matched_multiple, total)` over every `§` citation under `skills/`
+    (D35) — the population no single heading deletion can turn red, because
+    more than one live target would still satisfy it. For each citation,
+    count how many *individual* targets in its resolvable set independently
+    satisfy `_resolves(cite, {t})`; the citation counts toward
+    `matched_multiple` when two or more do. Informational only — never a
+    violation, never a gate; printed beside `--check`'s counts so a change
+    to `_resolves` shows up as a movement in this number rather than a
+    silent re-baseline."""
+    total = multi = 0
+    for _rel, _line, cite, targets in _iter_citation_sites(root):
+        total += 1
+        hits = sum(1 for t in targets if t and _resolves(cite, {t}))
+        if hits >= 2:
+            multi += 1
+    return multi, total
+
+
+def removed_targets_from_git(root=ROOT):
+    """Heading and bold-label text removed from `skills/` by the change
+    under review, as a normalized set — the parameter `check_orphaned_
+    citations` grades against (D34). Diffs `git merge-base HEAD main` (or,
+    with no `main`, `origin/HEAD`) against `HEAD`, collects the text of
+    every `^#{1,4}` heading or bold-label line a `-` diff line removes, and
+    drops any whose normalized text still appears anywhere in the
+    post-change tree's target vocabulary — a heading moved from one file to
+    another, not deleted, is not orphaned.
+
+    Returns `(removed_targets, skip_reason)`. `skip_reason` is `None` on a
+    clean run; otherwise a short string naming why the diff couldn't be
+    computed (no `.git`, no merge-base, or a failing `git` invocation) — the
+    empty set on success and the empty set on failure must never look alike
+    to a caller, so failure is always paired with a reason, never returned
+    as a bare empty set standing in for "ran cleanly, found nothing."""
+    import subprocess
+
+    if not os.path.isdir(os.path.join(root, '.git')):
+        return set(), 'not a git repo'
+
+    def run(args):
+        return subprocess.run(['git'] + args, cwd=root,
+                               capture_output=True, text=True)
+
+    mb = run(['merge-base', 'HEAD', 'main'])
+    if mb.returncode != 0:
+        mb = run(['merge-base', 'HEAD', 'origin/HEAD'])
+    if mb.returncode != 0:
+        return set(), 'no merge-base against main or origin/HEAD'
+    base = mb.stdout.strip()
+
+    diff = run(['diff', base, 'HEAD', '--', 'skills/'])
+    if diff.returncode != 0:
+        return set(), 'git diff failed: %s' % diff.stderr.strip()[:200]
+
+    removed = set()
+    for line in diff.stdout.splitlines():
+        if not line.startswith('-') or line.startswith('---'):
+            continue
+        content = line[1:]
+        hm = HEADING_RE.match(content)
+        if hm:
+            removed.add(_norm_citation_text(hm.group(1)))
+            continue
+        bm = BOLD_LABEL_RE.match(content)
+        if bm:
+            removed.add(_norm_citation_text(bm.group(1)))
+    removed.discard('')
+
+    survives_somewhere = set()
+    for f in glob.glob(os.path.join(root, 'skills', '**', '*.md'), recursive=True):
+        survives_somewhere |= _citation_targets(open(f, encoding='utf-8').read())
+    removed -= survives_somewhere
+    return removed, None
+
+
+def check_orphaned_citations(removed_targets, root=ROOT):
+    """`('citation-orphaned', detail)` for every `§` citation naming a
+    heading or bold label removed by the change under review (D34).
+    `removed_targets` is a parameter, not derived internally — that is what
+    lets `--selftest` grade this check's behaviour with no git plumbing,
+    and what makes it diff-scoped rather than tree-wide: it has nothing to
+    tune, because provenance (was this target removed by THIS change) is
+    diff information `_resolves`'s tree-wide matching never had.
+
+    Matching rule, exactly: flag citation `C` against removed target `T`
+    when `C == T`, or when `T.startswith(C)` at a clean boundary — never
+    the reverse. Then suppress the flag if `C` still resolves, in that same
+    one-directional sense, against a target that survives at that
+    citation's site — `_resolves_forward` both times, deliberately not the
+    bidirectional `_resolves`: the bidirectional reverse direction
+    (`C.startswith(T)`) is the exact one that let a deleted
+    `### Accessibility Review` heading escape detection via a surviving
+    `**Accessibility**` label, so reusing it here to decide suppression
+    would silently reopen the same hole this check exists to close."""
+    if not removed_targets:
+        return []
+    v = []
+    for rel, line, cite, targets in _iter_citation_sites(root):
+        for t in removed_targets:
+            if not t:
+                continue
+            hit = (cite == t or (t.startswith(cite)
+                   and (len(t) == len(cite) or not t[len(cite)].isalnum())))
+            if not hit:
+                continue
+            # Suppression checks against every OTHER target at this site,
+            # `t` itself excluded — otherwise a removed heading whose text
+            # is still physically present in the tree (the shape a direct,
+            # non-git call passes for testing, and a theoretical shape in
+            # production if a target were ever re-derived stale) would
+            # trivially "still resolve" against itself and suppress every
+            # flag this check exists to raise.
+            if _resolves_forward(cite, targets - {t}):
+                break  # still resolves against a surviving target — suppress
+            v.append(('citation-orphaned',
+                      '%s:%d § %s — heading "%s" removed by this change'
+                      % (rel, line, cite, t)))
+            break
     return v
 
 
@@ -473,14 +639,18 @@ PROFILE_PATH_RE = re.compile(r'~/\.claude[\w.-]*/skills')
 
 def check_all(root=ROOT):
     """Every violation the repo can currently detect, as (kind, detail) pairs,
-    plus the counts each check examined. Read-only — writes nothing.
+    plus the counts each check examined, plus informational notes. Read-only
+    — writes nothing.
 
-    Returns (violations, counts). `counts` is emitted alongside the verdict on
-    purpose: `0 violations` says nothing without the denominator beside it, and
-    a check whose denominator is zero because it looked in the wrong place
-    reports exactly the same green as one that looked everywhere.
+    Returns (violations, counts, notes). `counts` is emitted alongside the
+    verdict on purpose: `0 violations` says nothing without the denominator
+    beside it, and a check whose denominator is zero because it looked in
+    the wrong place reports exactly the same green as one that looked
+    everywhere. `notes` carries lines that belong beside the verdict but are
+    never a violation and never a gate — the citation-orphaned skip reason
+    when git isn't available, and the ungradeable-population count (D35).
 
-    Six checks:
+    Seven checks:
       toml-drift        — a toml differs from render() of its own source. This
                           proves the tomls agree with their generator, not that
                           the generator is right — it catches hand-edits and
@@ -559,13 +729,25 @@ def check_all(root=ROOT):
                           it catches a citation that fails to resolve, not
                           one that resolves to a heading whose content was
                           hollowed out from under it.
+      citation-orphaned  — a `§ X` citation naming a heading or bold label
+                          removed by the change under review (W2-T18, D34).
+                          Diff-scoped, not tree-wide: it grades only against
+                          `removed_targets_from_git(root)`, so it has no
+                          threshold to calibrate — provenance (was this
+                          target removed by THIS change) is diff
+                          information `citation-unresolved`'s tree-wide
+                          matching never had. With no git repo, no
+                          merge-base, or a failing `git` invocation, this
+                          check contributes nothing to `violations` and the
+                          reason is reported in `notes` instead — never a
+                          silent green standing in for "didn't run."
     """
     v = []
     v.extend(check_citations(root))
     ps = personas(root)
     for p in ps:
         t = '%s/codex-agents/%s.toml' % (root, p)
-        cur = open(t).read() if os.path.exists(t) else None
+        cur = open(t, encoding='utf-8').read() if os.path.exists(t) else None
         if cur is None:
             v.append(('toml-drift', '%s.toml missing' % p))
         elif cur != render(p, root):
@@ -575,8 +757,8 @@ def check_all(root=ROOT):
         t = '%s/codex-agents/%s.toml' % (root, p)
         if not os.path.exists(t):
             continue  # already reported above as toml-drift
-        toml_text = open(t).read()
-        sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
+        toml_text = open(t, encoding='utf-8').read()
+        sk = open('%s/skills/%s/SKILL.md' % (root, p), encoding='utf-8').read()
         body = skill_body(sk, is_text=True).strip('\n')
         if body not in toml_text:
             v.append(('citation-inlined', "%s.toml does not contain %s's own "
@@ -586,7 +768,7 @@ def check_all(root=ROOT):
             frag = '%s/skills/_shared/%s.md' % (root, name)
             if not os.path.exists(frag):
                 continue  # render() already errors loudly on this
-            content = open(frag).read().strip('\n')
+            content = open(frag, encoding='utf-8').read().strip('\n')
             if content not in toml_text:
                 v.append(('citation-inlined', '%s.toml is missing the current '
                           'verbatim content of _shared/%s.md, which its body '
@@ -596,7 +778,7 @@ def check_all(root=ROOT):
             ref = '%s/skills/%s/references/%s.md' % (root, owner, name)
             if not os.path.exists(ref):
                 continue  # render() already errors loudly on this
-            content = open(ref).read().strip('\n')
+            content = open(ref, encoding='utf-8').read().strip('\n')
             if content not in toml_text:
                 v.append(('citation-inlined', '%s.toml is missing the current '
                           'verbatim content of references/%s.md, which its '
@@ -604,7 +786,7 @@ def check_all(root=ROOT):
 
     md = sorted(glob.glob(root + '/skills/**/*.md', recursive=True))
     for f in md:
-        for i, line in enumerate(open(f), 1):
+        for i, line in enumerate(open(f, encoding='utf-8'), 1):
             m = PROFILE_PATH_RE.search(line)
             if m:
                 v.append(('profile-path', '%s:%d hardcodes %s'
@@ -616,7 +798,7 @@ def check_all(root=ROOT):
         if len(parts) < 2 or parts[0] != 'skills' or parts[1] == '_shared':
             continue  # not owned by a single persona; no "self" to check
         owner = parts[1]
-        for i, line in enumerate(open(f), 1):
+        for i, line in enumerate(open(f, encoding='utf-8'), 1):
             # REFERENCE_RE, not a private copy: this check's denominator has to
             # be exactly the set of citations render() resolves, or it grades a
             # different population than the one that ships. A second pattern
@@ -639,7 +821,16 @@ def check_all(root=ROOT):
         if p not in valid:
             v.append(('orphan-toml', '%s.toml has no persona in skills/' % p))
 
-    return v, {'personas': len(ps), 'markdown files': len(md), 'tomls': len(tomls)}
+    notes = []
+    removed_targets, skip_reason = removed_targets_from_git(root)
+    if skip_reason:
+        notes.append('citation-orphaned: skipped (%s)' % skip_reason)
+    else:
+        v.extend(check_orphaned_citations(removed_targets, root))
+    multi, total = _citation_multi_match_stats(root)
+    notes.append('%d of %d § citations match more than one target' % (multi, total))
+
+    return v, {'personas': len(ps), 'markdown files': len(md), 'tomls': len(tomls)}, notes
 
 
 def selftest(root=ROOT):
@@ -653,7 +844,7 @@ def selftest(root=ROOT):
         r = os.path.join(tmp, 'repo')
         shutil.copytree(root, r, ignore=shutil.ignore_patterns('.git', '__pycache__'))
 
-        base, counts = check_all(r)
+        base, counts, base_notes = check_all(r)
         if base:
             print('selftest: baseline copy is not clean (%d violations) — '
                   'fix the tree before trusting the controls' % len(base))
@@ -720,10 +911,10 @@ def selftest(root=ROOT):
                   'tree to plant in' % 'prefixed-reference/self')
 
         for kind, label, path, mutate in cases:
-            orig = open(path).read()
-            open(path, 'w').write(mutate(orig))
+            orig = open(path, encoding='utf-8').read()
+            open(path, 'w', encoding='utf-8').write(mutate(orig))
             red = [x for x in check_all(r)[0] if x[0] == kind]
-            open(path, 'w').write(orig)
+            open(path, 'w', encoding='utf-8').write(orig)
             green = [x for x in check_all(r)[0] if x[0] == kind]
             fired, cleared = bool(red), not green
             ok &= fired and cleared
@@ -743,7 +934,7 @@ def selftest(root=ROOT):
         # catches the same bug toml-drift missed.
         p = personas(r)[0]
         t = '%s/codex-agents/%s.toml' % (r, p)
-        orig_toml = open(t).read()
+        orig_toml = open(t, encoding='utf-8').read()
         real_render = globals()['render']
         # Only p's own render is buggy — every other persona's render() must
         # stay correct, or their toml-drift would fire too and the control
@@ -753,13 +944,13 @@ def selftest(root=ROOT):
                          else real_render(pp, rroot))
         globals()['render'] = buggy_render
         try:
-            open(t, 'w').write(buggy_render(p))
+            open(t, 'w', encoding='utf-8').write(buggy_render(p))
             violations = check_all(r)[0]
             drift_stayed_green = not [x for x in violations if x[0] == 'toml-drift']
             fired = bool([x for x in violations if x[0] == 'citation-inlined'])
         finally:
             globals()['render'] = real_render
-            open(t, 'w').write(orig_toml)
+            open(t, 'w', encoding='utf-8').write(orig_toml)
         cleared = not [x for x in check_all(r)[0] if x[0] == 'citation-inlined']
         ok &= fired and cleared and drift_stayed_green
         print('selftest: %-22s red=%s green-after-restore=%s '
@@ -780,17 +971,18 @@ def selftest(root=ROOT):
         # heading or bold label in the tree, so this control proves the
         # wholly-absent-target case only — it says nothing about a citation
         # whose real target WAS deleted while a same-first-word sibling
-        # survives (`Run close` -> `Run report`), which is the shape briar's
-        # Wave 2 Major found this exact control blind to by construction.
-        # `citation-unresolved/truncation-floor` below covers that case.
+        # survives (`Run close` -> `Run report`); that class is no longer
+        # `_resolves`'s job (D34 removed the floor that tried and failed to
+        # cover it) — `citation-orphaned`'s controls below are what cover
+        # it now, with diff information instead of a string-length guess.
         core_path = '%s/skills/_shared/core.md' % r
-        orig_core = open(core_path).read()
-        open(core_path, 'w').write(
+        orig_core = open(core_path, encoding='utf-8').read()
+        open(core_path, 'w', encoding='utf-8').write(
             orig_core
             + '\n\nSee § Zzyzx9Unresolvable Selftest Marker Heading for '
               'details.\n')
         red = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved']
-        open(core_path, 'w').write(orig_core)
+        open(core_path, 'w', encoding='utf-8').write(orig_core)
         green = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved']
         fired, cleared = bool(red), not green
         ok &= fired and cleared
@@ -798,47 +990,63 @@ def selftest(root=ROOT):
               % ('citation-unresolved/no-target', 'yes' if fired else 'NO',
                  'yes' if cleared else 'NO'))
 
-        # citation-unresolved/truncation-floor (briar Wave 2 Major): mutate
-        # a REAL colliding pair already in the tree, not a planted string —
-        # the whole point is that the no-target control above is built
-        # around avoiding this exact weak spot, so it proves nothing about
-        # it. Two live pairs, each a heading sharing only its leading word
-        # with a surviving sibling, cited by name in the Major:
-        # `skills/sol/SKILL.md`'s `## Run close` (cited by its own `§ Run
-        # close`, right beside `## Run report`) and `skills/eric/SKILL.md`'s
-        # `## PR Label` (cited by `§ PR Label`, beside `## PR Readiness`).
-        # Renaming the real target heading — never touching the citation —
-        # reproduces exactly what a slimming pass does when it deletes a
-        # section: pre-fix, `_resolves`'s truncation retry forgave both
-        # down to `Run`/`PR` against the sibling; post-fix,
-        # MIN_SINGLE_WORD_MATCH_LEN rejects both and the citation reports
-        # unresolved, as it should.
-        mutation_cases = [
-            ('sol', '%s/skills/sol/SKILL.md' % r, '## Run close',
-             '## XYZ close (selftest mutation)', 'Run close'),
-            ('eric', '%s/skills/eric/SKILL.md' % r, '## PR Label',
-             '## XYZ Label (selftest mutation)', 'PR Label'),
-        ]
-        for label, path, old_heading, new_heading, cite_fragment in mutation_cases:
-            orig = open(path).read()
-            mutated = orig.replace(old_heading, new_heading, 1)
-            if mutated == orig:
-                ok = False
-                print('selftest: %-22s NO MATCH — %r not found in %s to '
-                      'mutate' % ('citation-unresolved/truncation-floor/'
-                                  + label, old_heading, path))
-                continue
-            open(path, 'w').write(mutated)
-            red = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved'
-                   and cite_fragment in x[1]]
-            open(path, 'w').write(orig)
-            green = [x for x in check_all(r)[0]
-                     if x[0] == 'citation-unresolved' and cite_fragment in x[1]]
-            fired, cleared = bool(red), not green
-            ok &= fired and cleared
-            print('selftest: %-22s red=%s green-after-restore=%s'
-                  % ('citation-unresolved/truncation-floor/' + label,
-                     'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
+        # citation-orphaned (W2-T18/W2-T20, D34). Calls check_orphaned_
+        # citations() directly with a removed-target set — no git, no
+        # commit, no diff plumbing, exactly because the signature takes
+        # `removed_targets` as a parameter. `r` has no `.git` (copytree
+        # excludes it), which is also what the skipped-is-loud control
+        # below leans on.
+
+        # citation-orphaned/named: {'Run close'} should flag sol's own
+        # `§ Run close`  — `## Run close` is a real heading there, and
+        # nothing else in the tree resolves it forward once it's "removed".
+        hits = check_orphaned_citations({'Run close'}, r)
+        fired_named = any(k == 'citation-orphaned' and 'Run close' in d
+                           for k, d in hits)
+        clean_empty = not check_orphaned_citations(set(), r)
+        ok &= fired_named and clean_empty
+        print('selftest: %-22s red=%s clean-with-empty-set=%s'
+              % ('citation-orphaned/named', 'yes' if fired_named else 'NO',
+                 'yes' if clean_empty else 'NO'))
+
+        # citation-orphaned/abbreviated: the removed target is the FULL
+        # heading text and the citation is its abbreviation — eric's
+        # `§ Phase 4` citing `## Phase 4: GitHub writes (one batch — all
+        # writes together)` should flag in the abbreviation direction
+        # (`T.startswith(C)`).
+        hits = check_orphaned_citations(
+            {'Phase 4: GitHub writes (one batch — all writes together'}, r)
+        fired_abbrev = any(k == 'citation-orphaned' and 'eric' in d
+                            and 'Phase 4' in d for k, d in hits)
+        ok &= fired_abbrev
+        print('selftest: %-22s red=%s'
+              % ('citation-orphaned/abbreviated', 'yes' if fired_abbrev else 'NO'))
+
+        # citation-orphaned/never-reverse: pass the SHORT target. This is
+        # the control the whole re-sweep exists to add — the deleted floor
+        # forgave briar's `§ Accessibility Review` via the opposite
+        # (citation-longer) direction when only a surviving bold
+        # `**Accessibility**` label remained; this proves
+        # check_orphaned_citations doesn't reintroduce that hole from the
+        # removed-target side. `Accessibility Review` must NOT be flagged
+        # when `Accessibility` (13 chars, shorter) is the "removed" target.
+        hits = check_orphaned_citations({'Accessibility'}, r)
+        never_reversed = not any(
+            k == 'citation-orphaned' and 'Accessibility Review' in d
+            for k, d in hits)
+        ok &= never_reversed
+        print('selftest: %-22s never-flagged=%s'
+              % ('citation-orphaned/never-reverse',
+                 'yes' if never_reversed else 'NO'))
+
+        # citation-orphaned/skipped-is-loud: a non-git root must return a
+        # skip reason, never a bare empty set standing in for "ran cleanly,
+        # found nothing" — `r` has no `.git` (copytree excludes it).
+        removed, reason = removed_targets_from_git(r)
+        skip_loud = reason is not None and removed == set()
+        ok &= skip_loud
+        print('selftest: %-22s skip-reason=%r'
+              % ('citation-orphaned/skipped-is-loud', reason))
 
         # orphan-toml: a toml whose skill dir is gone
         p = personas(r)[0]
@@ -851,17 +1059,26 @@ def selftest(root=ROOT):
 
 
 if __name__ == '__main__':
-    mode = sys.argv[1] if len(sys.argv) > 1 else ''
-    if mode == '--selftest':
-        sys.exit(0 if selftest() else 1)
-    if mode == '--check':
-        violations, counts = check_all()
-        print('%d violations over %s'
-              % (len(violations), ', '.join('%d %s' % (n, k) for k, n in counts.items())))
-        for kind, detail in violations:
-            print('  %-13s %s' % (kind, detail), file=sys.stderr)
-        sys.exit(1 if violations else 0)
-    if mode:
+    # Branch on argument COUNT, not truthiness of the argument (D42): the
+    # regenerate arm below must only be reachable with zero arguments.
+    # `mode = sys.argv[1] if len(sys.argv) > 1 else ''` used to fall through
+    # to the regenerate arm on `python3 render-agents.py ""`, because an
+    # empty-string mode is falsy exactly like "no argument" — verified on a
+    # throwaway copy, that command used to reach the write arm at exit 0.
+    if len(sys.argv) > 1:
+        mode = sys.argv[1]
+        if mode == '--selftest':
+            sys.exit(0 if selftest() else 1)
+        if mode == '--check':
+            violations, counts, notes = check_all()
+            print('%d violations over %s'
+                  % (len(violations),
+                     ', '.join('%d %s' % (n, k) for k, n in counts.items())))
+            for note in notes:
+                print(note)
+            for kind, detail in violations:
+                print('  %-13s %s' % (kind, detail), file=sys.stderr)
+            sys.exit(1 if violations else 0)
         print('usage: render-agents.py [--check | --selftest]', file=sys.stderr)
         sys.exit(2)
     try:

@@ -63,7 +63,7 @@ def render(p, root=ROOT):
     Claude under-triggers skills already. A subagent whose description drifts
     from its skill's is a persona you can reach one way and not the other.
     """
-    sk = open('%s/skills/%s/SKILL.md' % (root, p)).read()
+    sk = open('%s/skills/%s/SKILL.md' % (root, p), encoding='utf-8').read()
     desc = ra.frontmatter_desc(sk, name=p)
     # Prose says "Briar"; identifiers (name, skills, paths) say "briar". The
     # skill file, its description, and every cross-persona reference capitalize
@@ -134,11 +134,11 @@ def regenerate_all(root=ROOT, check=False):
     written = []
     for p, text in sorted(rendered.items()):
         path = os.path.join(out_dir, AGENT_PREFIX + p + '.md')
-        if not os.path.exists(path) or open(path).read() != text:
+        if not os.path.exists(path) or open(path, encoding='utf-8').read() != text:
             written.append(p)
             if not check:
                 os.makedirs(out_dir, exist_ok=True)
-                open(path, 'w').write(text)
+                open(path, 'w', encoding='utf-8').write(text)
 
     expected = set(AGENT_PREFIX + p for p in names)
     orphans = sorted(
@@ -170,10 +170,10 @@ def selftest(root=ROOT):
         # drift: a hand-edited agent file no longer matches render() of its source
         p = ra.personas(r)[0]
         path = os.path.join(r, 'claude-agents', AGENT_PREFIX + p + '.md')
-        orig = open(path).read()
-        open(path, 'w').write(orig + '\n<!-- drift -->\n')
+        orig = open(path, encoding='utf-8').read()
+        open(path, 'w', encoding='utf-8').write(orig + '\n<!-- drift -->\n')
         red = regenerate_all(r, check=True)[0]
-        open(path, 'w').write(orig)
+        open(path, 'w', encoding='utf-8').write(orig)
         green = regenerate_all(r, check=True)[0]
         fired, cleared = p in red, not green
         ok &= fired and cleared
@@ -182,7 +182,7 @@ def selftest(root=ROOT):
 
         # orphan: an agent file with no persona behind it
         stray = os.path.join(r, 'claude-agents', 'not-a-persona.md')
-        open(stray, 'w').write('stray\n')
+        open(stray, 'w', encoding='utf-8').write('stray\n')
         red = regenerate_all(r, check=True)[1]
         os.remove(stray)
         green = regenerate_all(r, check=True)[1]
@@ -200,14 +200,14 @@ def selftest(root=ROOT):
         # breaking the fences instead would drop it from personas() entirely
         # and the render() call this control targets would never run.
         sk_path = os.path.join(r, 'skills', ra.personas(r)[0], 'SKILL.md')
-        orig_sk = open(sk_path).read()
-        open(sk_path, 'w').write(orig_sk.replace('description:', 'desc:', 1))
+        orig_sk = open(sk_path, encoding='utf-8').read()
+        open(sk_path, 'w', encoding='utf-8').write(orig_sk.replace('description:', 'desc:', 1))
         try:
             regenerate_all(r, check=True)
             fired = False
         except ValueError:
             fired = True
-        open(sk_path, 'w').write(orig_sk)
+        open(sk_path, 'w', encoding='utf-8').write(orig_sk)
         try:
             regenerate_all(r, check=True)
             cleared = True
@@ -220,17 +220,24 @@ def selftest(root=ROOT):
 
 
 if __name__ == '__main__':
-    mode = sys.argv[1] if len(sys.argv) > 1 else ''
-    if mode == '--selftest':
-        sys.exit(0 if selftest() else 1)
-    # An unrecognized argument must never fall through to the write arm: a
-    # mistyped `--chek` would regenerate and overwrite tracked files while the
-    # caller believed a read-only check ran, and exit 0 either way.
-    if mode and mode != '--check':
-        print('usage: render-claude-agents.py [--check | --selftest]',
-              file=sys.stderr)
-        sys.exit(2)
-    check = mode == '--check'
+    # Branch on argument COUNT, not truthiness of the argument (D42, same
+    # class as render-agents.py's guard): an empty-string argument
+    # (`python3 render-claude-agents.py ""`) is falsy exactly like "no
+    # argument supplied", so a truthiness check on `mode` alone reaches the
+    # write arm on that input instead of rejecting it.
+    check = False
+    if len(sys.argv) > 1:
+        mode = sys.argv[1]
+        if mode == '--selftest':
+            sys.exit(0 if selftest() else 1)
+        # An unrecognized argument must never fall through to the write arm: a
+        # mistyped `--chek` would regenerate and overwrite tracked files while
+        # the caller believed a read-only check ran, and exit 0 either way.
+        if mode != '--check':
+            print('usage: render-claude-agents.py [--check | --selftest]',
+                  file=sys.stderr)
+            sys.exit(2)
+        check = True
     try:
         written, orphans = regenerate_all(check=check)
     except ValueError as e:
