@@ -681,12 +681,61 @@ PROFILE_PATH_RE = re.compile(r'~/\.claude[\w.-]*/skills')
 STALE_REF_RE = re.compile(r'stale-reference:\s*"([^"]+)"\s*@\s*(\S+)')
 
 
+ROLE_LINE_RE = re.compile(r'^-[ \t]+\*\*([^*]+)\*\*:[^\n]*?\(([^)]*)\)', re.M)
+
+
+def _role_consumer_violations(root=ROOT):
+    """`('stale-reference', 'role-consumer', detail)` for every persona
+    `repo-map.template.md`'s `## Roles` section names beside the `ticket
+    pattern` role (in that bullet's trailing parenthetical — `read by X,
+    Y`) whose own `SKILL.md` never mentions that role by name (D50). A
+    persona can be *named* as a consumer without *being* one — docs
+    claiming a consumer that doesn't consume is the failure this closes:
+    verified, `.repo-map.template.md` and `README.md` both named nora
+    beside `ticket pattern` while `grep -ci 'ticket pattern'
+    skills/nora/SKILL.md` returned 0.
+
+    Scoped to the one role D50 actually found broken, not every role in
+    the file: `architect docs`' own consumers describe it as "architecture
+    docs"/"architecture context" rather than the bold label's exact
+    wording, which is a real phrasing mismatch, not a persona that fails
+    to consume the role — flagging it would be inventing a second finding
+    nobody measured, the exact thing this run's brief warns against doing
+    with the missing Spec minors. `ticket pattern` is the one D50 measured
+    live."""
+    tpl_path = os.path.join(root, 'repo-map.template.md')
+    if not os.path.exists(tpl_path):
+        return []
+    tpl = open(tpl_path, encoding='utf-8').read()
+    persona_dirs = sorted(os.path.basename(os.path.dirname(f))
+                           for f in glob.glob(root + '/skills/*/SKILL.md'))
+    v = []
+    for role, consumers_text in ROLE_LINE_RE.findall(tpl):
+        role = role.strip()
+        if role.lower() != 'ticket pattern':
+            continue
+        for p in persona_dirs:
+            if not re.search(r'(?<![\w-])' + re.escape(p.capitalize())
+                              + r"(?![\w-])", consumers_text):
+                continue
+            sk_path = os.path.join(root, 'skills', p, 'SKILL.md')
+            sk = open(sk_path, encoding='utf-8').read()
+            if role.lower() not in sk.lower():
+                v.append(('stale-reference', 'role-consumer',
+                          'repo-map.template.md names %s as a consumer of '
+                          'the %r role, but skills/%s/SKILL.md never '
+                          'mentions it' % (p, role, p)))
+    return v
+
+
 def check_stale_references(root=ROOT):
-    """`('stale-reference', 'stale-reference', detail)` for every
-    marker (`stale-reference:` a quoted phrase, `@`, a path) in `render-agents.py` or
-    `render-claude-agents.py` whose phrase no longer appears verbatim in
-    the file it names — a comment pointing at another file that stopped
-    pointing at the right place after that file was edited."""
+    """`('stale-reference', <arm>, detail)` for two things: a `stale-
+    reference: "<phrase>" @ <path>` marker (arm `stale-reference`) in
+    `render-agents.py` or `render-claude-agents.py` whose phrase no longer
+    appears verbatim in the file it names — a comment pointing at another
+    file that stopped pointing at the right place after that file was
+    edited; and (arm `role-consumer`, D50) a persona `repo-map.template.md`
+    names beside a role whose own SKILL.md doesn't mention that role."""
     v = []
     for fn in ('render-agents.py', 'render-claude-agents.py'):
         src_path = os.path.join(root, fn)
@@ -701,6 +750,7 @@ def check_stale_references(root=ROOT):
                 v.append(('stale-reference', 'stale-reference',
                           '%s cites "%s" @ %s, which no longer contains it '
                           'verbatim' % (fn, phrase, rel_path)))
+    v.extend(_role_consumer_violations(root))
     return v
 
 
@@ -777,6 +827,9 @@ ARMS = {
     'stale-reference': dict(
         kind='stale-reference', reachable='check_all', variance=None,
         bound=''),
+    'role-consumer': dict(
+        kind='stale-reference', reachable='check_all', variance=None,
+        bound=''),
 }
 
 
@@ -797,7 +850,7 @@ def _g1_code_arms(root=ROOT):
     src = open(os.path.join(root, 'render-agents.py'), encoding='utf-8').read()
     tree = ast.parse(src)
     target_fns = {'check_all', 'check_citations', 'check_orphaned_citations',
-                  'check_stale_references'}
+                  'check_stale_references', '_role_consumer_violations'}
     found = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name in target_fns:
@@ -1484,6 +1537,22 @@ def _build_controls(r):
     cleared = not [x for x in check_all(r)[0] if x[0] == 'stale-reference']
     add('stale-reference/renderer', 'stale-reference', 'stale-reference/renderer',
         'check_all', sr_ok_setup and fired and cleared)
+
+    # role-consumer, via check_all (W2-T41, D50): strip the mention of the
+    # `ticket pattern` role out of nora's own copy so repo-map.template.md
+    # still names her as a consumer but her SKILL.md no longer says so.
+    nora_path = '%s/skills/nora/SKILL.md' % r
+    orig = open(nora_path, encoding='utf-8').read()
+    mutated = re.sub(r'(?i)ticket pattern', 'ticket shape', orig)
+    rc_ok_setup = mutated != orig
+    open(nora_path, 'w', encoding='utf-8').write(mutated)
+    fired = any(k == 'stale-reference' and 'nora' in d and 'ticket pattern' in d
+                for k, d in check_all(r)[0])
+    open(nora_path, 'w', encoding='utf-8').write(orig)
+    cleared = not any(k == 'stale-reference' and 'nora' in d
+                       and 'ticket pattern' in d for k, d in check_all(r)[0])
+    add('role-consumer/nora', 'role-consumer', 'role-consumer/nora',
+        'check_all', rc_ok_setup and fired and cleared)
 
     # orphan-toml: a toml whose skill dir is gone. No restore — the temp
     # copy is discarded, and this control runs last for exactly that reason.

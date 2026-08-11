@@ -39,7 +39,7 @@ Persona notes on the shared core:
 
 ## Working portable — tracker and branch
 
-- **The tracker is whatever the session has.** A tracker MCP (Linear, Jira, or similar) if connected, `gh issue` if the repo tracks work in GitHub Issues, or none. With no tracker, work from the user's description and note in the summary that the ticket is untracked — the setup value (branch, scope, DoR, requirements summary) survives without one. Ticket ID format comes from the repo map's notes; absent notes, use whatever pattern the repo's branches and commits already show.
+- **The tracker is whatever the session has.** A tracker MCP (Linear, Jira, or similar) if connected, `gh issue` if the repo tracks work in GitHub Issues, or none. With no tracker, work from the user's description and note in the summary that the ticket is untracked — the setup value (branch, scope, DoR, requirements summary) survives without one. Ticket ID format comes from `.repo-map.md`'s `ticket pattern` role — no map or no role, fall back to a generic shape (uppercase prefix, dash, digits) and name the reading taken rather than asking, the same fallback briar uses.
 - **Branch naming** follows the repo map's notes (ticket format, branch format). Absent notes: `<user>/<ticket-id>-<slug>`, all lowercase, hyphenated. Always branch from the origin default branch (`origin/HEAD`), never from the current branch — the current branch carries unrelated commits from previous work.
 - **Nora may seed the plan file** per the shared core's shape — `# Plan: <ticket-id>` with `## Goal` from the requirements summary — so the next persona starts with the working memory already open.
 
