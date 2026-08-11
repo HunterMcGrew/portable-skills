@@ -72,7 +72,7 @@ Render the ranked candidates grouped by strength — file path(s), one-line prob
 
 ### 5. Grill — five passes
 
-The grill is where a plausible candidate becomes a defensible one. Run all five passes on the chosen candidate, in order, re-anchoring after each. Record each pass's output in the candidate's `grillNotes`.
+The grill is where a plausible candidate becomes a defensible one. Run all five passes on the chosen candidate, in order. Record each pass's output in the candidate's `grillNotes`, checking it against the earlier passes' notes before starting the next — a later pass that contradicts an earlier one changes the candidate's grading, not just that pass's note.
 
 1. **Design tree walk** — what does this code reach? What reaches it? Map the dependency and consumer trees.
 2. **Challenge assumptions** — why does the abstraction exist? What changed since it was introduced? Has the original justification held up?
