@@ -1091,6 +1091,18 @@ def selftest(root=ROOT):
 
 
 if __name__ == '__main__':
+    # W2-T36 (D45's sibling fix, same subprocess.run call): the tree is full
+    # of em dashes and § marks, and stdout/stderr fall back to the process's
+    # locale encoding, not UTF-8, when that locale is ASCII (a bare `LC_ALL=C`
+    # environment, common in CI and minimal shells). Reconfigure both streams
+    # to UTF-8 at entry rather than hunting non-ASCII characters out of every
+    # print — that policy is unenforceable in a tree this full of them.
+    # `reconfigure` was added in 3.7; the guard is for an interpreter old
+    # enough, or a stream type, that lacks it, not for a normal failure mode.
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, 'reconfigure'):
+            _stream.reconfigure(encoding='utf-8')
+
     # Branch on argument COUNT, not truthiness of the argument (D42): the
     # regenerate arm below must only be reachable with zero arguments.
     # `mode = sys.argv[1] if len(sys.argv) > 1 else ''` used to fall through
