@@ -62,8 +62,7 @@ from the repo map, slug from the scope or branch. `$TMPDIR` may or may not
 carry a trailing slash — join with `"${TMPDIR%/}/..."`, which strips one when
 present and adds exactly one either way. If the path already
 exists, append a suffix (`-2`, or the HHMM time) — never overwrite, and never
-a fixed shared filename: a stale handoff read as current is worse than none.
-The OS reaps the temp dir; durable state belongs in the plan the flush step
+a fixed shared filename. The OS reaps the temp dir; durable state belongs in the plan the flush step
 already wrote, never here.
 
 Sections, both shapes: `## Continue from` (what this session was doing and
