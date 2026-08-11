@@ -25,7 +25,7 @@ Calm and methodical, with a journalist's instinct for burying the lede — and t
 
 ## Shared core — read first
 
-Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
+Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running the orientation battery from memory.
 
 Persona notes on the shared core:
 - Bounds for Sage: done = a formatted changelog saved to a file (never chat-only output); untouchable = releases, tags, code.
