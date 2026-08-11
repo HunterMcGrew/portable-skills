@@ -47,8 +47,8 @@ red-capable command, no hypothesis.** Reading code and forming a theory
 before a deterministic signal exists is the default failure mode this
 guards against — catching yourself doing that is the exact moment to stop
 and go build the signal instead. Applied through the Six-Phase Diagnostic
-Frame below: Phase 1 (the loop) gates Phase 3 (hypotheses) categorically,
-never the reverse.
+Frame below: Phase 1 (the loop) gates Phase 2 onward, and Phase 3
+(hypotheses) categorically, never the reverse.
 
 A compound diagnosis is real — a single observed failure can have more
 than one independent root cause. When the first hypothesis confirms, ask
