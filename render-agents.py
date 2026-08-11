@@ -502,13 +502,18 @@ def _iter_citation_sites(root=ROOT):
 
 def check_citations(root=ROOT):
     """Every `§ X` citation under `skills/` that fails to resolve against
-    its resolvable target set, as `('citation-unresolved', detail)` pairs —
-    see the block comment above `CITATION_RE` for the resolution rules and
-    this check's stated bound."""
+    its resolvable target set, as `('citation-unresolved', 'citation-
+    unresolved', detail)` triples — see the block comment above
+    `CITATION_RE` for the resolution rules and this check's stated bound.
+    The middle element is the arm id (ARMS, D46) — one arm here, so it
+    always equals the kind, but it is still threaded explicitly: G1 reads
+    the literal at this append site, not a rule about when arm equals
+    kind."""
     v = []
     for rel, line, cite, targets in _iter_citation_sites(root):
         if not _resolves(cite, targets):
-            v.append(('citation-unresolved', '%s:%d § %s' % (rel, line, cite)))
+            v.append(('citation-unresolved', 'citation-unresolved',
+                      '%s:%d § %s' % (rel, line, cite)))
     return v
 
 
@@ -605,8 +610,9 @@ def removed_targets_from_git(root=ROOT):
 
 
 def check_orphaned_citations(removed_targets, root=ROOT):
-    """`('citation-orphaned', detail)` for every `§` citation naming a
-    heading or bold label removed by the change under review (D34).
+    """`('citation-orphaned', 'citation-orphaned', detail)` triples for every
+    `§` citation naming a heading or bold label removed by the change under
+    review (D34). The middle element is the ARMS (D46) arm id.
     `removed_targets` is a parameter, not derived internally — that is what
     lets `--selftest` grade this check's behaviour with no git plumbing,
     and what makes it diff-scoped rather than tree-wide: it has nothing to
@@ -643,7 +649,7 @@ def check_orphaned_citations(removed_targets, root=ROOT):
             # flag this check exists to raise.
             if _resolves_forward(cite, targets - {t}):
                 break  # still resolves against a surviving target — suppress
-            v.append(('citation-orphaned',
+            v.append(('citation-orphaned', 'citation-orphaned',
                       '%s:%d § %s — heading "%s" removed by this change'
                       % (rel, line, cite, t)))
             break
@@ -653,10 +659,134 @@ def check_orphaned_citations(removed_targets, root=ROOT):
 PROFILE_PATH_RE = re.compile(r'~/\.claude[\w.-]*/skills')
 
 
+# ARMS / CONTROLS (D46). Five findings from the pass-3 sweep — skipped-is-
+# loud calling the producer instead of grading through check_all;
+# never-reverse passing vacuously; profile-path's four controls never
+# varying the literal; citation-inlined's truncation reaching one arm of
+# three; a narrowed citation denominator being invisible to every control —
+# turned out to be one property, not five point fixes: a 220-line selftest()
+# in which controls and arms were related only by whoever last read both.
+#
+# ARMS is one row per way a check can produce a result — one row per
+# `v.append` site (arm id threaded as the middle element of every violation
+# triple, see check_citations/check_orphaned_citations/check_all above),
+# plus one row per producer skip reason (removed_targets_from_git's three
+# `return set(), '<reason>'` sites). Not one row per check: toml-drift and
+# citation-inlined each have more than one arm, and no control run against
+# only one of them proves anything about the others.
+#
+# Fields: kind (the string a violation's first tuple element carries),
+# arm (the id; unique, used as ARMS' key), reachable ('check_all' — this
+# arm's violations flow through check_all's return — or 'direct', for the
+# three skip reasons, which never become a violation and instead land in
+# check_all's `notes`), variance (None, or the dimension G4 requires ≥2
+# controls to span: 'payload' for a pattern-driven arm like profile-path,
+# where a control that always plants the same literal can't tell a correct
+# regex from one narrowed to that one string; 'corpus_kind' for a glob-
+# driven arm like the citation checks, where a control that only ever
+# plants into one kind of file can't tell a correct glob from one that
+# silently stopped covering another kind), and bound (the text this arm's
+# own known limits are printed as, when it has any beyond what its
+# `variance` control already exercises — most arms have none).
+ARMS = {
+    'citation-unresolved': dict(
+        kind='citation-unresolved', reachable='check_all',
+        variance='corpus_kind',
+        bound='tree-wide only; has no diff information, so a coincidental '
+              'short-word collision cannot be told apart from a citation '
+              'whose real target was deleted by the change under review'),
+    'toml-drift/missing': dict(
+        kind='toml-drift', reachable='check_all', variance=None, bound=''),
+    'toml-drift/differs': dict(
+        kind='toml-drift', reachable='check_all', variance=None, bound=''),
+    'citation-inlined/body': dict(
+        kind='citation-inlined', reachable='check_all', variance=None,
+        bound=''),
+    'citation-inlined/shared-fragment': dict(
+        kind='citation-inlined', reachable='check_all', variance=None,
+        bound=''),
+    'citation-inlined/reference': dict(
+        kind='citation-inlined', reachable='check_all', variance=None,
+        bound=''),
+    'profile-path': dict(
+        kind='profile-path', reachable='check_all', variance='payload',
+        bound=''),
+    'prefixed-reference': dict(
+        kind='prefixed-reference', reachable='check_all', variance=None,
+        bound=''),
+    'orphan-toml': dict(
+        kind='orphan-toml', reachable='check_all', variance=None, bound=''),
+    'citation-orphaned': dict(
+        kind='citation-orphaned', reachable='check_all',
+        variance='corpus_kind',
+        bound='diff-scoped to the change under review; does not cover '
+              'pre-existing breakage, uncommitted deletions, or a citation '
+              'suppressed by a surviving target (D48, printed in notes on '
+              'every run)'),
+    'skip/not-a-git-repo': dict(
+        kind='skip', reachable='direct', variance=None, bound=''),
+    'skip/no-merge-base': dict(
+        kind='skip', reachable='direct', variance=None, bound=''),
+    'skip/git-diff-failed': dict(
+        kind='skip', reachable='direct', variance=None, bound=''),
+}
+
+
+def _g1_code_arms(root=ROOT):
+    """AST-scans `render-agents.py` itself for every arm-id string literal
+    reaching a `v.append(...)` call inside `check_all`, `check_citations`,
+    and `check_orphaned_citations` — the three functions that build
+    violation triples. Reads the code, not a hand-kept list: an arm added
+    to a `v.append` call with no matching `ARMS` row is invisible to every
+    other gate, so this is the one gate with no gate of its own above it.
+
+    Bound, stated because it is real (D46): this only sees arm ids written
+    as a string literal at the append site. An arm id computed at runtime —
+    built from a variable, an f-string, string concatenation — escapes it.
+    That is a constraint on how checks in this file are written, not a
+    limitation to work around."""
+    import ast
+    src = open(os.path.join(root, 'render-agents.py'), encoding='utf-8').read()
+    tree = ast.parse(src)
+    target_fns = {'check_all', 'check_citations', 'check_orphaned_citations'}
+    found = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name in target_fns:
+            for sub in ast.walk(node):
+                if (isinstance(sub, ast.Call)
+                        and isinstance(sub.func, ast.Attribute)
+                        and sub.func.attr == 'append'
+                        and isinstance(sub.func.value, ast.Name)
+                        and sub.func.value.id == 'v'
+                        and sub.args and isinstance(sub.args[0], ast.Tuple)
+                        and len(sub.args[0].elts) >= 2
+                        and isinstance(sub.args[0].elts[1], ast.Constant)
+                        and isinstance(sub.args[0].elts[1].value, str)):
+                    found.add(sub.args[0].elts[1].value)
+    return found
+
+
+def _g1_arms_closure(root=ROOT):
+    """G1 (D46): code arms and `ARMS` rows must be exactly the same set —
+    scoped to the `v.append`-reachable rows only (`kind != 'skip'`); the 3
+    producer skip-reason rows are a different mechanism (a bare `return`,
+    never a `v.append`) and are validated by G2's coverage requirement
+    instead, not by this AST scan. Returns (ok, extra_in_code, extra_in_arms)
+    — `extra_in_code` is an arm the code emits with no `ARMS` row (the
+    new-arm-with-no-row case this gate exists to reject); `extra_in_arms` is
+    a row nothing emits (a stale entry, or a typo in the row's own id)."""
+    code = _g1_code_arms(root)
+    declared = {a for a, row in ARMS.items() if row['kind'] != 'skip'}
+    return (code == declared, sorted(code - declared), sorted(declared - code))
+
+
 def check_all(root=ROOT):
     """Every violation the repo can currently detect, as (kind, detail) pairs,
     plus the counts each check examined, plus informational notes. Read-only
-    — writes nothing.
+    — writes nothing. Internally, every violation carries a third element —
+    an arm id (ARMS, D46) naming exactly which way of producing that kind of
+    result fired — but the public return strips it back to (kind, detail),
+    so no existing caller has to change.
 
     Returns (violations, counts, notes). `counts` is emitted alongside the
     verdict on purpose: `0 violations` says nothing without the denominator
@@ -765,9 +895,10 @@ def check_all(root=ROOT):
         t = '%s/codex-agents/%s.toml' % (root, p)
         cur = open(t, encoding='utf-8').read() if os.path.exists(t) else None
         if cur is None:
-            v.append(('toml-drift', '%s.toml missing' % p))
+            v.append(('toml-drift', 'toml-drift/missing', '%s.toml missing' % p))
         elif cur != render(p, root):
-            v.append(('toml-drift', '%s.toml differs from its skills/ source' % p))
+            v.append(('toml-drift', 'toml-drift/differs',
+                      '%s.toml differs from its skills/ source' % p))
 
     for p in ps:
         t = '%s/codex-agents/%s.toml' % (root, p)
@@ -777,7 +908,8 @@ def check_all(root=ROOT):
         sk = open('%s/skills/%s/SKILL.md' % (root, p), encoding='utf-8').read()
         body = skill_body(sk, is_text=True).strip('\n')
         if body not in toml_text:
-            v.append(('citation-inlined', "%s.toml does not contain %s's own "
+            v.append(('citation-inlined', 'citation-inlined/body',
+                      "%s.toml does not contain %s's own "
                       "current SKILL.md body verbatim" % (p, p)))
         for name in sorted(set(m for m in EXTRA_SHARED_RE.findall(body)
                                 if m not in EXTRA_SHARED_SKIP)):
@@ -786,7 +918,8 @@ def check_all(root=ROOT):
                 continue  # render() already errors loudly on this
             content = open(frag, encoding='utf-8').read().strip('\n')
             if content not in toml_text:
-                v.append(('citation-inlined', '%s.toml is missing the current '
+                v.append(('citation-inlined', 'citation-inlined/shared-fragment',
+                          '%s.toml is missing the current '
                           'verbatim content of _shared/%s.md, which its body '
                           'cites' % (p, name)))
         for owner, name in sorted(set(REFERENCE_RE.findall(body))):
@@ -796,7 +929,8 @@ def check_all(root=ROOT):
                 continue  # render() already errors loudly on this
             content = open(ref, encoding='utf-8').read().strip('\n')
             if content not in toml_text:
-                v.append(('citation-inlined', '%s.toml is missing the current '
+                v.append(('citation-inlined', 'citation-inlined/reference',
+                          '%s.toml is missing the current '
                           'verbatim content of references/%s.md, which its '
                           'body cites' % (p, name)))
 
@@ -805,7 +939,7 @@ def check_all(root=ROOT):
         for i, line in enumerate(open(f, encoding='utf-8'), 1):
             m = PROFILE_PATH_RE.search(line)
             if m:
-                v.append(('profile-path', '%s:%d hardcodes %s'
+                v.append(('profile-path', 'profile-path', '%s:%d hardcodes %s'
                           % (os.path.relpath(f, root), i, m.group(0))))
 
     for f in md:
@@ -825,7 +959,8 @@ def check_all(root=ROOT):
             # match here.
             for pm in REFERENCE_RE.finditer(line):
                 if pm.group(1) == owner:
-                    v.append(('prefixed-reference', '%s:%d cites its own %s '
+                    v.append(('prefixed-reference', 'prefixed-reference',
+                              '%s:%d cites its own %s '
                               'via the repo-root-relative form instead of '
                               'the bare references/ form'
                               % (rel, i, pm.group(0))))
@@ -835,7 +970,8 @@ def check_all(root=ROOT):
     for t in tomls:
         p = os.path.basename(t)[:-5]
         if p not in valid:
-            v.append(('orphan-toml', '%s.toml has no persona in skills/' % p))
+            v.append(('orphan-toml', 'orphan-toml',
+                      '%s.toml has no persona in skills/' % p))
 
     notes = []
     removed_targets, skip_reason = removed_targets_from_git(root)
@@ -862,7 +998,12 @@ def check_all(root=ROOT):
     multi, total = _citation_multi_match_stats(root)
     notes.append('%d of %d § citations match more than one target' % (multi, total))
 
-    return v, {'personas': len(ps), 'markdown files': len(md), 'tomls': len(tomls)}, notes
+    # v accumulated as (kind, arm, detail) triples (D46) so an arm id exists
+    # at the site that emits it; the public return stays (kind, detail)
+    # pairs, unchanged, so no existing caller has to change.
+    violations = [(kind, detail) for kind, arm, detail in v]
+    return violations, {'personas': len(ps), 'markdown files': len(md),
+                         'tomls': len(tomls)}, notes
 
 
 def selftest(root=ROOT):
@@ -875,6 +1016,19 @@ def selftest(root=ROOT):
     with tempfile.TemporaryDirectory() as tmp:
         r = os.path.join(tmp, 'repo')
         shutil.copytree(root, r, ignore=shutil.ignore_patterns('.git', '__pycache__'))
+
+        # G1 reads the module's source text via AST, not check_all's
+        # behaviour, so it runs — and can fail — before the baseline-clean
+        # check below: an unregistered arm reaching v.append is exactly the
+        # shape of bug that also makes the baseline copy dirty (the arm
+        # fires unconditionally), and G1's own verdict must still print in
+        # that case rather than being swallowed by the early return.
+        g1_ok, g1_extra_code, g1_extra_arms = _g1_arms_closure(r)
+        ok &= g1_ok
+        print('selftest: G1/arms-closure     %s%s'
+              % ('ok' if g1_ok else 'NO',
+                 '' if g1_ok else ' (unregistered in code: %s; unmatched in '
+                 'ARMS: %s)' % (g1_extra_code, g1_extra_arms)))
 
         base, counts, base_notes = check_all(r)
         if base:
@@ -1034,7 +1188,7 @@ def selftest(root=ROOT):
         # nothing else in the tree resolves it forward once it's "removed".
         hits = check_orphaned_citations({'Run close'}, r)
         fired_named = any(k == 'citation-orphaned' and 'Run close' in d
-                           for k, d in hits)
+                           for k, a, d in hits)
         clean_empty = not check_orphaned_citations(set(), r)
         ok &= fired_named and clean_empty
         print('selftest: %-22s red=%s clean-with-empty-set=%s'
@@ -1049,7 +1203,7 @@ def selftest(root=ROOT):
         hits = check_orphaned_citations(
             {'Phase 4: GitHub writes (one batch — all writes together'}, r)
         fired_abbrev = any(k == 'citation-orphaned' and 'eric' in d
-                            and 'Phase 4' in d for k, d in hits)
+                            and 'Phase 4' in d for k, a, d in hits)
         ok &= fired_abbrev
         print('selftest: %-22s red=%s'
               % ('citation-orphaned/abbreviated', 'yes' if fired_abbrev else 'NO'))
@@ -1065,7 +1219,7 @@ def selftest(root=ROOT):
         hits = check_orphaned_citations({'Accessibility'}, r)
         never_reversed = not any(
             k == 'citation-orphaned' and 'Accessibility Review' in d
-            for k, d in hits)
+            for k, a, d in hits)
         ok &= never_reversed
         print('selftest: %-22s never-flagged=%s'
               % ('citation-orphaned/never-reverse',
