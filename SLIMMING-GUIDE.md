@@ -191,7 +191,7 @@ Ranked by suppression risk, not by file size:
 2. **`eric`** (6,345) and **`briar`** (5,566) — reviewers, where a suppressed external lookup becomes a missed bug. Also the skills most at risk of acquiring rule 6's "be conservative" phrasing.
 3. **`pixel`** (6,017) — prescribed reads, and design work leans on external convention.
 4. **`reese`** (6,955) and **`nora`** (6,125) — largest in the roster; likely restatement-heavy given their overlap with Winston's AC contract.
-5. **`_shared/core.md`** — a cut here lands in all 30. The Closing Re-Orientation Battery is the open question: item 4 already hedges with "the bar is honest reporting, not extra checking," but the battery as a whole is a closing verification ceremony of exactly the kind rule 2 removes. Worth isolating, and worth being careful with — the blast radius is the entire roster.
+5. **`_shared/core.md`** — a cut here lands in all 30. **Resolved by the judgment-first-roster run (Part 11): the Closing Re-Orientation Battery was cut** — it was a closing verification ceremony of exactly the kind rule 2 removes — **and the Opening Orientation Battery was kept**, on the strength of this guide's own rule 1: it is neither a prescribed read sequence nor a verification checklist, just four questions about the request.
 
 The unanswered question underneath all of this: **what does a skill add over the always-on rules?** The no-skill control in the bake-off produced 801 chat words, 18 tasks, and 15 verification commands — matching or beating both Winston versions on detail at a third of the output — and it did research the skills didn't. Its one durable weakness was task sequencing (2 sequence markers vs 7–8). The skill's measured marginal contribution was ~1,500 extra chat words for a better-sequenced plan.
 
@@ -363,3 +363,57 @@ class both reviewers missed leaves no trace in either reviewer's output, so the 
 include it — the method is structurally blind to it. `3 of 7` is a measured lower bound on the
 true miss rate, not the true miss rate; a future run should read it that way rather than as a
 completed measurement.
+
+## Part 11 — Judgment-first roster: what this run reversed and what it added
+
+The `judgment-first-roster` plan (2026-08-10/11) took this guide's own rubric back to the
+roster after the first slimming pass shipped, and reversed three of its own briefed cuts on
+the strength of evidence this file already recorded. **A reversal that isn't written down gets
+re-proposed** — that is the reason this Part exists, not narrative completeness.
+
+**Reversed against the incoming brief, using this guide's own evidence:**
+
+- **`_shared/core.md § Context budget` was briefed as a cut and kept.** Part 1 rule 7 protects
+  it by name: "already matches Anthropic's recommended guidance almost line for line… Noted
+  here so nobody deletes it during a slimming pass." The brief instructed deleting the exact
+  thing this rule exists to protect.
+- **`_shared/core.md § Opening Orientation Battery` was briefed as a cut and kept**, per Part 7
+  item 5's resolution above — it is four questions about the request, not a prescribed
+  sequence or a verification checklist.
+- **`briar § Diff-only reading` was briefed as a cut and kept**, condensed to one line. It is a
+  live, human-set rule ("we should only go over the diff"), and `_shared/review-exhaustiveness.md`
+  cites it as the sibling-arm sweep's escape — deleting it would have orphaned a cross-reference
+  in a file two reviewers share.
+
+**What the run added**, having established (via a bake-off recorded in `<plans>/reviewer-recall.md`)
+that these were the roster's real gaps rather than restatement: briar's two-axis Standards/Spec
+split (mirroring eric's, both now citing one shared assignment in `_shared/review-angles.md`
+§ Axis split rather than each hardcoding it); sasha rebuilt around a loop-first ordering — no
+red-capable command, no hypothesis; and a persona-less `tdd` reference skill holding the
+red-green loop and its three anti-patterns, excluded from both generated projections by the
+same persona-line mechanism that already excluded `devils-advocate`, `handoff`, and
+`review-loop`.
+
+### The tooling verified structure and was blind to whether prose was true
+
+The run's single most reusable finding. A mid-run review (`eric`'s Standards axis, folded into
+this plan before it shipped) found that **none of the five existing `render-agents.py` checks
+read prose cross-references** — every one of them compares generated output against source,
+never a `§ heading` citation against the section it names. A cut that deleted a definition out
+from under a surviving citation went undetected by all five, because the checks verify that
+the generated surface is *consistent*, never that the prose is *true*. Every defect the run's
+review passes surfaced — stale battery-count plurals, missed sweep sites, a dangling pass-order
+citation — trace back to this one mechanical gap.
+
+The fix was a sixth check, `check_citations()`: for every markdown file under `skills/`, resolve
+every `§ X` citation against that file's own headings, its `references/` siblings, and
+`_shared/core.md`. It closes the dangling-pointer half of the class — a citation that fails to
+*resolve*. It does **not** close the other half: a citation that resolves to a heading whose
+*content* was hollowed out from under it reads clean by design, because the heading still
+exists. That half stays a human-read finding. Don't oversell the check when citing it as
+evidence a rewrite is safe.
+
+**The generalizable lesson, restated for the next slimming pass:** a deletion that removes a
+definition must sweep for every instruction that cites the term, in the same commit — and green
+checks are evidence the generated surface didn't drift, never evidence the prose still says
+what it claims to.
