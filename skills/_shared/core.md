@@ -45,10 +45,8 @@ Run once, immediately after startup and before any work.
 run-on line.** Emit them in chat before any work starts:
 
 - **Intent** — the outcome actually being asked for, not the literal words.
-- **Ambiguity** — what's readable two ways *and* load-bearing. Nothing
-  load-bearing is the common case: write `none load-bearing; assuming <X>`,
-  naming the reading you took. Never blank, never `n/a` — the assumption is
-  the content.
+- **Ambiguity** — write `none load-bearing; assuming <X>`, naming the reading
+  you took. Never blank, never `n/a` — the assumption is the content.
 - **Bounds** — what done looks like, and what must not be touched.
 - **Approach** — the smallest correct approach, and whether a simpler framing
   than the obvious one exists.
