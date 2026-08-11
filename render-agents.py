@@ -843,6 +843,22 @@ def check_all(root=ROOT):
         notes.append('citation-orphaned: skipped (%s)' % skip_reason)
     else:
         v.extend(check_orphaned_citations(removed_targets, root))
+    # D48: the bound is printed where the verdict is printed, on every run —
+    # not only on the skip path. Two of the five classes this check could
+    # miss are now fixed behaviour (worktrees, D45; fence-donated removals,
+    # D47) and are deliberately not listed here — a bound that no longer
+    # applies is the same dishonesty one direction over. The three that
+    # remain: pre-existing breakage (this check is diff-scoped to the
+    # change under review, never the whole tree); uncommitted deletions
+    # (the diff is merge-base..HEAD, so a heading deleted only in the
+    # working tree, not yet committed, is invisible — documented nowhere
+    # before this line); and a citation suppressed because it still
+    # resolves against a surviving target.
+    notes.append(
+        'citation-orphaned: examined %d removed target%s; does not cover '
+        'pre-existing breakage, uncommitted deletions, or a citation '
+        'suppressed by a surviving target'
+        % (len(removed_targets), '' if len(removed_targets) == 1 else 's'))
     multi, total = _citation_multi_match_stats(root)
     notes.append('%d of %d § citations match more than one target' % (multi, total))
 
