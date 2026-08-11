@@ -718,7 +718,7 @@ ARMS = {
         kind='orphan-toml', reachable='check_all', variance=None, bound=''),
     'citation-orphaned': dict(
         kind='citation-orphaned', reachable='check_all',
-        variance='corpus_kind',
+        variance=None,
         bound='diff-scoped to the change under review; does not cover '
               'pre-existing breakage, uncommitted deletions, or a citation '
               'suppressed by a surviving target (D48, printed in notes on '
@@ -1035,7 +1035,8 @@ def _build_controls(r):
     the table: one call, one entry per control, closed against `ARMS`
     exactly like a static table would be, just built against `r` instead of
     read off disk."""
-    import shutil
+    import shutil, subprocess
+    tmp_parent = os.path.dirname(r)
     rows = []
 
     def add(id_, arm, label, via, ok, payload=None, corpus_kind=None,
@@ -1054,21 +1055,26 @@ def _build_controls(r):
     add('toml-drift', 'toml-drift/differs', 'toml-drift', 'check_all',
         fired and cleared)
 
-    # profile-path, via check_all, corpus_kind variance: plant the literal
-    # in one file of every kind check_all's md glob reaches — persona body,
-    # reference file, non-core fragment, and core.md itself — so a future
-    # narrowing of that glob shows up as a missing corpus_kind rather than
-    # a green check over a surface it stopped reading.
+    # profile-path, via check_all, payload AND corpus_kind variance (G4,
+    # W2-T39): plant the literal in one file of every kind check_all's md
+    # glob reaches — persona body, reference file, non-core fragment, and
+    # core.md itself — so a future narrowing of that glob shows up as a
+    # missing corpus_kind rather than a green check over a surface it
+    # stopped reading. The payload also varies across rows now: all four
+    # planting the identical `~/.claude-work/skills` literal let
+    # `PROFILE_PATH_RE` be narrowed to exactly that string with every
+    # control still green (D46's payload-variance finding) — three
+    # distinct payloads here, each still matching the real regex.
     bodies = sorted(glob.glob(r + '/skills/*/SKILL.md'))
     refs = sorted(glob.glob(r + '/skills/*/references/*.md'))
     frags = sorted(f for f in glob.glob(r + '/skills/_shared/*.md')
                    if os.path.basename(f) not in ('core.md',))
     for id_, corpus_kind, found, payload in (
             ('profile-path/core', 'core', ['%s/skills/_shared/core.md' % r],
-             '~/.claude-work/skills'),
+             '~/.claude/skills'),
             ('profile-path/skill', 'skill', bodies, '~/.claude-work/skills'),
             ('profile-path/reference', 'reference', refs,
-             '~/.claude-work/skills'),
+             '~/.claude.bak/skills'),
             ('profile-path/fragment', 'fragment', frags,
              '~/.claude-work/skills')):
         if not found:
@@ -1150,6 +1156,50 @@ def _build_controls(r):
         'citation-unresolved/no-target', 'check_all', fired and cleared,
         corpus_kind='core')
 
+    # citation-unresolved/no-target-reference, corpus_kind='reference'
+    # (G4, W2-T39): the same absent-target plant, but into a references/
+    # file instead of core.md, so a future narrowing of
+    # `_iter_citation_sites`'s glob to drop `references/` shows up as a
+    # missing corpus_kind rather than a green check over a surface it
+    # stopped reading.
+    if refs:
+        fired, cleared = _mutate_and_grade(
+            r, 'citation-unresolved', refs[0],
+            lambda s: s + '\n\nSee § Zzyzx9Unresolvable Selftest Marker '
+                           'Heading for details.\n')
+        add('citation-unresolved/no-target-reference', 'citation-unresolved',
+            'citation-unresolved/no-target-reference', 'check_all',
+            fired and cleared, corpus_kind='reference')
+    else:
+        add('citation-unresolved/no-target-reference', 'citation-unresolved',
+            'citation-unresolved/no-target-reference', 'check_all', False,
+            corpus_kind='reference',
+            note='NO FILE — nothing of this kind in the tree to plant in')
+
+    # citation-unresolved/fence-only, corpus_kind='shared-fragment' (G4,
+    # W2-T39, and `_strip_fences`'s first control, D41): plant BOTH a
+    # fenced `#`-heading and a `§` citation naming it, into the same
+    # _shared/*.md fragment. A heading that exists only inside a fenced
+    # code block donates no live target — this control fails if that
+    # stops being true, i.e. if a citation naming a fence-quoted heading
+    # started silently resolving.
+    if frags:
+        marker = 'Zzyzx8 Selftest Fence-Only Heading'
+
+        def _fence_plant(s, _m=marker):
+            return (s + '\n\n```markdown\n# %s\n```\n\n'
+                    'See § %s for details.\n' % (_m, _m))
+        fired, cleared = _mutate_and_grade(
+            r, 'citation-unresolved', frags[0], _fence_plant)
+        add('citation-unresolved/fence-only', 'citation-unresolved',
+            'citation-unresolved/fence-only', 'check_all', fired and cleared,
+            corpus_kind='shared-fragment')
+    else:
+        add('citation-unresolved/fence-only', 'citation-unresolved',
+            'citation-unresolved/fence-only', 'check_all', False,
+            corpus_kind='shared-fragment',
+            note='NO FILE — nothing of this kind in the tree to plant in')
+
     # citation-orphaned. check_orphaned_citations() directly with a
     # removed-target set — no git, no commit, no diff plumbing, exactly
     # because the signature takes `removed_targets` as a parameter. `r` has
@@ -1169,25 +1219,202 @@ def _build_controls(r):
     add('citation-orphaned/abbreviated', 'citation-orphaned',
         'citation-orphaned/abbreviated', 'direct', fired_abbrev)
 
-    # citation-orphaned/never-reverse: pass the SHORT target. Today this
-    # passes vacuously (AC-50) — `### Accessibility Review` is still a live
-    # heading at briar's own SKILL.md, so the suppression path forgives the
-    # citation whichever direction the hit test uses, and this control
-    # never actually exercises the direction it's named for. W2-T39
-    # rebuilds it on a synthetic fixture with a declared twin (G5); left
-    # as-is here so this migration commit changes no control's behaviour.
-    hits = check_orphaned_citations({'Accessibility'}, r)
+    # citation-orphaned/never-reverse (G5, W2-T39): rebuilt on a synthetic
+    # fixture, not the real tree. Against the real tree this passed
+    # vacuously (AC-50) — `### Accessibility Review` is still a live
+    # heading at briar's own SKILL.md, so the suppression path
+    # (`_resolves_forward(cite, targets - {t})`) forgives the citation
+    # whichever direction the hit test uses, and the control's fired/
+    # not-fired outcome was identical under correct code and under the
+    # reverse-direction mutant. This fixture has NO heading or bold label
+    # anywhere resembling "Accessibility" — nothing left to suppress with —
+    # so a citation `§ Accessibility Review` against removed target
+    # `{'Accessibility'}` (13 chars, shorter) can only stay unflagged under
+    # the correct one-directional hit test (`t.startswith(cite)`, false
+    # here since `t` is shorter) and WOULD flag under the mutant that adds
+    # `cite.startswith(t)`.
+    nr_root = os.path.join(tmp_parent, 'scratch-never-reverse')
+    os.makedirs(os.path.join(nr_root, 'skills', '_shared'), exist_ok=True)
+    os.makedirs(os.path.join(nr_root, 'skills', 'testp'), exist_ok=True)
+    open(os.path.join(nr_root, 'skills', '_shared', 'core.md'), 'w',
+         encoding='utf-8').write('# Shared Core\n\n## Session close\n\n'
+                                  'placeholder.\n')
+    open(os.path.join(nr_root, 'skills', 'testp', 'SKILL.md'), 'w',
+         encoding='utf-8').write(
+        '---\nname: testp\ndescription: test\n---\n'
+        'You are **Testp** (they/them), a test persona.\n\n'
+        'See § Accessibility Review.\n')
+    hits = check_orphaned_citations({'Accessibility'}, nr_root)
     never_reversed = not any(
         k == 'citation-orphaned' and 'Accessibility Review' in d
         for k, a, d in hits)
     add('citation-orphaned/never-reverse', 'citation-orphaned',
-        'citation-orphaned/never-reverse', 'direct', never_reversed)
+        'citation-orphaned/never-reverse', 'direct', never_reversed,
+        expect='never-fires', twin='citation-orphaned/never-reverse-twin')
+
+    # citation-orphaned/never-reverse-twin (G5): the SAME fixture, an
+    # EXACT-match removed target (`cite == t`, no direction question at
+    # all) — proves the fixture's citation is actually reachable and
+    # gradable by this call path, not silently inert. Without this, the
+    # never-fires control above would read "never-flagged=yes" even if the
+    # fixture were broken and no citation were extracted from it at all.
+    hits = check_orphaned_citations({'Accessibility Review'}, nr_root)
+    twin_fired = any(k == 'citation-orphaned' and 'Accessibility Review' in d
+                      for k, a, d in hits)
+    add('citation-orphaned/never-reverse-twin', 'citation-orphaned',
+        'citation-orphaned/never-reverse-twin', 'direct', twin_fired)
 
     removed, reason = removed_targets_from_git(r)
     skip_loud = reason is not None and removed == set()
     add('citation-orphaned/skipped-is-loud', 'skip/not-a-git-repo',
         'citation-orphaned/skipped-is-loud', 'direct', skip_loud,
         note='skip-reason=%r' % reason)
+
+    # toml-drift/missing, via check_all (W2-T39): delete a toml outright
+    # rather than editing it — the existing toml-drift control only ever
+    # exercised the "differs" arm.
+    ps = personas(r)
+    p_missing = ps[1] if len(ps) > 1 else ps[0]
+    toml_missing_path = '%s/codex-agents/%s.toml' % (r, p_missing)
+    orig = open(toml_missing_path, encoding='utf-8').read()
+    os.remove(toml_missing_path)
+    fired = bool([x for x in check_all(r)[0] if x[0] == 'toml-drift'])
+    open(toml_missing_path, 'w', encoding='utf-8').write(orig)
+    cleared = not [x for x in check_all(r)[0] if x[0] == 'toml-drift']
+    add('toml-drift/missing', 'toml-drift/missing', 'toml-drift/missing',
+        'check_all', fired and cleared)
+
+    # citation-inlined/body, via check_all (W2-T39): mutate the SOURCE
+    # SKILL.md so its body content diverges from what the (unregenerated)
+    # toml already contains — this is the arm the existing truncation
+    # control cannot reach (see the note above the /reference control).
+    p_body = ps[2] if len(ps) > 2 else ps[0]
+    body_sk_path = '%s/skills/%s/SKILL.md' % (r, p_body)
+    orig = open(body_sk_path, encoding='utf-8').read()
+    open(body_sk_path, 'w', encoding='utf-8').write(
+        orig + '\n\nSelftest body mutation marker.\n')
+    fired = bool([x for x in check_all(r)[0] if x[0] == 'citation-inlined'])
+    open(body_sk_path, 'w', encoding='utf-8').write(orig)
+    cleared = not [x for x in check_all(r)[0] if x[0] == 'citation-inlined']
+    add('citation-inlined/body', 'citation-inlined/body',
+        'citation-inlined/body', 'check_all', fired and cleared)
+
+    # citation-inlined/shared-fragment, via check_all (W2-T39): same idea,
+    # for a _shared/*.md fragment some persona's body cites — find the
+    # first (persona, fragment) pair via EXTRA_SHARED_RE, the same pattern
+    # render() and check_all's own citation-inlined loop use.
+    frag_name = None
+    for pp in ps:
+        pbody = skill_body(
+            open('%s/skills/%s/SKILL.md' % (r, pp), encoding='utf-8').read(),
+            is_text=True)
+        matches = [m for m in EXTRA_SHARED_RE.findall(pbody)
+                   if m not in EXTRA_SHARED_SKIP]
+        if matches:
+            frag_name = matches[0]
+            break
+    if frag_name:
+        frag_path = '%s/skills/_shared/%s.md' % (r, frag_name)
+        orig = open(frag_path, encoding='utf-8').read()
+        open(frag_path, 'w', encoding='utf-8').write(
+            orig + '\n\nSelftest fragment mutation marker.\n')
+        fired = bool([x for x in check_all(r)[0] if x[0] == 'citation-inlined'])
+        open(frag_path, 'w', encoding='utf-8').write(orig)
+        cleared = not [x for x in check_all(r)[0] if x[0] == 'citation-inlined']
+        add('citation-inlined/shared-fragment', 'citation-inlined/shared-fragment',
+            'citation-inlined/shared-fragment', 'check_all', fired and cleared)
+    else:
+        add('citation-inlined/shared-fragment', 'citation-inlined/shared-fragment',
+            'citation-inlined/shared-fragment', 'check_all', False,
+            note='NO FILE — no persona body cites a non-core _shared fragment')
+
+    # citation-orphaned via check_all (W2-T39): the control G3 demands, and
+    # the one whose absence let the shipping path (check_all's own
+    # `v.extend(check_orphaned_citations(...))` line) be deleted with every
+    # control still green (D46's mutation proof). A real scratch git repo —
+    # `r` deliberately has no `.git` (see skipped-is-loud above), so this
+    # needs its own copy: init, commit the current tree as base on `main`,
+    # then commit a real heading deletion, and grade THROUGH `check_all`,
+    # not a direct call to `check_orphaned_citations`.
+    co_root = os.path.join(tmp_parent, 'scratch-citation-orphaned')
+    shutil.copytree(r, co_root, ignore=shutil.ignore_patterns('__pycache__'))
+
+    def _git(args, cwd=co_root):
+        return subprocess.run(['git'] + args, cwd=cwd, capture_output=True,
+                               text=True, encoding='utf-8')
+    _git(['init', '-q', '-b', 'main'])
+    _git(['config', 'user.email', 'selftest@example.com'])
+    _git(['config', 'user.name', 'selftest'])
+    _git(['add', '-A'])
+    _git(['commit', '-q', '-m', 'base'])
+    # `main` has to stay AT the base commit while HEAD moves ahead — a
+    # branch checked out and committed directly on `main` makes
+    # `merge-base HEAD main` resolve to HEAD itself (they're the same
+    # commit), so the diff is empty and nothing is ever "removed". A
+    # feature branch mirrors what a real PR looks like.
+    _git(['checkout', '-q', '-b', 'work'])
+    briar_path = os.path.join(co_root, 'skills', 'briar', 'SKILL.md')
+    content = open(briar_path, encoding='utf-8').read()
+    mutated = content.replace('### Accessibility Review\n', '', 1)
+    co_ok_setup = mutated != content
+    open(briar_path, 'w', encoding='utf-8').write(mutated)
+    _git(['add', '-A'])
+    _git(['commit', '-q', '-m', 'delete a heading'])
+    co_violations = check_all(co_root)[0]
+    co_fired = co_ok_setup and any(k == 'citation-orphaned'
+                                    for k, d in co_violations)
+    add('citation-orphaned/via-check_all', 'citation-orphaned',
+        'citation-orphaned/via-check_all', 'check_all', co_fired)
+
+    # skip/no-merge-base (W2-T39): a git repo with no `main` branch and no
+    # `origin/HEAD` — `removed_targets_from_git` must return that skip
+    # reason, and nothing else.
+    nomb_root = os.path.join(tmp_parent, 'scratch-no-merge-base')
+    os.makedirs(nomb_root, exist_ok=True)
+
+    def _git_nomb(args, cwd=nomb_root):
+        return subprocess.run(['git'] + args, cwd=cwd, capture_output=True,
+                               text=True, encoding='utf-8')
+    _git_nomb(['init', '-q', '-b', 'trunk'])
+    _git_nomb(['config', 'user.email', 'selftest@example.com'])
+    _git_nomb(['config', 'user.name', 'selftest'])
+    open(os.path.join(nomb_root, 'README.md'), 'w', encoding='utf-8').write('x')
+    _git_nomb(['add', '-A'])
+    _git_nomb(['commit', '-q', '-m', 'x'])
+    nomb_removed, nomb_reason = removed_targets_from_git(nomb_root)
+    add('skip/no-merge-base', 'skip/no-merge-base', 'skip/no-merge-base',
+        'direct',
+        nomb_reason == 'no merge-base against main or origin/HEAD'
+        and nomb_removed == set(),
+        note='skip-reason=%r' % nomb_reason)
+
+    # skip/git-diff-failed (W2-T39): a valid merge-base, then the `git
+    # diff --name-only` call itself fails. Monkey-patches the process-wide
+    # `subprocess.run` for the duration of one call, restored in `finally`
+    # — the same monkey-patch shape citation-inlined/reference already uses
+    # on `render()` above, applied one layer down. Runs against the actual
+    # running checkout (`ROOT`), which has a real `main` to find a merge-
+    # base against; the call is read-only.
+    real_sp_run = subprocess.run
+
+    def _fake_run(args, *a, **kw):
+        if len(args) >= 2 and args[0] == 'git' and args[1] == 'diff':
+            class _R:
+                returncode = 1
+                stdout = ''
+                stderr = 'selftest-forced diff failure'
+            return _R()
+        return real_sp_run(args, *a, **kw)
+    subprocess.run = _fake_run
+    try:
+        gdf_removed, gdf_reason = removed_targets_from_git(ROOT)
+    finally:
+        subprocess.run = real_sp_run
+    add('skip/git-diff-failed', 'skip/git-diff-failed', 'skip/git-diff-failed',
+        'direct',
+        bool(gdf_reason) and gdf_reason.startswith('git diff failed')
+        and gdf_removed == set(),
+        note='skip-reason=%r' % gdf_reason)
 
     # orphan-toml: a toml whose skill dir is gone. No restore — the temp
     # copy is discarded, and this control runs last for exactly that reason.
