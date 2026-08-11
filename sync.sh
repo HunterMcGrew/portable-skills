@@ -4,6 +4,18 @@
 # counterpart in this repo) must survive, so the loops below never use
 # --delete semantics against a destination directory.
 set -euo pipefail
+
+# This script takes no arguments — there is no --check/--dry-run mode, only
+# the real deploy below. An unrecognized argument must never fall through to
+# the write arm: `bash sync.sh --selftest`, typed expecting a read-only pass
+# (there is none; that's sync-selftest.sh, a separate file), instead ran a
+# full deploy because the flag was silently ignored. Same defect class as
+# render-claude-agents.py's argv guard, fixed there and not here until now.
+if [ "$#" -gt 0 ]; then
+  echo "usage: sync.sh (no arguments)" >&2
+  exit 2
+fi
+
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Defaults: one destination, no exclusions, no backup. This is the whole
