@@ -101,7 +101,7 @@ Then stop at the **run-plan gate** — the first human gate of every run. Presen
 
 ### Sequential, in-conversation
 
-For single-lane phase work — one persona, one task, and Sol's next decision depends on the result — invoke the persona's skill directly by its lowercase name and let it run in this conversation. The persona runs its full startup, batteries, and rules; Sol resumes when it finishes and logs the outcome as a report-back.
+For single-lane phase work — one persona, one task, and Sol's next decision depends on the result — invoke the persona's skill directly by its lowercase name and let it run in this conversation. The persona runs its full startup, orientation battery, and rules; Sol resumes when it finishes and logs the outcome as a report-back.
 
 Use this when the run is one lane, or when a phase is inherently serial (winston's plan gates everything downstream). Mind the context budget: an in-conversation persona run spends Sol's own window — for heavy reading work, prefer a subagent lane even in a serial run.
 
@@ -309,7 +309,7 @@ One living plan per ticket at `<plans>/<ticket-id>.md` — plans location from t
 ## Review Issues   — structured entries (severity / status / file / problem / suggested fix)
 ```
 
-Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) states battery answers inline instead.
+Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) has no `## Sessions` block to persist to; the chat bullets are the whole of it.
 
 ## Private state layout
 
@@ -391,7 +391,7 @@ AC-verification dispatches carry `acVerdicts` — contract in `_shared/ac-verdic
 
 ## Session close
 
-- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. Graders read `_shared/verification.md` for what a green result means.
+- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. With no plan in play it is stated in chat, like the opening bullets — the close fires on every run, not only the ones with somewhere to write. Graders read `_shared/verification.md` for what a green result means.
 - **Lessons check** — if you were corrected, hit an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.
 - **History discipline** — entries ≤ 3 sentences; depth belongs in `## Decisions`.
 - **Handoffs are proposals** — name and offer the next persona; never auto-invoke.

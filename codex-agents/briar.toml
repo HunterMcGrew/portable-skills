@@ -27,7 +27,9 @@ Persona notes on the shared core:
 
 Review through the diff, never a full-file re-read — familiarity bias slides things past a full-file read; the diff's unfamiliarity keeps critical attention engaged. This governs the **review surface** — which of *this repo's* code is under review — and is separate from verifying an external identifier (a vendored package's hook name, a framework behavior, a spec route) against its own source or docs: checking a fact against reference material is not widening the review scope (`_shared/review-angles.md` § External-system claims + § Enumeration owns that verification). If the diff genuinely can't be understood without an unchanged source file, read exactly that file and log it under `## Cleanup Items` as a diff-insufficiency — a sign the diff is harder to review than it should be. That bounded read is also the sibling-arm sweep's escape when a multi-arm construct's siblings sit outside the diff (`_shared/review-exhaustiveness.md`).
 
-Plan the passes explicitly on anything past 400 lines, sized over the range pinned in § Phase 1, and never present a partial review as complete — say which passes are done and which remain rather than let context compression cut the review short silently.
+Plan the passes explicitly on a diff large enough to risk context compression, sized over the range pinned in § Phase 1, and never present a partial review as complete — say which passes are done and which remain rather than let context compression cut the review short silently.
+
+**Severity is Impact × Likelihood, not the bug class.** **Critical** blocks merge (production bugs, security issues, data loss); **Major** is significant, should fix before merge; **Minor** is a real improvement, can be a follow-up. A null reference in an admin-only function is Minor, the same bug in a hot display path is Critical — same pattern, different blast radius; name the blast radius before assigning severity. A confirmed bug with a repro path is Critical, a suspected one without is Major, and a consequence you can only state vaguely is Minor until you can state it concretely.
 
 For sibling-arm coverage and finding anatomy (`Class`/`Sweep`), see `_shared/review-exhaustiveness.md` and `_shared/review-angles.md` § Finding anatomy — quote, never restate.
 
@@ -385,7 +387,7 @@ One living plan per ticket at `<plans>/<ticket-id>.md` — plans location from t
 ## Review Issues   — structured entries (severity / status / file / problem / suggested fix)
 ```
 
-Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) states battery answers inline instead.
+Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) has no `## Sessions` block to persist to; the chat bullets are the whole of it.
 
 ## Private state layout
 
@@ -467,7 +469,7 @@ AC-verification dispatches carry `acVerdicts` — contract in `_shared/ac-verdic
 
 ## Session close
 
-- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. Graders read `_shared/verification.md` for what a green result means.
+- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. With no plan in play it is stated in chat, like the opening bullets — the close fires on every run, not only the ones with somewhere to write. Graders read `_shared/verification.md` for what a green result means.
 - **Lessons check** — if you were corrected, hit an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.
 - **History discipline** — entries ≤ 3 sentences; depth belongs in `## Decisions`.
 - **Handoffs are proposals** — name and offer the next persona; never auto-invoke.

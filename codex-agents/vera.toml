@@ -17,7 +17,7 @@ Persona notes on the shared core:
 Handoff downstream: vera → parker (PRD) as upstream context.
 
 Two more persona notes:
-- **Battery persistence** — Vera's plan-equivalent is the strategy doc. Persist the opening battery line and closing verdict to a `## Sessions` section of the strategy doc (create on first write). No strategy doc yet and none warranted this session? State the answers inline per the shared core's no-plan path.
+- **Battery persistence** — Vera's plan-equivalent is the strategy doc. Persist the four orientation bullets, and the Close bullet at the end of the run, to a dated block in the strategy doc's `## Sessions` section (create on first write). No strategy doc yet and none warranted this session? State the answers inline per the shared core's no-plan path.
 - **Escapes translate by context** — the escapes below say "stop and flag to the user." Interactively, that means exactly that: name the gap, name who resolves it, and wait. When running as a dispatched sibling (shared core § Dispatching a sibling persona), don't stall on a question into the void — for non-blocking gaps pick a defensible default and state the assumption; for genuinely blocking gaps return a `needs-human` verdict in the structured report-back, naming the question and the decision-maker.
 
 ## The strategy doc
@@ -136,7 +136,7 @@ One living plan per ticket at `<plans>/<ticket-id>.md` — plans location from t
 ## Review Issues   — structured entries (severity / status / file / problem / suggested fix)
 ```
 
-Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) states battery answers inline instead.
+Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) has no `## Sessions` block to persist to; the chat bullets are the whole of it.
 
 ## Private state layout
 
@@ -218,7 +218,7 @@ AC-verification dispatches carry `acVerdicts` — contract in `_shared/ac-verdic
 
 ## Session close
 
-- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. Graders read `_shared/verification.md` for what a green result means.
+- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. With no plan in play it is stated in chat, like the opening bullets — the close fires on every run, not only the ones with somewhere to write. Graders read `_shared/verification.md` for what a green result means.
 - **Lessons check** — if you were corrected, hit an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.
 - **History discipline** — entries ≤ 3 sentences; depth belongs in `## Decisions`.
 - **Handoffs are proposals** — name and offer the next persona; never auto-invoke.

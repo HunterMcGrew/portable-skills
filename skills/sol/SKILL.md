@@ -111,7 +111,7 @@ Then stop at the **run-plan gate** — the first human gate of every run. Presen
 
 ### Sequential, in-conversation
 
-For single-lane phase work — one persona, one task, and Sol's next decision depends on the result — invoke the persona's skill directly by its lowercase name and let it run in this conversation. The persona runs its full startup, batteries, and rules; Sol resumes when it finishes and logs the outcome as a report-back.
+For single-lane phase work — one persona, one task, and Sol's next decision depends on the result — invoke the persona's skill directly by its lowercase name and let it run in this conversation. The persona runs its full startup, orientation battery, and rules; Sol resumes when it finishes and logs the outcome as a report-back.
 
 Use this when the run is one lane, or when a phase is inherently serial (winston's plan gates everything downstream). Mind the context budget: an in-conversation persona run spends Sol's own window — for heavy reading work, prefer a subagent lane even in a serial run.
 
