@@ -406,12 +406,27 @@ review passes surfaced — stale battery-count plurals, missed sweep sites, a da
 citation — trace back to this one mechanical gap.
 
 The fix was a sixth check, `check_citations()`: for every markdown file under `skills/`, resolve
-every `§ X` citation against that file's own headings, its `references/` siblings, and
-`_shared/core.md`. It closes the dangling-pointer half of the class — a citation that fails to
-*resolve*. It does **not** close the other half: a citation that resolves to a heading whose
-*content* was hollowed out from under it reads clean by design, because the heading still
-exists. That half stays a human-read finding. Don't oversell the check when citing it as
-evidence a rewrite is safe.
+every `§ X` citation against that file's own headings and bold list-item labels, its
+`references/` siblings, `_shared/core.md` (read by every persona, so it's always in scope), and —
+per blank-line-delimited paragraph — any other `_shared/*.md` or `references/*.md` file, or
+another persona's `SKILL.md`, named in that same paragraph. That cross-file, paragraph-scoped
+rule is not an optional refinement: an earlier pass without it produced 59 false positives on
+exactly this shape (a legitimate cross-file citation like `` `_shared/review-angles.md` § Axis
+split ``), and `render-agents.py`'s `CITATION_RE` block comment records that as the reason the
+narrower version was rejected. Reimplementing from a description that omits these two rules
+rebuilds the version already measured as broken.
+
+The check closes the dangling-pointer half of the class — a citation that fails to *resolve*, not
+one that resolves to the wrong heading. Two known bounds beyond that, both worth stating rather
+than discovering the hard way. It does **not** catch a citation that resolves to a heading whose
+*content* was hollowed out from under it — the heading still exists, so this reads clean by
+design; that half stays a human-read finding. It also floors how far a citation is allowed to
+truncate before matching — `render-agents.py`'s `_resolves` docstring and
+`MIN_SINGLE_WORD_MATCH_LEN` carry the current bound and the mutation evidence behind it — because
+an unfloored truncation retry let a genuinely deleted heading resolve silently against an
+unrelated surviving sibling that happened to share its first word. Don't oversell the check when
+citing it as evidence a rewrite is safe; read `CITATION_RE`'s block comment for the authoritative,
+current rule set rather than restating it here.
 
 **The generalizable lesson, restated for the next slimming pass:** a deletion that removes a
 definition must sweep for every instruction that cites the term, in the same commit — and green
