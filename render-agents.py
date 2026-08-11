@@ -253,6 +253,20 @@ def regenerate_all(root=ROOT):
 # stopped at `\n`, which truncated every citation split across a wrapped
 # line (e.g. `review-loop/SKILL.md`'s own wrapped prose) into a false
 # unresolved fragment.
+#
+# The capture group is anchored `[A-Z]` — a `§ x...` citation starting
+# lowercase is never extracted, so it is never graded, and an unresolvable
+# lowercase citation would read identically to a resolving one. Deliberate,
+# not an oversight: every heading and bold-label target this check resolves
+# against starts capitalized (`HEADING_RE`/`BOLD_LABEL_RE` impose no such
+# rule themselves, but the repo's own convention is Title Case), so a
+# lowercase `§` mention in the tree today is prose referring back to an
+# earlier citation rather than pointing at a new target — e.g. the `(§
+# below)` idiom (`eric:130`, `eric:131`). Widening the anchor to `[A-Za-z]`
+# would start capturing that idiom as a citation needing its own resolvable
+# target and require carving out an exception for it, for zero live
+# lowercase citations that need resolving. `grep -rn '§[ \t]\+[a-z]'
+# skills/` is the check for whether that trade has changed.
 CITATION_RE = re.compile(
     r'§[ \t]+([A-Z][^)]*?)(?=[)]|,\s|\.\s|\.\Z|—|;\s|\s§|\+\s*§|\Z)')
 HEADING_RE = re.compile(r'^#{1,4}[ \t]+(.+?)[ \t]*$', re.M)
@@ -304,6 +318,30 @@ def _resolves_exact(citation, targets):
     return False
 
 
+# Floor for a single retained word after truncation (or for an
+# already-one-word citation) in `_resolves`. Calibrated against briar's
+# Wave-2-review Major, not chosen in the abstract: deleting a heading and
+# re-running `--check` stayed green because the truncation retry forgave
+# the deletion against an unrelated sibling sharing only its FIRST word —
+# `Run close` -> `Run` (3 chars) matching `Run report`; `PR Label` -> `PR`
+# (2) matching `PR Readiness`; `AC Verification Mode` -> `AC` (2) matching
+# `AC conformance`; `How Tess Thinks` -> `How` (3) matching `How Briar
+# Thinks`; `Mode selection` -> `Mode` (4) matching the bold label `Mode
+# gate`. Every one of those collisions is a short, common English word or
+# acronym — exactly the shape that turns up as an unrelated heading's first
+# word by coincidence. Contrast the two live citations that legitimately
+# need this same truncation retry to resolve at all: `Phase 1 already does`
+# -> `Phase 1` (`eric:97`, two words, unaffected by a single-word floor) and
+# `Decompose chains (winston -> ... -> park at merge` -> `Decompose`
+# (`sol/references/fleet-runs.md:5`, one word, 9 characters). 5 is the
+# threshold that rejects every collision above while keeping both live
+# single/short matches (`Decompose` at 9 chars, and `references/fleet-
+# runs.md:10`'s `Budgets` at 7 chars) — verified against the full live
+# citation population, not just these examples (see `_resolves`'s
+# docstring).
+MIN_SINGLE_WORD_MATCH_LEN = 5
+
+
 def _resolves(citation, targets):
     """`_resolves_exact`, retried over right-truncated word-prefixes of
     `citation` when the full string doesn't resolve.
@@ -319,10 +357,25 @@ def _resolves(citation, targets):
     `Decompose`, both of which resolve cleanly. Truncating is safe in this
     direction only — a heading name is never split across an earlier stop
     point than the real one, since `_resolves_exact` already tries citation-
-    is-prefix-of-target for the untruncated string first."""
+    is-prefix-of-target for the untruncated string first.
+
+    A candidate of exactly one word is rejected below
+    `MIN_SINGLE_WORD_MATCH_LEN` characters, truncated or not. Without this
+    floor, a genuinely deleted heading resolves silently against any
+    surviving sibling that happens to start with the same short leading
+    word — the retry has no way to tell a real single-word heading name
+    (`Decompose`) apart from a common word a deleted multi-word heading
+    used to start with (`Run`, from a deleted `Run close` matching a
+    surviving `Run report`). See `MIN_SINGLE_WORD_MATCH_LEN` above for the
+    calibration evidence. Multi-word candidates carry no such floor — two
+    or more words in agreement is specific enough on its own; the failure
+    mode this guards against is single-word-only."""
     words = citation.split(' ')
     for n in range(len(words), 0, -1):
-        if _resolves_exact(' '.join(words[:n]), targets):
+        candidate = ' '.join(words[:n])
+        if n == 1 and len(candidate) < MIN_SINGLE_WORD_MATCH_LEN:
+            continue
+        if _resolves_exact(candidate, targets):
             return True
     return False
 
@@ -715,19 +768,21 @@ def selftest(root=ROOT):
                  'yes' if cleared else 'NO',
                  'yes' if drift_stayed_green else 'NO'))
 
-        # citation-unresolved (W2-T9): plant a `§` citation whose target
-        # heading exists nowhere in the tree, into a file `check_citations`
-        # actually reads (`skills/_shared/core.md`, unioned into every
-        # other file's resolvable set too, so this also proves the plant
-        # is reachable from a persona file's citation, not just core's
-        # own). The trap this guards against, named in this run's brief: a
-        # control that plants its failure somewhere the checked code path
-        # never touches passes green while testing nothing. `Zzyzx9…` is
-        # deliberately not a prefix of any real heading or bold label in
-        # the tree — the whole point of the word-truncation retry in
-        # `_resolves` is that it can accidentally over-forgive down to a
-        # short common word, so the planted string is chosen long and
-        # singular enough that no such accident is plausible.
+        # citation-unresolved/no-target (W2-T9): plant a `§` citation whose
+        # target heading exists nowhere in the tree, into a file
+        # `check_citations` actually reads (`skills/_shared/core.md`,
+        # unioned into every other file's resolvable set too, so this also
+        # proves the plant is reachable from a persona file's citation, not
+        # just core's own). The trap this guards against, named in this
+        # run's brief: a control that plants its failure somewhere the
+        # checked code path never touches passes green while testing
+        # nothing. `Zzyzx9…` is deliberately not a prefix of any real
+        # heading or bold label in the tree, so this control proves the
+        # wholly-absent-target case only — it says nothing about a citation
+        # whose real target WAS deleted while a same-first-word sibling
+        # survives (`Run close` -> `Run report`), which is the shape briar's
+        # Wave 2 Major found this exact control blind to by construction.
+        # `citation-unresolved/truncation-floor` below covers that case.
         core_path = '%s/skills/_shared/core.md' % r
         orig_core = open(core_path).read()
         open(core_path, 'w').write(
@@ -740,8 +795,50 @@ def selftest(root=ROOT):
         fired, cleared = bool(red), not green
         ok &= fired and cleared
         print('selftest: %-22s red=%s green-after-restore=%s'
-              % ('citation-unresolved', 'yes' if fired else 'NO',
+              % ('citation-unresolved/no-target', 'yes' if fired else 'NO',
                  'yes' if cleared else 'NO'))
+
+        # citation-unresolved/truncation-floor (briar Wave 2 Major): mutate
+        # a REAL colliding pair already in the tree, not a planted string —
+        # the whole point is that the no-target control above is built
+        # around avoiding this exact weak spot, so it proves nothing about
+        # it. Two live pairs, each a heading sharing only its leading word
+        # with a surviving sibling, cited by name in the Major:
+        # `skills/sol/SKILL.md`'s `## Run close` (cited by its own `§ Run
+        # close`, right beside `## Run report`) and `skills/eric/SKILL.md`'s
+        # `## PR Label` (cited by `§ PR Label`, beside `## PR Readiness`).
+        # Renaming the real target heading — never touching the citation —
+        # reproduces exactly what a slimming pass does when it deletes a
+        # section: pre-fix, `_resolves`'s truncation retry forgave both
+        # down to `Run`/`PR` against the sibling; post-fix,
+        # MIN_SINGLE_WORD_MATCH_LEN rejects both and the citation reports
+        # unresolved, as it should.
+        mutation_cases = [
+            ('sol', '%s/skills/sol/SKILL.md' % r, '## Run close',
+             '## XYZ close (selftest mutation)', 'Run close'),
+            ('eric', '%s/skills/eric/SKILL.md' % r, '## PR Label',
+             '## XYZ Label (selftest mutation)', 'PR Label'),
+        ]
+        for label, path, old_heading, new_heading, cite_fragment in mutation_cases:
+            orig = open(path).read()
+            mutated = orig.replace(old_heading, new_heading, 1)
+            if mutated == orig:
+                ok = False
+                print('selftest: %-22s NO MATCH — %r not found in %s to '
+                      'mutate' % ('citation-unresolved/truncation-floor/'
+                                  + label, old_heading, path))
+                continue
+            open(path, 'w').write(mutated)
+            red = [x for x in check_all(r)[0] if x[0] == 'citation-unresolved'
+                   and cite_fragment in x[1]]
+            open(path, 'w').write(orig)
+            green = [x for x in check_all(r)[0]
+                     if x[0] == 'citation-unresolved' and cite_fragment in x[1]]
+            fired, cleared = bool(red), not green
+            ok &= fired and cleared
+            print('selftest: %-22s red=%s green-after-restore=%s'
+                  % ('citation-unresolved/truncation-floor/' + label,
+                     'yes' if fired else 'NO', 'yes' if cleared else 'NO'))
 
         # orphan-toml: a toml whose skill dir is gone
         p = personas(r)[0]
