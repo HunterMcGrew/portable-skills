@@ -103,6 +103,11 @@ with no setup and it copies `skills/`, `claude-agents/`, and `output-styles/`
 into `~/.claude`. That's the whole story for one profile — no exclusions, no
 backup, nothing to configure.
 
+`sync.sh` takes no arguments — there is no `--check`/`--dry-run` mode, only
+the real deploy. Any argument exits 2 with a usage line before anything is
+written; `sync-selftest.sh` is the read-only counterpart, and it never
+touches a real profile.
+
 Every copy loop is per-file with no `--delete` semantics against the
 destination, so a skill, agent, or style you keep only in your profile (not
 shipped by this repo) survives a re-sync untouched.
