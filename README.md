@@ -348,7 +348,7 @@ thing. The rules:
 ## Why the persona files are thin
 
 Each `SKILL.md` carries what is specific to that persona and points at
-`_shared/core.md` for the rest — the orientation batteries, the dispatch
+`_shared/core.md` for the rest — the orientation battery, the dispatch
 contract, the session-close routine. It reads as underspecified next to a
 self-contained skill file, and that is deliberate: the roster previously
 restated the shared chassis in every persona, which meant a wording fix had to
@@ -381,6 +381,7 @@ compounds instead of adding.
   meaning as portable skills.
 - Re-run the copy (`cp -R skills/* ~/.claude/skills/`, or `./sync.sh`) after
   adding or editing personas — copies don't self-propagate.
-- If long sessions still drift despite the re-anchors, a user-level
-  PostToolUse hook is the mechanical backstop — layer it on, don't replace
-  the skill-level instructions.
+- If long sessions still drift despite the orientation battery and the
+  `## Sessions` Close bullet's drift check, a user-level PostToolUse hook is
+  the mechanical backstop — layer it on, don't replace the skill-level
+  instructions.

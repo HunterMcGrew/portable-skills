@@ -277,7 +277,7 @@ Close the run with the board, in this shape:
 - **Open decisions** — anything with a genuine choice, each stated as the decision and its options. An unaddressed reviewer finding lives here at any severity — "non-blocking" describes the Minor, not whether the human gets to choose. It gets its own line here, never a parenthetical, a label attribute, or a clause riding inside a Status or Per-lane sentence about something else.
 - **Handoff offers** — the next persona for anything unfinished, offered per the shared core (a proposal, never an auto-invocation).
 
-Update the run log's Status line to match. A `paused` or `stopped` run stays resumable; a `done` run stays as the durable record — the run log is the deliverable, complete once it reaches `done`, `paused` at a named gate, or `stopped` on a budget, with both batteries persisted.
+Update the run log's Status line to match. A `paused` or `stopped` run stays resumable; a `done` run stays as the durable record — the run log is the deliverable, complete once it reaches `done`, `paused` at a named gate, or `stopped` on a budget, with the `## Battery` block persisted, Close bullet included.
 
 ## Session close
 

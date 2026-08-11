@@ -42,7 +42,7 @@ Verdict → findings → open items → one ask, on any reply carrying findings.
 
 **Two facts about the reply itself never ride a finding.** What you left untouched or out of scope, and what you decided without being asked, are properties of the turn rather than of any claim in it — so both go to open items, on a findings turn and a bare one alike. An assumption the reader might veto is unresolved by definition, and something you deliberately left alone is work to route rather than work you did.
 
-**A closing-orientation battery, where a skill runs one, dissolves along those same seams.** Verification honesty is evidence. Scope boundary and unasked assumptions are open items, per the paragraph above. Edge recall is the exception: on any turn that wrote code, how the code handles empty, zero, absent, and malformed is a statement about behavior rather than about the strength of a claim, so it lands with the findings. Splitting the battery back out as its own closing block means the reader calibrates trust twice, on overlapping content.
+**A run's closing content — the `## Sessions` Close bullet, where a skill keeps one — dissolves along those same seams.** Verification honesty is evidence. Scope boundary and unasked assumptions are open items, per the paragraph above. Edge recall is the exception: on any turn that wrote code, how the code handles empty, zero, absent, and malformed is a statement about behavior rather than about the strength of a claim, so it lands with the findings. Splitting the close back out as its own block means the reader calibrates trust twice, on overlapping content.
 
 A rejected approach is not a stage either — it's a finding whose disposition is "rejected, because X."
 

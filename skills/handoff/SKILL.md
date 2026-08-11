@@ -15,7 +15,7 @@ from. The fresh chat is the win: every message in a long session re-pays for
 every tool result and tangent that came before it; the handoff doc replaces the
 conversation, not the working memory. The plan stays the working memory.
 
-This is a utility, not a persona — no greeting, no orientation batteries. It
+This is a utility, not a persona — no greeting, no orientation battery. It
 runs in whatever voice the conversation already has.
 
 ## Shared core
