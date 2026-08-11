@@ -205,8 +205,64 @@ else
   ok arg-guard-red "$green" "guard removed and an unrecognized argument still exited 2 — control 10 proves nothing"
 fi
 
+# 12. Symlink-clobber guard: a destination file that is already a symlink
+# to something outside the repo (a stray user edit, or a previous sync run
+# under a different scheme) must be replaced with a fresh regular file,
+# never written through — cp follows a destination symlink to its target,
+# so writing through it would silently clobber whatever that target is.
+# output-styles is the loop this control exercises because it is the one
+# of the three rm-then-cp loops (skills, agents, output-styles) with no
+# other control behind it; the skills and agents loops both ride through
+# controls 2/3's exclusion mechanics, which already touch the same
+# rm-before-cp shape.
+scaffold symlink
+mkdir -p "$src/outside" "$src/dest-all/output-styles"
+echo original-precious-content >"$src/outside/precious"
+ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
+run "$src"
+green=true
+[ -L "$src/dest-all/output-styles/scannable.md" ] && green=false
+[ "$(cat "$src/outside/precious")" = original-precious-content ] || green=false
+ok symlink-clobber "$green" "destination symlink survived the sync, or the outside file was clobbered"
+
+# 13. The same case with all three rm-before-cp lines stripped must go red
+# — otherwise control 12 passes for some reason other than the guard.
+# python3, not sed, per control 3/9's own precedent: three distinct lines
+# across three loops is easier to match exactly this way than to keep
+# three sed expressions in sync with the source.
+scaffold symlink-red
+python3 - "$src/sync.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+targets = (
+    'rm -rf "${dst:?}/skills/${name:?}"  # removes old symlink or stale copy\n',
+    'rm -f "$dst/agents/$name.md"\n',
+    'rm -f "$dst/output-styles/$(basename "$f")"  # see the agents loop above\n',
+)
+for old in targets:
+    assert old in s, 'not found: %r' % old
+    s = s.replace(old, '', 1)
+open(p, 'w').write(s)
+PY
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok symlink-clobber-red false "the strip did not match — this control tested nothing"
+else
+  mkdir -p "$src/outside" "$src/dest-all/output-styles"
+  echo original-precious-content >"$src/outside/precious"
+  ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
+  run "$src"
+  if [ "$(cat "$src/outside/precious")" != original-precious-content ]; then
+    green=true
+  else
+    green=false
+  fi
+  ok symlink-clobber-red "$green" "rm-before-cp removed and the outside file was not clobbered — control 12 proves nothing"
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 11 controls green"
+  echo "selftest: 13 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1
