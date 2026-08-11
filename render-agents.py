@@ -535,11 +535,19 @@ def removed_targets_from_git(root=ROOT):
     """Heading and bold-label text removed from `skills/` by the change
     under review, as a normalized set — the parameter `check_orphaned_
     citations` grades against (D34). Diffs `git merge-base HEAD main` (or,
-    with no `main`, `origin/HEAD`) against `HEAD`, collects the text of
-    every `^#{1,4}` heading or bold-label line a `-` diff line removes, and
-    drops any whose normalized text still appears anywhere in the
-    post-change tree's target vocabulary — a heading moved from one file to
-    another, not deleted, is not orphaned.
+    with no `main`, `origin/HEAD`) against `HEAD`: for every `skills/` path
+    the two revisions disagree on, runs `_citation_targets` (D41's fence-
+    stripping vocabulary function — the same one the survival side uses)
+    against that path's content at the base revision, then drops any target
+    whose normalized text still appears anywhere in the post-change tree's
+    target vocabulary — a heading moved from one file to another, not
+    deleted, is not orphaned. Sharing `_citation_targets` on both sides
+    (D47) is deliberate: a diff is a line stream and a fence cannot be
+    matched reliably across hunks, so the two sides used to disagree about
+    what a target is (a heading deleted from inside a fenced example
+    counted as a real removal) — re-deriving both sides through the same
+    function makes that asymmetry impossible instead of something to keep
+    in sync by hand.
 
     Returns `(removed_targets, skip_reason)`. `skip_reason` is `None` on a
     clean run; otherwise a short string naming why the diff couldn't be
@@ -569,28 +577,30 @@ def removed_targets_from_git(root=ROOT):
         return set(), 'no merge-base against main or origin/HEAD'
     base = mb.stdout.strip()
 
-    diff = run(['diff', base, 'HEAD', '--', 'skills/'])
-    if diff.returncode != 0:
-        return set(), 'git diff failed: %s' % diff.stderr.strip()[:200]
+    names = run(['diff', '--name-only', base, 'HEAD', '--', 'skills/'])
+    if names.returncode != 0:
+        return set(), 'git diff failed: %s' % names.stderr.strip()[:200]
 
-    removed = set()
-    for line in diff.stdout.splitlines():
-        if not line.startswith('-') or line.startswith('---'):
+    # Both sides of the orphan diff run through `_citation_targets` (D47),
+    # not a private raw-line scan here — that is what makes fence-stripping,
+    # HEADING_RE, and BOLD_LABEL_RE identical on both sides by construction
+    # instead of two implementations kept in sync by hand. A path that
+    # doesn't exist at `base` (added by this change) contributes nothing:
+    # `git show` fails for it and that failure is silently skipped, not
+    # treated as a diff error — a file being new is not a diff failure.
+    base_targets = set()
+    for path in names.stdout.splitlines():
+        if not path:
             continue
-        content = line[1:]
-        hm = HEADING_RE.match(content)
-        if hm:
-            removed.add(_norm_citation_text(hm.group(1)))
+        shown = run(['show', '%s:%s' % (base, path)])
+        if shown.returncode != 0:
             continue
-        bm = BOLD_LABEL_RE.match(content)
-        if bm:
-            removed.add(_norm_citation_text(bm.group(1)))
-    removed.discard('')
+        base_targets |= _citation_targets(shown.stdout)
 
     survives_somewhere = set()
     for f in glob.glob(os.path.join(root, 'skills', '**', '*.md'), recursive=True):
         survives_somewhere |= _citation_targets(open(f, encoding='utf-8').read())
-    removed -= survives_somewhere
+    removed = base_targets - survives_somewhere
     return removed, None
 
 
