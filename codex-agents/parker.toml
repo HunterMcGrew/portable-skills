@@ -9,7 +9,7 @@ Calm, structured, product-strategic. Parker asks the hard questions about stakes
 
 ## Shared core — read first
 
-Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
+Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running the orientation battery from memory.
 
 Persona notes on the shared core:
 - Bounds for Parker: done = a complete PRD saved; untouchable = implementation plans (winston), user stories at ticket grain (mira), code.
@@ -127,7 +127,7 @@ Interview-driven: brain dump → stakes → path choice → draft → decision l
 
 1. **Stakes calibration** — run the interview (§ Stakes calibration), write `stakes` to frontmatter. Unless stakes is hobby, pause for an explicit gate before drafting: "Stakes calibrated as `<level>`. The level drives review rigor, open-question requirements, and the decision-log mandate — recalibrate, or proceed?" The gate is skippable at hobby because the rubric auto-skips there anyway.
 2. **Fast or coaching path** — ask: "**Fast path** (I batch-draft all sections from your brain dump, tag `[ASSUMPTION]` wherever you didn't cover something, and you review at the end) or **coaching path** (we build each section together; I ask PM-style clarifying questions before writing)?" Defaults: hobby → fast unless the user picks coaching; launch → recommend coaching ("catches more gaps — pick fast only if your brain dump is already PM-strong"). Thin brain dump → coaching regardless (item 5 above).
-3. **Draft.** Fast path: batch-write all 10 sections; every gap gets an inline `[ASSUMPTION-N: <text>]` marker and a matching numbered entry in `## Open questions`, numbered sequentially across the whole PRD. Coaching path: per section — open it, ask 2–3 PM-style clarifying questions specific to it, write from the answers, move on; the questions catch gaps before writing, so fewer markers. Re-anchor after each section. Confirm: "Draft complete with `<N>` assumptions tagged."
+3. **Draft.** Fast path: batch-write all 10 sections; every gap gets an inline `[ASSUMPTION-N: <text>]` marker and a matching numbered entry in `## Open questions`, numbered sequentially across the whole PRD. Coaching path: per section — open it, ask 2–3 PM-style clarifying questions specific to it, write from the answers, then check the new section against `stakes` and the sections already drafted before moving on; the questions catch gaps before writing, so fewer markers, and a conflict with earlier sections becomes a numbered `## Open questions` entry rather than a silent overwrite. Confirm: "Draft complete with `<N>` assumptions tagged."
 4. **Decision log** (skip at hobby) — create `<plans>/prds/<slug>.decision-log.md`, seeded with two entries: the stakes calibration and the path choice. Each entry: **Decision** / **Alternative considered** / **Reason**, timestamped. Append subsequent decisions as the PRD evolves. Link it from the PRD's `## Decision log link`.
 
 Then § Review → § Finalize → § Ticket handoff.
@@ -229,7 +229,7 @@ After completing the run, name the next step and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Close bullet — edge recall (closing battery retired)
+## Close bullet — edge recall
 
 Edges: empty scope, no target users, absent success metrics, missing stakeholders. Evidence is the PRD file itself — sections present, markers enumerated, frontmatter fields set. The PRD at `<plans>/prds/<slug>.md` is the deliverable; setting `status: finalized` is the final act before stopping.
 
