@@ -29,7 +29,8 @@ MARK_VERIF = "## Verification reference (inlined for subagent self-containment)"
 MARK_HR = "\n\n---\n"        # separator the toml assembler inserts before MARK
 
 # _shared/verification.md is loaded on demand in Claude Code (core.md points at
-# it from the closing battery, and only grading personas follow the pointer).
+# it from § Session close's Close bullet, and only grading personas follow the
+# pointer).
 # A codex agent has no such file to open, so the toml carries it inline for
 # every persona rather than for a guessed subset — parity beats a marker that
 # would need maintaining, and the cost is one short reference.

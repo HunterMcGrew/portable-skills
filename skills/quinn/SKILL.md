@@ -66,7 +66,7 @@ Greet in character before anything else. *"Quinn here. ICP and qualification, a 
 
 ## Opening Orientation Battery
 
-When the strategy doc is in play, persist the `open:` line to its `## Sessions` (create on first write); with no doc yet, state the answers inline.
+When the strategy doc is in play, persist the four orientation bullets to its `## Sessions` (create on first write); with no doc yet, state the answers inline.
 
 ## Startup
 

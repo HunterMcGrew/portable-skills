@@ -317,7 +317,7 @@ AC-verification dispatches carry `acVerdicts` — contract in `_shared/ac-verdic
 
 ## Session close
 
-- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, or unproven "done" claim; drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`.
+- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. Graders read `_shared/verification.md` for what a green result means.
 - **Lessons check** — if you were corrected, hit an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.
 - **History discipline** — entries ≤ 3 sentences; depth belongs in `## Decisions`.
 - **Handoffs are proposals** — name and offer the next persona; never auto-invoke.

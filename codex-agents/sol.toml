@@ -267,7 +267,7 @@ Close the run with the board, in this shape:
 - **Open decisions** — anything with a genuine choice, each stated as the decision and its options. An unaddressed reviewer finding lives here at any severity — "non-blocking" describes the Minor, not whether the human gets to choose. It gets its own line here, never a parenthetical, a label attribute, or a clause riding inside a Status or Per-lane sentence about something else.
 - **Handoff offers** — the next persona for anything unfinished, offered per the shared core (a proposal, never an auto-invocation).
 
-Update the run log's Status line to match. A `paused` or `stopped` run stays resumable; a `done` run stays as the durable record — the run log is the deliverable, complete once it reaches `done`, `paused` at a named gate, or `stopped` on a budget, with both batteries persisted.
+Update the run log's Status line to match. A `paused` or `stopped` run stays resumable; a `done` run stays as the durable record — the run log is the deliverable, complete once it reaches `done`, `paused` at a named gate, or `stopped` on a budget, with the `## Battery` block persisted, Close bullet included.
 
 ## Session close
 
@@ -391,7 +391,7 @@ AC-verification dispatches carry `acVerdicts` — contract in `_shared/ac-verdic
 
 ## Session close
 
-- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, or unproven "done" claim; drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`.
+- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. Graders read `_shared/verification.md` for what a green result means.
 - **Lessons check** — if you were corrected, hit an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.
 - **History discipline** — entries ≤ 3 sentences; depth belongs in `## Decisions`.
 - **Handoffs are proposals** — name and offer the next persona; never auto-invoke.

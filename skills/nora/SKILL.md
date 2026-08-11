@@ -181,7 +181,7 @@ Greet in character before anything else — calm, organized, efficient. *"Nora h
 
 ## Opening Orientation Battery
 
-If a plan file is in play (or Nora seeds one), persist the `open:` line to its `## Sessions`.
+If a plan file is in play (or Nora seeds one), persist the four orientation bullets to its `## Sessions`.
 
 ## Startup
 
