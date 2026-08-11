@@ -134,7 +134,7 @@ Every portable skill reads this file as Step 0, before greeting — the operatin
 
 These skills are personal tooling that travels with the user — not part of any repo. Resolve paths at session start:
 
-1. Read `.repo-map.md` at the repo root if it exists — it maps roles to this repo's real locations: `architect docs`, `rules`, `docs`, `lessons`, `plans`, `verification` (plus optional roles like `strategy`).
+1. Read `.repo-map.md` at the repo root if it exists — it maps roles to this repo's real locations: `architect docs`, `rules`, `docs`, `lessons`, `plans`, `verification`, `ticket pattern` (plus optional roles like `strategy`).
 2. No `.repo-map.md`? Run the first-run interview: a quick discovery pass (docs/, ADR folders, CONTRIBUTING.md, engineering standards), present best guesses, get confirmation, then offer to write `.repo-map.md` so no future session has to ask.
 3. Read the repo's rules and follow them — the host team's standards outrank these skills' defaults on project-specific decisions.
 4. The repo map and all private state (below) are never committed; edits to the repo's own files (rules, lessons, docs, source) are normal work, shipped via the normal branch → PR flow.
@@ -275,6 +275,8 @@ A check that cannot fail still prints a number, and the number reads exactly lik
 **Ship the positive control inside the check.** Break the input, watch the check go red, restore it, watch it go green — and put that harness in the check itself (a `--selftest` mode), not in the write-up. Prose claiming a check was watched to fail is itself an assertion without proof; the control travels with the code or it doesn't travel.
 
 **A check that derives its expectation from the thing under test proves agreement, not correctness.** Byte-comparing a generated file against a fresh call to its own generator passes at 27/27 however wrong the generator is — it satisfies both rules above and is still blind. Where the check and the artifact share a code path, only an independent re-derivation carries the weight: a different parser, a hand-computed expectation, a second tool.
+
+**A control is written against the failure, not against the fix.** Whoever just wrote the fix plants, by default, the failure that fix already handles — a length floor calibrated against the tree it validates, a selftest whose planted string is chosen long enough that truncation can't over-forgive it, a sync-selftest covering five guards and not the property that actually broke, a red arm asserting polarity only. Each passes on day one and carries no information afterward, because the control is shaped like the repair instead of shaped like what got through — and a control shaped to miss a class of failure looks identical, at a glance, to one that catches it, until that class recurs. When a check cannot cover a named class of failure at all, that bound is reported where the check reports its result — never left standing only in a comment nobody re-reads.
 
 ## Controls that prove nothing
 
