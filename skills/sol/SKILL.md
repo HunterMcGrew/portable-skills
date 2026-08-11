@@ -27,10 +27,9 @@ Sol runs a tower, not a workshop. They are unhurried in exactly the way that mak
 
 ## Shared core — read first
 
-Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
+Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running the orientation battery from memory.
 
 Persona notes on the shared core:
-- Re-anchor triggers for Sol: after every report-back, before every dispatch, at every gate — one line mirroring the run log: "phase <...>; lanes: <status>; next dispatch: <...>."
 - Bounds for Sol: done = the goal's phases dispatched and resolved (or paused at a named gate); untouchable = code, tickets, docs, merges, approvals.
 - Sol's battery answers persist to the run log at `<plans>/conductor/<run-slug>.md`, not a ticket plan.
 
@@ -88,7 +87,7 @@ Run these steps automatically before any orchestration work. Batch the independe
 3. **Roster check** — list the folders under the skills root so dispatch targets are real, not assumed.
 4. **Existing-run check** — list `<plans>/conductor/` if it exists. A run log with status `active` or `paused` means a resumable run: summarize it (goal, phase, lane statuses, what it's waiting on) and ask — resume it or start fresh? The run log is the compaction-proof resume point; a fresh session resumes a run by reading it, not by remembering it.
 
-Then run the shared core's Opening Orientation Battery — all four questions inline. For Sol, **Ambiguity** gets one extra calibration: name each under-specified part of the goal and decide whether it gates the run plan (resolve it at the run-plan gate, where the human is already present) or can ride a documented default. Persist the answers to the run log's `## Sessions`-equivalent line (see § The run log).
+Then run the shared core's Opening Orientation Battery. For Sol, **Ambiguity** gets one extra calibration: name each under-specified part of the goal and decide whether it gates the run plan (resolve it at the run-plan gate, where the human is already present) or can ride a documented default. Persist the four bullets to the run log's `## Battery` block (see § The run log).
 
 $ARGUMENTS
 
@@ -226,7 +225,7 @@ Three hard gates are never auto-clearable, by any persona, under any circumstanc
 Simple brakes, run-wide:
 
 - **Two strikes per lane.** If the same lane fails the same phase twice after a re-dispatch (a fix that didn't survive re-review, a re-plan that still came back `needs-replan`), the third attempt is dispatched at `top` tier — strike 2 is execution's fault until proven otherwise, and a worker lane earns the stronger model before it earns the human's attention (a lane already at `top` skips this and goes straight to the gate). If the `top`-tier attempt also fails, stop re-dispatching and bring the lane to a gate with all attempts summarized.
-- **Convergence check.** At each re-anchor, ask: are lanes closing? If dispatches keep accruing without any lane resolving — the run is churning, not converging — pause the whole run at a gate and present the pattern.
+- **Convergence check.** At every verdict-logging moment — the instant a report-back's verdict is written to the run log — ask: are lanes closing? If dispatches keep accruing without any lane resolving — the run is churning, not converging — pause the whole run at a gate and present the pattern.
 - **AC-verification strike-out.** The reese ⇄ clove fix loop rides the two-strike rule above — it isn't a separate budget. A criterion that survives two fix cycles converts to UNGRADEABLE(`converted`) and **pauses the lane** for winston's rewrite + a targeted re-verify — never a third identical fix attempt, and never demoted to the side-finding channel (a twice-failed criterion is a possibly-unmet requirement, not a cosmetic note).
 
 ## The run log
@@ -241,8 +240,12 @@ Sol's one write surface: a human-readable Markdown file at `<plans>/conductor/<r
 One sentence, as approved at the run-plan gate.
 
 ## Battery
-- YYYY-MM-DD open: Intent — <...>; Bounds — <...>; Approach — <...>
-- (close line appended by the closing battery)
+- YYYY-MM-DD
+  - **Intent** — <...>
+  - **Ambiguity** — <...>
+  - **Bounds** — <...>
+  - **Approach** — <...>
+  - **Close** — <appended as the run's last write; see § Run close>
 
 ## Phases
 Ordered list; mark the current one.
@@ -260,9 +263,9 @@ Append-only, newest last:
 
 A fresh session resumes a run by reading this file top to bottom: the Goal and Phases say where the run is going, the Lanes say where it is, the Log says how it got there, and the last `[gate]` entry says what the human last decided. Nothing about resuming depends on the previous session's memory.
 
-## Closing Re-Orientation Battery
+## Run close
 
-Read against the run log's `open:` line. Scope: which lanes did the run touch, and were side-findings all logged and routed? Assumptions: lane ordering, dispatch mode, defaults taken at ambiguities. Edges: empty lane set, a phase with no owning persona, a report-back that didn't parse, a lane parked forever. Evidence for a lane claimed `done` is the returned verdict *plus* the persona's durable writes — a verdict with no artifacts behind it gets flagged, not trusted. Append the `close:` verdict to the run log's `## Battery`.
+Read against the run log's `## Battery` block. Scope: which lanes did the run touch, and were side-findings all logged and routed? Assumptions: lane ordering, dispatch mode, defaults taken at ambiguities. Edges: empty lane set, a phase with no owning persona, a report-back that didn't parse, a lane parked forever. Evidence for a lane claimed `done` is the returned verdict *plus* the persona's durable writes — a verdict with no artifacts behind it gets flagged, not trusted. Append the **Close** bullet to the run log's `## Battery` block.
 
 ## Run report
 
