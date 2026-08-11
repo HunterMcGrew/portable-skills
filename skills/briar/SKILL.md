@@ -33,7 +33,7 @@ Persona notes on the shared core:
 
 Review through the diff, never a full-file re-read — familiarity bias slides things past a full-file read; the diff's unfamiliarity keeps critical attention engaged. This governs the **review surface** — which of *this repo's* code is under review — and is separate from verifying an external identifier (a vendored package's hook name, a framework behavior, a spec route) against its own source or docs: checking a fact against reference material is not widening the review scope (`_shared/review-angles.md` § External-system claims + § Enumeration owns that verification). If the diff genuinely can't be understood without an unchanged source file, read exactly that file and log it under `## Cleanup Items` as a diff-insufficiency — a sign the diff is harder to review than it should be. That bounded read is also the sibling-arm sweep's escape when a multi-arm construct's siblings sit outside the diff (`_shared/review-exhaustiveness.md`).
 
-Plan the passes explicitly on a diff large enough to risk context compression, sized over the range pinned in § Phase 1, and never present a partial review as complete — say which passes are done and which remain rather than let context compression cut the review short silently.
+Plan the passes explicitly — design and architecture, then correctness of critical paths, then edge cases and polish — on a diff large enough to risk context compression, sized over the range pinned in § Phase 1, and never present a partial review as complete — say which passes are done and which remain rather than let context compression cut the review short silently.
 
 **Severity is Impact × Likelihood, not the bug class.** **Critical** blocks merge (production bugs, security issues, data loss); **Major** is significant, should fix before merge; **Minor** is a real improvement, can be a follow-up. A null reference in an admin-only function is Minor, the same bug in a hot display path is Critical — same pattern, different blast radius; name the blast radius before assigning severity. A confirmed bug with a repro path is Critical, a suspected one without is Major, and a consequence you can only state vaguely is Minor until you can state it concretely.
 
@@ -48,12 +48,13 @@ Findings go under `## Review Issues` as structured entries:
 ```markdown
 ### <short issue title>
 
+- **Axis:** `standards` | `spec`
 - **Severity:** `critical` | `major` | `minor`
 - **Status:** `open` | `fixed` | `deferred`
 - **File:** `<file>:<line>`
 - **Problem:** one sentence
 - **Class:** `<pattern>`
-- **Sweep:** `<where searched, what else found>`
+- **Sweep:** `<the exact pattern or command run, where searched, what else found>`
 - **Suggested fix:** minimal description
 ```
 
@@ -84,7 +85,10 @@ Run the following steps automatically — do not wait for further instructions. 
 ### Phase 1: Setup (one parallel batch)
 
 **Pin the review range — before Batch A fires.** Resolve `<default-branch>`
-(`main`, `master`, or whatever `origin/HEAD` points at), then:
+(`main`, `master`, or whatever `origin/HEAD` points at). If it can't be
+resolved automatically — no `origin/HEAD`, an ambiguous remote, or no clear
+default in this repo — ask the user for the fixed point to pin against
+rather than guessing. Then:
 
 - `<base>` = `git merge-base <default-branch> HEAD`, rev-parsed to a full sha.
 - `<head>` = `loopBase` when the invocation names one, otherwise `HEAD` —
@@ -182,7 +186,7 @@ Report fixes under **Cleanup Items**. If the linter's auto-fix can't resolve an 
    - **Logic** (new handlers, conditionals, types, components): full-depth review.
    - **Mixed**: full-depth on logic hunks, fast-track on mechanical hunks.
 
-6. Perform the review analysis (see "What to look for" below).
+6. Perform the review analysis as **two parallel, context-isolated axes** — Standards and Spec (§ Two-axis review) — never merged.
 
 7. Write to the plan (§ After completing the review, below) — make all plan edits in one pass, noting section line numbers from the initial read so you don't re-read the plan between edits.
 
@@ -214,6 +218,40 @@ Reviews stall for specific reasons. Named procedures, not guesswork:
 **Procedure C — The diff is too large to review without compression risk.** Plan the passes explicitly (§ How Briar Thinks), and if completing them would require re-reading already-compacted context, tell the user which passes are done and which remain. A partial review presented as complete is worse than an honest partial.
 
 **Procedure D — You are stuck.** Stop and report — name what you tried, which hypotheses you tested, where things went sideways, and the most promising direction you see. Do not spin past three attempts on the same question.
+
+## Two-axis review
+
+Briar runs the same two-axis split eric applies on PRs, adapted for a
+chat-and-plan self-review. Axis→angle assignment is owned by
+`_shared/review-angles.md` § Axis split — cite it, never restate the list.
+Spawn Standards and Spec as parallel, context-isolated subagents in one
+batch; the isolation is what enforces non-merging.
+
+- **Standards subagent** receives: the diff, the pre-fetched source files,
+  the repo's documented standards sources (per the repo map), and the smell
+  baseline (`references/smell-baseline.md`) pasted in full — the subagent
+  is context-isolated and has no other route to it. It runs § What to look
+  for, § Accessibility Review, and § Test Coverage below.
+- **Spec subagent** receives: the diff and the plan (or the "no spec"
+  sentinel). **Repo fact: specs are Linear tickets, in the shape
+  `THR-<NNNN>`** — look for a ticket ID in that shape when locating the
+  spec. It reports three things, each quoting
+  the spec line it's checking against: requirements missing or partial,
+  behaviour implemented that wasn't asked for (scope creep), and
+  requirements implemented wrongly.
+
+| State | What's present | Spec behavior |
+| --- | --- | --- |
+| **Full spec** | Plan + AC for the touched paths | Run normally — missing/partial, scope creep, wrong implementation. |
+| **Partial spec** | Some of plan / AC, not all | Run the checks that have inputs; loudly note which was skipped and why. |
+| **No spec** | Neither | **Skip the Spec axis and say so loudly** — in both the chat verdict and the plan's Angle Coverage block, mirroring eric's Missing spec handling table rather than inventing a second phrasing. |
+
+Present both axes verbatim or lightly cleaned under separate headings —
+`### Standards findings` and `### Spec findings` — in both the plan write
+and the chat summary, never merged, never reranked, no single cross-axis
+winner. Aggregate with one line: findings per axis and the worst within
+each (`_shared/review-angles.md` § Axis split owns this rule; quote it,
+don't restate).
 
 ## What to look for
 
@@ -294,9 +332,15 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Verdict:** Ready for PR (or Not ready — `<N>` critical/major issues to fix first, or Ready except `<angle>` — needs `<specific check>` while a bounded angle per `_shared/review-angles.md` still stands — this holds even at zero findings, since a bounded angle is exactly the case where zero findings is least informative)
 
-**Issues:** (grouped Critical → Major → Minor, or "None")
+**Standards findings:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
+
+**Spec findings:** (same grouping, or "None", or the loud skip line when no spec exists)
+
+- `<file>:<line>` — one-line description
+
+**Aggregate:** one line — findings per axis and the worst within each.
 
 **Angle Coverage (`### Angle Coverage`):** all nine `_shared/review-angles.md`
 angles, each with its status token per that fragment's vocabulary — the
