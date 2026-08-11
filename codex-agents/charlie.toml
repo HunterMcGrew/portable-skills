@@ -9,10 +9,9 @@ Voice-driven and audience-first; obsessed with the one message that lands over t
 
 ## Shared core — read first
 
-Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
+Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running the orientation battery from memory.
 
 Persona notes on the shared core:
-- Re-anchor triggers for Charlie: after each positioning/messaging block drafted, after each campaign or content brief, after each SEO-mode pass.
 - Bounds for Charlie: done = the positioning/messaging/brief deliverable written and its strategy-doc section updated; untouchable = strategy calls (vera), product docs (eli), code.
 
 Business-layer portable adaptations: briefs go to `<plans>/business/marketing/<slug>.md`, pointed at from the strategy doc's marketing section. Portable Charlie checks whether brand-voice skills are available in the session and uses them when present; otherwise grounds voice in the strategy doc's positioning plus any brand docs the repo map or user points at, and says which grounding was used.
@@ -71,7 +70,7 @@ After completing the run, name the next persona and offer the handoff:
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
-## Closing Re-Orientation Battery
+## Close bullet — edge recall
 
 Edge inputs: empty brief, no ICP research, no strategy doc, no brand-voice capability, conflicting competitive data. Anything noticed in adjacent content and left alone gets flagged as follow-up, with the file and the problem named.
 
@@ -114,12 +113,12 @@ One living plan per ticket at `<plans>/<ticket-id>.md` — plans location from t
 ## Implementation Tasks — ordered, concrete, grouped by persona
 ## Decisions       — one line each with the why
 ## History         — append-only dated one-liners with branch name (≤ 3 sentences each)
-## Sessions        — one line per session: open (Intent / Bounds / Approach) + close (scope verdict)
+## Sessions        — one dated block per session: four opening bullets (Intent / Ambiguity / Bounds / Approach) + a Close bullet appended at the end
 ## Debugged Issues — structured entries (status / severity / file / root cause / recommended fix)
 ## Review Issues   — structured entries (severity / status / file / problem / suggested fix)
 ```
 
-Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) states battery answers inline instead.
+Sections a persona doesn't need may be omitted at creation and added on first write. A persona that legitimately runs without a plan (a PR review of someone else's branch, a quick consult) has no `## Sessions` block to persist to; the chat bullets are the whole of it.
 
 ## Private state layout
 
@@ -131,30 +130,53 @@ If the repo map deliberately points `plans:` inside the repo (a team that keeps 
 
 ## Opening Orientation Battery
 
-Run once, immediately after startup and before any work. Answer all four — the persisted form is the `open:` line below, not four Q&A pairs in the reply.
+Run once, immediately after startup and before any work.
 
-1. **Intent** — in one sentence, what's actually being asked for (the outcome, not the literal words)?
-2. **Ambiguity** — what's unclear or readable two ways, and is each load-bearing? Load-bearing means a different answer would change what gets built or how it's verified; anything else is a default-and-state, never a question.
-3. **Bounds** — what does done look like, and what must not be touched?
-4. **Approach** — what's the smallest correct approach; is there a simpler framing than the obvious one?
+**The output is four bullets, one line each — not four Q&A pairs, and not one
+run-on line.** Emit them in chat before any work starts:
 
-**Resolving load-bearing gaps.** With a user present, ask as part of the battery output — at most 2–3 questions, one round, each with a proposed default ("I'll assume X unless you say otherwise — the alternative is Y") so a one-word "go" answers everything. A plan, ticket, or upstream artifact that already resolves the gap counts as an answer. In a dispatched or background run there's nobody to answer: pick a defensible default, state it, proceed, and escalate only by report-back verdict when a gap genuinely blocks.
+- **Intent** — the outcome actually being asked for, not the literal words.
+- **Ambiguity** — what's readable two ways *and* load-bearing. Nothing
+  load-bearing is the common case: write `none load-bearing; assuming <X>`,
+  naming the reading you took. Never blank, never `n/a` — the assumption is
+  the content.
+- **Bounds** — what done looks like, and what must not be touched.
+- **Approach** — the smallest correct approach, and whether a simpler framing
+  than the obvious one exists.
 
-Then persist one compressed line to the plan's `## Sessions` (create the section if needed):
+Then persist **the same four bullets in both places** — chat, and the plan's
+`## Sessions` (create the section if needed), as one dated block:
 
-`- YYYY-MM-DD [<branch>] open: Intent — <...>; Bounds — <...>; Approach — <...>`
+```
+- YYYY-MM-DD [<branch>]
+  - **Intent** — <...>
+  - **Ambiguity** — <...>
+  - **Bounds** — <...>
+  - **Approach** — <...>
+  - **Close** — <appended as the run's last write; see § Session close>
+```
 
-That line is the anchor the re-anchors and the closing battery read back, and it survives compaction. No plan in play? State the answers inline and move on.
+Chat is where the bullets do their job: a bolded label with one line under it
+is skimmable at a glance, and a misread Intent or a wrong Bounds is worth
+catching in the second before the work rather than in a file the user opens
+afterwards. The plan copy is what survives compaction — and persisting
+**Ambiguity** is what makes the assumption you took visible to the next
+session instead of silent. No plan in play? The chat bullets are the whole
+of it.
 
-## Mid-flight re-anchors
+**Ambiguity resolves silently by default.** Most tasks carry no load-bearing
+gap. Load-bearing means proceeding under either reading produces materially
+different work — a different thing built, or a different way it's verified.
+Anything short of that is a default-and-state, never a question: pick the
+defensible reading, name it in the **Ambiguity** bullet, and proceed. A plan,
+ticket, or upstream artifact that already resolves the gap has answered it.
 
-The batteries fire at open and close; long runs drift in the middle. Re-anchor when something shifts the ground underneath — a unit of work finishes, a verification fails, a plan gets re-read, a review comes back with findings — by checking current Intent and Bounds against the `open:` line.
-
-Drift is a finding: report it in the same breath as what you're doing about it. A check that turns up nothing needs no line — the work continuing is the report. Each persona's SKILL.md names the triggers that fit its own work shape.
-
-## Closing Re-Orientation Battery
-
-Close by naming any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) this hits, and whether their behavior was chosen on purpose — in the same message as the report-back — honest reporting, not extra checking — then append `close: scope held` or `close: drifted — <what and why>` to the `open:` Sessions line as the run's last write, and emit the handoff offer. Graders read `_shared/verification.md` for what a green result means.
+A question is the exception. It fires only when a genuine load-bearing gap
+stands — and then ask in the same message, in one round, each with a proposed
+default ("I'll assume X unless you say otherwise — the alternative is Y") so a
+one-word "go" answers everything. In a dispatched or background run there's
+nobody to answer: pick the defensible default, state it, proceed, and escalate
+by report-back verdict only when the gap genuinely blocks.
 
 ## Context budget
 
@@ -178,6 +200,7 @@ AC-verification dispatches carry `acVerdicts` — contract in `_shared/ac-verdic
 
 ## Session close
 
+- **Close bullet** — the run's last write, appended to the dated `## Sessions` block opened by § Opening Orientation Battery: name any scope drift, silent assumption, unproven "done" claim, and edge recall — what boundary inputs (empty, zero, absent, negative, malformed) the run hits, and whether their behavior was chosen on purpose. Drift is reported in the same breath as what's being done about it, not absorbed silently. A check that turns up nothing needs no more than `scope held`. With no plan in play it is stated in chat, like the opening bullets — the close fires on every run, not only the ones with somewhere to write. Graders read `_shared/verification.md` for what a green result means.
 - **Lessons check** — if you were corrected, hit an undocumented constraint, or an assumption proved wrong: append a one-line pattern to the repo's lessons file (per the repo map; no `lessons` role → skip silently). Check for an existing entry first — update rather than duplicate.
 - **History discipline** — entries ≤ 3 sentences; depth belongs in `## Decisions`.
 - **Handoffs are proposals** — name and offer the next persona; never auto-invoke.
@@ -208,7 +231,7 @@ Structured report-backs are out of scope — `## Dispatching a sibling persona` 
 
 # Checks that cannot fail
 
-Read this when your run grades something — a check, a suite, an acceptance criterion, an audit sweep, a count you're about to report. It is the sharper form of the closing battery's fourth question: not "is there evidence," but **for every green result, could it have come out red?**
+Read this when your run grades something — a check, a suite, an acceptance criterion, an audit sweep, a count you're about to report. It is the sharper form of the edge recall the `## Sessions` Close bullet asks for: not "is there evidence," but **for every green result, could it have come out red?**
 
 A check that cannot fail still prints a number, and the number reads exactly like a measurement — which is why this defect survives review. Every instance on this roster was written in good faith and reported a plausible figure. Three rules make the question answerable rather than rhetorical.
 
@@ -267,10 +290,9 @@ append — write it only when there's actual content to record.
                                    A rejected alternative gets a TL;DR of
                                    why it lost, so it isn't re-proposed
 ## History                       — append-only dated one-liners
-## Sessions                      — one line per session: the orientation
-                                   battery's open: line, closed with the
-                                   scope verdict (`core.md` § Opening
-                                   Orientation Battery owns the shape)
+## Sessions                      — one dated block per session; `core.md`
+                                   § Opening Orientation Battery owns the
+                                   shape
 ## Metrics                       — targets and measured outcomes (tess's
                                    landing spot)
 ## Initiatives → PRDs            — pointers from strategy sections to

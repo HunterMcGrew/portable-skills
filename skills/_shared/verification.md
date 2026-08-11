@@ -1,6 +1,6 @@
 # Checks that cannot fail
 
-Read this when your run grades something — a check, a suite, an acceptance criterion, an audit sweep, a count you're about to report. It is the sharper form of the closing battery's fourth question: not "is there evidence," but **for every green result, could it have come out red?**
+Read this when your run grades something — a check, a suite, an acceptance criterion, an audit sweep, a count you're about to report. It is the sharper form of the edge recall the `## Sessions` Close bullet asks for: not "is there evidence," but **for every green result, could it have come out red?**
 
 A check that cannot fail still prints a number, and the number reads exactly like a measurement — which is why this defect survives review. Every instance on this roster was written in good faith and reported a plausible figure. Three rules make the question answerable rather than rhetorical.
 

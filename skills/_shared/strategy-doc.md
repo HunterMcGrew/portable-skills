@@ -35,10 +35,9 @@ append — write it only when there's actual content to record.
                                    A rejected alternative gets a TL;DR of
                                    why it lost, so it isn't re-proposed
 ## History                       — append-only dated one-liners
-## Sessions                      — one line per session: the orientation
-                                   battery's open: line, closed with the
-                                   scope verdict (`core.md` § Opening
-                                   Orientation Battery owns the shape)
+## Sessions                      — one dated block per session; `core.md`
+                                   § Opening Orientation Battery owns the
+                                   shape
 ## Metrics                       — targets and measured outcomes (tess's
                                    landing spot)
 ## Initiatives → PRDs            — pointers from strategy sections to

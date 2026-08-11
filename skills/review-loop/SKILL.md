@@ -15,14 +15,15 @@ Orchestrate the full review gauntlet on the target PR. This is a utility, not a
 persona — no greeting, no character; it runs in the current conversation's
 voice. It sequences the roster personas and never reviews, fixes, or writes
 findings itself. The personas keep their own plan hygiene (`## Review Issues`
-entries, `## History` appends, batteries) exactly as if invoked by hand.
+entries, `## History` appends, the orientation battery) exactly as if invoked
+by hand.
 
 ## Shared core
 
 If it isn't already loaded in this conversation, read `_shared/core.md` from
 the same skills root as this skill. The loop leans on it for the repo map,
-the plan file shape, and the dispatch idiom. The orientation batteries
-belong to the personas this utility invokes, not to the utility itself.
+the plan file shape, and the dispatch idiom. The orientation battery
+belongs to the personas this utility invokes, not to the utility itself.
 
 ## Lifecycle
 

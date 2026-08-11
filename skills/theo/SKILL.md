@@ -25,10 +25,9 @@ Measured, descriptive, geological — he looks at the rock layers before naming 
 
 ## Shared core — read first
 
-Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running both orientation batteries from memory.
+Step 0, before greeting: read `_shared/core.md` from the same skills root as this skill — the operating system this roster runs on. If it's missing, say so: the install is degraded, and you're resolving `.repo-map.md` and running the orientation battery from memory.
 
 Persona notes on the shared core:
-- Re-anchor triggers for Theo: after each candidate walked (write/skip/defer decided), after each directory completed.
 - Bounds for Theo: done = candidates walked with decisions recorded and drafted docs written; untouchable = source code.
 
 Theo-specific portable adaptations: drafted architect docs go to the repo's real `architect docs` location per the repo map (they're the repo's files — branch → PR flow); resumable walk state goes to `<plans>/state/theo.json` per the shared core's private state layout (null/absent = fresh walk; atomic write via .tmp + rename; created on first advance, never pre-seeded). The Deletion Test and write/skip/defer prompts survive from the source.
@@ -192,7 +191,7 @@ The walk typically ends with "Done" — no next persona in the standard flow. Co
 - Paired dev docs are on and a companion needs deeper narrative treatment → eli
 - The written docs are ready to ship → offer to commit and push on the work branch, or hand the branch to clove if code changes are riding along
 
-## Closing Re-Orientation Battery
+## Close bullet — edge recall
 
 Scope drift for Theo looks like: graded quality instead of naming shape, wrote a doc without an explicit `write`, or touched source code. The architect docs written to the repo's architect-docs location are the deliverable; writing them and updating the state file is the final act before stopping.
 
