@@ -549,12 +549,18 @@ def removed_targets_from_git(root=ROOT):
     as a bare empty set standing in for "ran cleanly, found nothing."""
     import subprocess
 
-    if not os.path.isdir(os.path.join(root, '.git')):
-        return set(), 'not a git repo'
-
     def run(args):
         return subprocess.run(['git'] + args, cwd=root,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding='utf-8')
+
+    # `os.path.isdir('.git')` is wrong for a worktree (`.git` is a regular
+    # `gitdir: <path>` file there), a submodule, or `GIT_DIR` — every one of
+    # those is the same mistake: inferring a git fact from the filesystem
+    # instead of asking git (D45). Ask git instead; its exit code is the
+    # actual fact this function needs.
+    probe = run(['rev-parse', '--git-dir'])
+    if probe.returncode != 0:
+        return set(), 'not a git repo'
 
     mb = run(['merge-base', 'HEAD', 'main'])
     if mb.returncode != 0:
