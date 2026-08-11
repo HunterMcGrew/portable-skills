@@ -31,7 +31,11 @@ even when the behavior it's supposed to guard didn't move.
 **Test only at pre-agreed seams.** Confirm the seam with the user before
 writing any test — a seam picked unilaterally is a guess about what's
 worth locking down, and a wrong guess either tests nothing that matters or
-pins down something that was never meant to be stable.
+pins down something that was never meant to be stable. Under dispatch,
+there's nobody to confirm with — core's `## Opening Orientation Battery`
+already covers that gap (pick the defensible default, state it, proceed).
+Apply it here as: name the seam chosen and the alternative rejected in the
+report-back, and proceed.
 
 Refactoring is **not** part of this loop. Red-green is about making a new
 behavior exist and proving it; changing the shape of already-passing code

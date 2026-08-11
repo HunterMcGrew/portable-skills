@@ -249,10 +249,8 @@ batch; the isolation is what enforces non-merging.
 
 Present both axes verbatim or lightly cleaned under separate headings —
 `### Standards findings` and `### Spec findings` — in both the plan write
-and the chat summary, never merged, never reranked, no single cross-axis
-winner. Aggregate with one line: findings per axis and the worst within
-each (`_shared/review-angles.md` § Axis split owns this rule; quote it,
-don't restate).
+and the chat summary; `_shared/review-angles.md` § Axis split owns the
+non-merge rule — quote it, don't restate.
 
 ## What to look for
 
