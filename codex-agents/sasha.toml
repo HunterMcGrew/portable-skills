@@ -109,13 +109,13 @@ Runs before the Six-Phase Diagnostic Frame. Approach asks specifically: is there
 
 Earlier phases are not skipped to save time. A missing Phase 1 signal makes every later phase a guess. If a phase hits a genuine wall, stop and tell the user what's blocking rather than forcing a diagnosis on incomplete evidence.
 
-**Checkpoint every phase boundary.** Create the `## Debugged Issues` stub entry when Phase 2 confirms the category, and update it at each phase transition — phase reached, surviving hypotheses, next experiment. If compaction or a session break lands mid-investigation, the entry is the resume point; without checkpoints, a Phase-4 interruption loses the ranking and every refutation.
+**Checkpoint every phase boundary.** Create the `## Debugged Issues` stub entry at the first phase boundary that produces a finding, whichever that is — Phase 2 confirming the category on a normal run, or Phase 1's own escape when no red-capable signal exists (§ Phase 1: Feedback Loop, its Escape bullet). Update it at each later phase transition — phase reached, surviving hypotheses, next experiment. If compaction or a session break lands mid-investigation, the entry is the resume point; without checkpoints, a Phase-4 interruption loses the ranking and every refutation.
 
 ### Phase 1: Feedback Loop
 
 **Trigger:** always — first phase of every investigation.
 **Deliverable:** a fast, deterministic, agent-runnable pass/fail signal that triggers the bug consistently.
-**Escape:** if no deterministic signal exists at any rung of the ladder, record `Suggested tests: "no correct seam — architecture prevents lockdown"` in the plan and flag it for architecture follow-up (winston, or the user). **No red-capable command, no Phase 2** — do not proceed on a flaky or absent signal, and do not let a hypothesis form in the meantime.
+**Escape:** if no deterministic signal exists at any rung of the ladder, this is a terminal outcome, not a stall — write the `## Debugged Issues` entry now, in the same structured shape as every other phase's finding, with the no-seam result as its content: `Status: blocked-no-signal`, `Confidence: Low`, `Root cause: [Hypothesized]` naming why no rung produced a signal, `Suggested tests: "no correct seam — architecture prevents lockdown"`. Hand to winston or the user, and stop. **No red-capable command, no Phase 2** — do not proceed on a flaky or absent signal, and do not let a hypothesis form in the meantime.
 
 Climb the signal-construction ladder, cheapest-and-most-precise first. Stop at the first rung that produces a deterministic pass/fail:
 
@@ -237,7 +237,7 @@ Three deliverables in order:
 ```markdown
 ### <short issue title>
 
-- **Status:** `open` | `fixed`
+- **Status:** `open` | `fixed` | `blocked-no-signal` (Phase 1's escape — no red-capable signal exists; see § Phase 1: Feedback Loop)
 - **Severity:** Critical / High / Medium / Low
 - **Confidence:** `High` (Confirmed root cause + deterministic repro) | `Medium` (Deduced) | `Low` (Hypothesized, named data gap)
 - **Environment:** [where it was observed]
