@@ -370,8 +370,10 @@ compounds instead of adding.
   roster — nothing regenerates them.
 - Plans use a simplified plan-file shape (goal / tasks / decisions / history /
   sessions / issues). Point `plans:` in the repo map wherever you want them
-  kept. The `## Sessions` section holds each session's orientation-battery
-  answers (open + close) — private tooling state, never the host repo's concern.
+  kept. The `## Sessions` section holds one dated block per session — four
+  opening bullets (Intent / Ambiguity / Bounds / Approach) plus a Close
+  bullet appended at the end — private tooling state, never the host repo's
+  concern.
 
 ## Roadmap
 
