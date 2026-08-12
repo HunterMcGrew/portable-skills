@@ -103,6 +103,11 @@ with no setup and it copies `skills/`, `claude-agents/`, and `output-styles/`
 into `~/.claude`. That's the whole story for one profile — no exclusions, no
 backup, nothing to configure.
 
+`sync.sh` takes no arguments — there is no `--check`/`--dry-run` mode, only
+the real deploy. Any argument exits 2 with a usage line before anything is
+written; `sync-selftest.sh` is the read-only counterpart, and it never
+touches a real profile.
+
 Every copy loop is per-file with no `--delete` semantics against the
 destination, so a skill, agent, or style you keep only in your profile (not
 shipped by this repo) survives a re-sync untouched.
@@ -307,11 +312,12 @@ printf '.repo-map.md\n' >> ~/.gitignore_global
 **Prefer the interview over hand-filling.** In a new repo's first session, invoke
 any persona and say "no repo map yet — interview me." The skill runs a discovery
 pass, asks you to confirm where each role lives (rules, architect docs, docs,
-lessons, plans, verification), and writes `.repo-map.md` itself. Front-loading
-this interview beats mid-task questions — make it the first thing you do in a
-new repo. Roles you leave out are opt-outs (no `lessons` line → no lesson
-capture), and skills will offer to append locations they discover mid-session
-back into the map.
+lessons, plans, verification, ticket pattern), and writes `.repo-map.md` itself.
+Front-loading this interview beats mid-task questions — make it the first thing
+you do in a new repo. Roles you leave out are opt-outs (no `lessons` line → no
+lesson capture; no `ticket pattern` → Nora and Briar's Spec subagent fall back
+to a generic ticket shape), and skills will offer to append locations they
+discover mid-session back into the map.
 
 ## How work leaves the repo
 
@@ -370,8 +376,10 @@ compounds instead of adding.
   roster — nothing regenerates them.
 - Plans use a simplified plan-file shape (goal / tasks / decisions / history /
   sessions / issues). Point `plans:` in the repo map wherever you want them
-  kept. The `## Sessions` section holds each session's orientation-battery
-  answers (open + close) — private tooling state, never the host repo's concern.
+  kept. The `## Sessions` section holds one dated block per session — four
+  opening bullets (Intent / Ambiguity / Bounds / Approach) plus a Close
+  bullet appended at the end — private tooling state, never the host repo's
+  concern.
 
 ## Roadmap
 

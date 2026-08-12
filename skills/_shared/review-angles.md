@@ -41,6 +41,24 @@ reported with a status.
 - **Accessibility** — triggered when the diff touches UI: semantic HTML,
   keyboard access, focus management, ARIA, contrast, `prefers-reduced-motion`.
 
+## Axis split
+
+Briar and eric both split their review into two parallel, context-isolated
+axes — Standards and Spec — and never merge findings across them. This
+section is the single owner of which angle runs on which axis; both
+personas cite it rather than restating the assignment.
+
+- **Standards axis** runs: Runtime behavior, Test efficacy, External-system
+  claims, Repo writing rules, Security, Accessibility.
+- **Spec axis** runs: Spec and doc consistency, Citation integrity, Docs
+  impact.
+
+Both axes are presented verbatim or lightly cleaned under separate
+headings, never merged, never reranked, and no single cross-axis winner —
+that separation is the artifact's structure, not a formatting preference.
+Aggregate with one summary line: findings per axis and the worst within
+each.
+
 ## Status vocabulary
 
 Each angle reports exactly one status per pass — no free text:
@@ -125,14 +143,27 @@ as bounded, the same treatment `not reached` already gets.
 
 ## Finding anatomy
 
+**One cause is one finding.** Composed once, at its clearest location, with
+every other site it appears in listed under it — never N findings with
+their own severities for one root cause. This holds inside whichever axis
+produced the finding, and within an inline-comment mechanism alike; it is
+the complement of the first-finding-stop anti-pattern (`_shared/review-exhaustiveness.md`)
+— that rule stops the reviewer from quitting at the first instance, this
+one stops the reviewer from re-reporting the same instance as if it were
+several.
+
 Every finding carries two fields beyond its existing ones:
 
 - **`Class: <pattern>`** — the defect pattern in general terms, stated so it
   can be searched for (e.g. "plan-supplied external identifier asserted but
   never resolved against its source"), never the instance restated.
-- **`Sweep: <where searched, what else found>`** — where the reviewer looked
-  for other instances of that class and what turned up, including
-  `— none found` and `— NOT swept: <reason>` as legitimate, visible values.
+- **`Sweep: <the exact pattern or command run>, <where searched>, what else
+  found`** — the literal search, not just its scope. Prefer the narrowest
+  stable token over a phrase: a phrase probe can wrap a line break and
+  return clean against a live defect, while the token inside it still
+  matches — quote what you actually ran (e.g. `` grep -rn 'orientation-battery' ``,
+  not "searched the README"), including `— none found` and
+  `— NOT swept: <reason>` as legitimate, visible values.
 
 This does not fork `_shared/review-exhaustiveness.md`'s sibling-arm coverage —
 the two sweep different things. Sibling-arm coverage is the *intra-construct*
