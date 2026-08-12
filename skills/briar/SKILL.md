@@ -224,16 +224,38 @@ Reviews stall for specific reasons. Named procedures, not guesswork:
 Briar runs the same two-axis split eric applies on PRs, adapted for a
 chat-and-plan self-review. Axis→angle assignment is owned by
 `_shared/review-angles.md` § Axis split — cite it, never restate the list.
-Spawn Standards and Spec as parallel, context-isolated subagents in one
-batch; the isolation is what enforces non-merging.
+The axes own how findings are grouped and reported; the fan-out below owns
+who does the looking.
 
-- **Standards subagent** receives: the diff, the pre-fetched source files,
-  the repo's documented standards sources (per the repo map), and the smell
-  baseline (`references/smell-baseline.md`) pasted in full — the subagent
-  is context-isolated and has no other route to it. It runs § What to look
-  for, § Accessibility Review, and § Test Coverage below.
-- **Spec subagent** receives: the diff and the plan (or the "no spec"
-  sentinel). Ticket ID format comes from `.repo-map.md`'s `ticket pattern`
+**Fan out by file-surface slice, not by angle.** Partition the Batch A
+name-only list into slices of roughly five *related* files — grouped by
+directory and module affinity, so files in the same module that reference
+each other land together — never alphabetically. Spawn every slice
+subagent plus the single cross-cutting subagent below as parallel,
+context-isolated subagents in one batch; the isolation is what enforces
+non-merging.
+
+- **Each slice subagent** receives: its slice's hunks from the diff, the
+  pre-fetched source files for those paths, the repo's documented standards
+  sources (per the repo map), the plan (or the "no spec" sentinel), and the
+  smell baseline (`references/smell-baseline.md`) pasted in full — the
+  subagent is context-isolated and has no other route to it. It carries
+  **every** angle in `_shared/review-angles.md` as its rubric, and runs
+  § What to look for, § Accessibility Review, and § Test Coverage below —
+  applied to its own slice only. Tell it explicitly that cross-file
+  findings are not its lane: anything that can only be judged by comparing
+  a pointer in one file against a definition in another belongs to the
+  cross-cutting subagent, and the slice reports such an angle
+  `not reached — cross-file, owned by the cross-cutting sweep` rather than
+  guessing from its slice alone. Each slice returns its findings **and** a
+  per-angle status plus enumeration scoped to its slice — a partial answer,
+  labelled as one.
+- **Exactly one cross-cutting subagent** — one per pass, never one per
+  slice — receives the whole diff over the pinned range and the plan (or
+  the "no spec" sentinel). It runs **only** the angles no slice can settle
+  on its own: Spec and doc consistency, Citation integrity, Docs impact,
+  and any claim that compares a pointer in one file against a definition in
+  another. Ticket ID format comes from `.repo-map.md`'s `ticket pattern`
   role when locating the spec — no map or no role, fall back to a generic
   shape (uppercase prefix, dash, digits) and name the reading taken rather
   than asking. It reports three things, each quoting the spec line it's
@@ -246,6 +268,11 @@ batch; the isolation is what enforces non-merging.
 | **Full spec** | Plan + AC for the touched paths | Run normally — missing/partial, scope creep, wrong implementation. |
 | **Partial spec** | Some of plan / AC, not all | Run the checks that have inputs; loudly note which was skipped and why. |
 | **No spec** | Neither | **Skip the Spec axis and say so loudly** — in both the chat verdict and the plan's Angle Coverage block, mirroring eric's Missing spec handling table rather than inventing a second phrasing. |
+
+Briar routes each returned finding to its axis heading by the angle that
+produced it (`_shared/review-angles.md` § Axis split), dedups by root cause
+across slices — one cause reported in three slices is one finding — and
+assigns severity herself, since a slice sees only its own blast radius.
 
 Present both axes verbatim or lightly cleaned under separate headings —
 `### Standards findings` and `### Spec findings` — in both the plan write
@@ -306,6 +333,22 @@ The plan is the persistent record; the chat summary is a presentation of what's 
 
 1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues. A zero-findings pass writes the `No issues found — <YYYY-MM-DD> [<branch>]` line.
 2. Add/update `### Angle Coverage` under `## Review Issues`, one line per angle from `_shared/review-angles.md`, each carrying its status token per that fragment's vocabulary — quote the fragment, never restate it. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle). Emit all nine angles on every pass, including a clean pass — this block is exempt from conditional-emit.
+
+   **Assembling coverage from partial answers.** The slice subagents return
+   per-angle statuses scoped to one slice each, so no single answer
+   establishes an angle's status, and a naive merge would report an angle
+   `swept` when only one slice looked at it. For every angle a slice can
+   own, the line reads `swept` **only when every slice with surface for that
+   angle reported `swept`** — one slice's `swept` never speaks for the
+   others. A slice that reported `not reached` makes the whole angle
+   bounded, and the reason names the slices still owed. A slice with no
+   surface for the angle contributes `n/a` and does not make the angle
+   `n/a` unless every slice said so. The angle's enumeration is the
+   **union** of the per-slice enumerations, not the longest of them. For the
+   cross-cutting angles the single whole-tree subagent's status and
+   enumeration are the angle's outright, and the slices'
+   `not reached — cross-file` answers are discarded rather than merged in —
+   they record a hand-off, not a gap.
 3. Add/update `## Cleanup Items` for dead code, debug artifacts, stray comments.
 4. Update `## PR Readiness` in the plan with checklist state and build result:
 
