@@ -164,9 +164,12 @@ collide, and the fix then is `CODEX_EXCLUDES` or a prefix decided at that
 point. The deploy is per-file with no `--delete`, so a host repo's own
 differently-named agents in that directory survive untouched; one sharing a
 basename with a toml this repo ships is overwritten, which is the collision
-above. `CODEX_DEST` pointing at this repo's own `codex-agents/` is refused
-outright — the copy is destination-first, so it would delete the sources it
-was asked to deploy.
+above. Any destination resolving to one of this repo's own source
+directories is refused outright, before anything is written —
+`CODEX_DEST` pointing at `codex-agents/`, and equally a `DESTS` entry
+whose `skills/`, `agents/` or `output-styles/` lands back in the repo,
+directly or through a symlink an earlier sync left behind. The copy is
+destination-first, so it would delete the sources it was asked to deploy.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
 written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
@@ -182,10 +185,11 @@ exclude it; `CODEX_EXCLUDES` gets the same warning on its own pass. Both
 lists are matched with globbing off, so a `*` in a name matches literally
 instead of expanding against whatever directory you happened to run from.
 
-`./sync-selftest.sh` covers that logic in seventeen controls — exclusions, the
+`./sync-selftest.sh` covers that logic in twenty controls — exclusions, the
 prefix strip, the no-`--delete` guarantee, the symlink-clobber guard, the
-stale-exclusion warning, an empty `DESTS`, the codex deploy and its unset
-default, and the four abort conditions — against a fabricated tree in
+self-target refusal, the stale-exclusion warning, an empty `DESTS`, the
+codex deploy and its unset default, and the four abort conditions — against
+a fabricated tree in
 `$TMPDIR` with `HOME` redirected there, so it never touches a real profile.
 Several are paired red controls: they break the mechanism under test and
 assert the check goes red, so the control it guards cannot pass by testing
