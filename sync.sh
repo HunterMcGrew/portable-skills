@@ -120,7 +120,12 @@ SRC_DIRS=("$SRC" "$SRC/skills" "$SRC/claude-agents" "$SRC/output-styles" "$SRC/c
 # that let three of them ship unguarded.
 refuse_self_target() {
   local label="$1" dir="$2" s
-  for s in "${SRC_DIRS[@]}"; do
+  # :--guarded like every other array expansion in this file. SRC_DIRS is a
+  # fixed literal and cannot be empty, so this is the convention holding rather
+  # than a live bug — but it was the one value-form expansion left, and the
+  # rule control 8 states ("the index form or :--guarded, every one of them")
+  # is worth less with an exception in it than the guard costs.
+  for s in "${SRC_DIRS[@]:-}"; do
     if [ "$dir" -ef "$s" ]; then
       echo "sync.sh: $label resolves to this repo's own $s — the copy is destination-first, so syncing there would delete the files it deploys (destination: $dir)" >&2
       exit 1

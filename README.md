@@ -165,25 +165,27 @@ point. The deploy is per-file with no `--delete`, so a host repo's own
 differently-named agents in that directory survive untouched; one sharing a
 basename with a toml this repo ships is overwritten, which is the collision
 above. Any destination resolving to one of this repo's own source
-directories is refused outright, before anything is written —
-`CODEX_DEST` pointing at `codex-agents/`, and equally a `DESTS` entry
-whose `skills/`, `agents/` or `output-styles/` lands back in the repo,
-directly or through a symlink an earlier sync left behind. The copy is
-destination-first, so it would delete the sources it was asked to deploy.
+directories — or to the repo root itself — is refused outright, before
+anything is written: `CODEX_DEST` pointing at `codex-agents/`, and equally a
+`DESTS` entry whose `skills/`, `agents/` or `output-styles/` lands back in
+the repo, directly or through a symlink an earlier sync left behind. The
+copy is destination-first, so it would delete the sources it was asked to
+deploy; a destination resolving to the root instead drops untracked copies
+into the working tree.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
-written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
-its stripped name, so the prefixed form matches nothing. It's parallel-array
-rather than an associative array because the
-bash macOS ships (3.2) predates them. An excluded name is skipped for both
-the skill directory and its `claude-agents/*.md` shim together: the agent
-file's `skills:` field preloads the same-named skill, so shipping the shim
-without the skill produces an agent pointing at nothing. `sync.sh` warns on a
-stale exclusion (a listed name with no matching `skills/` dir) so a rename
-doesn't silently start leaking the renamed skill into a profile that meant to
-exclude it; `CODEX_EXCLUDES` gets the same warning on its own pass. Both
-lists are matched with globbing off, so a `*` in a name matches literally
-instead of expanding against whatever directory you happened to run from.
+written unprefixed — `winston`, never `p-winston`; the agent shim is matched
+on its stripped name, so the prefixed form matches nothing. It's
+parallel-array rather than an associative array because the bash macOS ships
+(3.2) predates them. An excluded name is skipped for both the skill directory
+and its `claude-agents/*.md` shim together: the agent file's `skills:` field
+preloads the same-named skill, so shipping the shim without the skill produces
+an agent pointing at nothing. `sync.sh` warns on a stale exclusion (a listed
+name with no matching `skills/` dir) so a rename doesn't silently start
+leaking the renamed skill into a profile that meant to exclude it;
+`CODEX_EXCLUDES` gets the same warning on its own pass. Both lists are matched
+with globbing off, so a `*` in a name matches literally instead of expanding
+against whatever directory you happened to run from.
 
 `./sync-selftest.sh` covers that logic and reports how many controls it ran
 on the line it exits with, so the count lives in the suite rather than in
@@ -191,8 +193,10 @@ this paragraph — exclusions, the prefix strip, the no-`--delete` guarantee,
 the symlink-clobber guard, the self-target refusal, the stale-exclusion
 warning, a multi-name exclusion list, a stale backup setting, an empty
 `DESTS`, the codex deploy and its unset default, the un-configured defaults
-with no `sync.local.sh` at all, and the four abort conditions — against a fabricated tree in `$TMPDIR` with `HOME` redirected
-there, so it never touches a real profile.
+with no `sync.local.sh` at all, and the other three abort conditions —
+against a fabricated tree in `$TMPDIR` with `HOME` redirected there. That
+last part is asserted rather than assumed: the defaults control matches the
+summary line whole, so a destination outside the fabricated tree fails it.
 Several are paired red controls: they break the mechanism under test and
 assert the check goes red, so the control it guards cannot pass by testing
 nothing.
