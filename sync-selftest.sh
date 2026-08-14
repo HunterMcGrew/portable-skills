@@ -22,6 +22,7 @@ trap 'rm -rf "$work"' EXIT
 # for it used to live inside a control that has since been deleted.
 mkdir -p "$work/fakehome"
 fails=0
+controls=0
 
 # Two personas is the smallest tree that can tell "excluded" from "empty":
 # clove goes everywhere, winston is excluded from the second destination.
@@ -54,6 +55,7 @@ run() {
 }
 
 ok() {
+  controls=$((controls + 1))
   if [ "$2" = true ]; then
     printf 'selftest: %-22s ok\n' "$1"
   else
@@ -466,14 +468,19 @@ ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a d
 
 # 19. Self-target refusal: a destination resolving to one of this repo's own
 # source directories must abort before any write, with every source file still
-# on disk. Six rows — four arms, one relation, and one list entry. Row 5 is
+# on disk. Seven rows — four arms, one relation, one list entry, and one
+# destination index above zero. Row 5 is
 # the relation: a ./ segment makes the destination inode-equal but not
 # string-equal, which is exactly what control 21 proves a string compare
 # misses. Row 6 is SRC_DIRS' own "$SRC" entry, the one no arm reaches: a
 # destination subdirectory resolving to the repo *root*, whose damage is
 # untracked copies landing in the working tree rather than a source file
-# deleted. Rows share one scaffold because a refusal writes nothing, so the
-# tree is unchanged between them; dest-all is rebuilt per row.
+# deleted. Row 7 is the arm that proves the pre-flight loops over every
+# destination rather than checking the first: its second DESTS entry aliases
+# the source tree while its first is benign, so a pre-flight restricted to
+# DESTS[0] walks straight past it. Rows share one scaffold because a refusal
+# writes nothing, so the tree is unchanged between them; dest-all is rebuilt
+# per row.
 scaffold self-target
 green=true
 st_row() {  # st_row <row> <file that must survive>
@@ -534,6 +541,21 @@ EXCLUDES=("")
 EOF
 st_row 6 "$src/skills/clove/SKILL.md"
 [ -e "$src/clove" ] && { green=false; echo "  self-target row 6: untracked copies landed in the repo root" >&2; }
+
+# Row 7: a destination index above zero. Every other fixture in this file is
+# single-entry, so nothing yet distinguishes a pre-flight that loops from one
+# that checks DESTS[0] and stops. The first entry is benign and the second
+# aliases the source root; the refusal has to name the second, and the source
+# skill directories have to be all still there afterwards.
+rm -rf "$src/dest-all" "$src/dest-two"; mkdir -p "$src/dest-all" "$src/dest-two"
+before=$(ls "$src/skills" | wc -l | tr -d ' ')
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-two" "$src")
+EXCLUDES=("" "")
+EOF
+st_row 7 "$src/skills/clove/SKILL.md"
+grep -q "DESTS\[1\]" "$work/err" || { green=false; echo "  self-target row 7: refusal did not name the second destination" >&2; }
+[ "$(ls "$src/skills" | wc -l | tr -d ' ')" = "$before" ] || { green=false; echo "  self-target row 7: a source skill directory was destroyed" >&2; }
 ok self-target "$green" "a destination aliasing the source tree was not refused before writing, or a source file did not survive"
 
 # 20. The same case with the pre-flight's three DESTS calls stripped must go
@@ -602,8 +624,57 @@ EOF
   ok self-target-string-red "$green" "a string compare refused an inode-equal destination — control 19 row 5 proves nothing"
 fi
 
+# 22. A multi-name exclusion list excludes every name in it. The lists are
+# space-separated strings split by an unquoted expansion under `set -f`, and
+# sync.sh's own comment explains at length why quoting would be a regression —
+# a quoted expansion is one word, so a two-name list matches no persona and
+# silently excludes nothing. Nothing measured that until this control: every
+# fixture in this file held a single name, where one word and one list are
+# indistinguishable.
+scaffold multi-exclude
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all" "$src/dest-filtered")
+EXCLUDES=("" "winston clove")
+EOF
+run "$src"
+green=true
+[ "$rc" -eq 0 ] || green=false
+[ -e "$src/dest-filtered/skills/winston" ] && green=false
+[ -e "$src/dest-filtered/skills/clove" ] && green=false
+[ -e "$src/dest-filtered/agents/p-winston.md" ] && green=false
+[ -e "$src/dest-filtered/agents/p-clove.md" ] && green=false
+[ -f "$src/dest-all/skills/winston/SKILL.md" ] || green=false
+[ -f "$src/dest-all/skills/clove/SKILL.md" ] || green=false
+ok multi-exclude "$green" "a two-name exclusion list did not exclude both names, or excluded them from the wrong destination"
+
+# 23. The same case with excluded()'s split quoted must go red, or control 22
+# is passing for some reason other than the word splitting. cmp against the
+# real file first, per controls 9/13/15/17/20/21's precedent.
+scaffold multi-exclude-red
+python3 - "$src/sync.sh" <<'PY_MX'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+old = '  for ex in $list; do\n'
+assert old in s, 'not found: %r' % old
+s = s.replace(old, '  for ex in "$list"; do\n', 1)
+open(p, 'w').write(s)
+PY_MX
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok multi-exclude-red false "the quote did not match — this control tested nothing"
+else
+  cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all" "$src/dest-filtered")
+EXCLUDES=("" "winston clove")
+EOF
+  run "$src"
+  if [ -e "$src/dest-filtered/skills/winston" ]; then green=true; else green=false; fi
+  ok multi-exclude-red "$green" "the split was quoted and a two-name exclusion still held — control 22 proves nothing"
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 20 controls green"
+  echo "selftest: $controls controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1
