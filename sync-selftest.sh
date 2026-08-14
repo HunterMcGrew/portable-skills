@@ -37,6 +37,7 @@ scaffold() {
   echo 'name: p-winston' >"$src/claude-agents/p-winston.md"
   echo 'name: p-clove' >"$src/claude-agents/p-clove.md"
   echo style >"$src/output-styles/scannable.md"
+  echo style >"$src/output-styles/winston.md"
   echo 'name = "winston"' >"$src/codex-agents/winston.toml"
   echo 'name = "clove"' >"$src/codex-agents/clove.toml"
   cp "$REPO/sync.sh" "$src/sync.sh"
@@ -92,10 +93,19 @@ ok baseline "$green" "unfiltered destination is missing files (rc=$rc)"
 # `[ "$i" -eq 0 ] || continue` left the suite fully green, while the identical
 # restriction on the skills or agents loop reds this control on the two lines
 # above.
+#
+# winston.md carries the *unfiltered* half, which nothing observed before:
+# every style in the fixture used to be named for no persona, so adding
+# excluded() filtering to the output-styles loop — the one thing sync.sh's
+# comment above that loop rules out — changed no file and left the suite fully
+# green. A style named for the excluded persona is the cheapest fixture that
+# can see it, and it must land in dest-filtered even though `winston` is that
+# destination's exclusion.
 green=true
 [ -e "$src/dest-filtered/skills/clove" ] || green=false
 [ -e "$src/dest-filtered/agents/p-clove.md" ] || green=false
 [ -e "$src/dest-filtered/output-styles/scannable.md" ] || green=false
+[ -e "$src/dest-filtered/output-styles/winston.md" ] || green=false
 [ ! -e "$src/dest-filtered/skills/winston" ] || green=false
 [ ! -e "$src/dest-filtered/agents/p-winston.md" ] || green=false
 ok exclusion "$green" "excluded persona leaked, an output style never reached the second destination, or the destination is empty"
@@ -874,7 +884,23 @@ green=true
 grep -q "BACKUP_DIR is set but nothing reads it" "$work/err" || green=false
 [ -e "$src/somewhere" ] && green=false
 [ -f "$src/dest-all/skills/clove/SKILL.md" ] || green=false
-ok backup-inert "$green" "a stale BACKUP_DIR did not warn, aborted the sync, or something created the directory (rc=$rc)"
+# Row 2: the same name arriving from the process environment instead must stay
+# silent. sync.sh unsets it before sourcing sync.local.sh, which is what makes
+# row 1's warning mean "your sync.local.sh sets this" rather than "something in
+# your environment is called BACKUP_DIR". Nothing observed that line: deleting
+# the `unset` left the suite fully green, while every clone with the variable
+# exported would be told, on every sync, to delete a setting it never made.
+scaffold backup-env
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+EOF
+export BACKUP_DIR="$src/from-env"
+run "$src"
+unset BACKUP_DIR
+[ "$rc" -eq 0 ] || { green=false; echo "  backup row 2: an env-supplied BACKUP_DIR aborted the sync (rc=$rc)" >&2; }
+grep -q "BACKUP_DIR is set but nothing reads it" "$work/err" && { green=false; echo "  backup row 2: an env-supplied BACKUP_DIR warned, so sync.sh's unset no longer clears it before sync.local.sh is sourced" >&2; }
+ok backup-inert "$green" "a stale BACKUP_DIR did not warn, aborted the sync, something created the directory, or an env-supplied one was not cleared (rc=$rc)"
 
 # 25. The defaults block itself. Every other control in this file writes a
 # sync.local.sh before running, so the path README calls the normal case — no
