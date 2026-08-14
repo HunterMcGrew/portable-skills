@@ -162,16 +162,9 @@ done
 # claude-agents/, and deployed here for the same reason: rendering mutates
 # tracked files, syncing only copies committed ones.
 #
-# One destination rather than a DESTS-parallel array, because ~/.codex/agents
-# is a single global directory with no work/personal split to mirror.
-# CODEX_EXCLUDES is a plain space-separated list for that one destination.
-#
-# The exclusion means something different here than it does above. A
-# claude-agents shim preloads a same-named skill, so shipping it without the
-# skill produces a persona with nothing to be; a codex toml inlines the
-# persona's whole body (README.md § The codex-agents toml surface) and is
-# self-contained. Excluding one is a preference about this machine, not a
-# consistency requirement.
+# CODEX_EXCLUDES is a flat space-separated list rather than a DESTS-parallel
+# array, and an exclusion means something different on this surface than it
+# does above. Both are stated once in README.md § sync.sh, not restated here.
 #
 # Same per-file, no --delete semantics as every loop above, and it matters
 # most here: a host repo's own agents (thrive-*.toml and the like) live in
