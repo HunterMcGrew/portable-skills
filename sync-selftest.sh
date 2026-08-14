@@ -3,9 +3,9 @@
 # --selftest: every control asserts the green case and then breaks the
 # mechanism to prove the control goes red. A check that cannot fail is not a
 # check. Exclusion logic is where this file started and is now a minority of
-# it — the copy semantics, the four abort conditions, the self-target refusal,
-# the codex arm and the un-configured defaults all have controls here, so read
-# the numbered comments rather than this line for the scope.
+# it — the copy semantics, the other three abort conditions, the self-target
+# refusal, the codex arm and the un-configured defaults all have controls
+# here, so read the numbered comments rather than this line for the scope.
 #
 # `bash -n sync.sh` is a syntax check and would pass just as happily with the
 # prefix strip deleted, which is the one line whose failure is silent — an
@@ -83,14 +83,15 @@ ok baseline "$green" "unfiltered destination is missing files (rc=$rc)"
 # present in both. This is the case that fails if the prefix strip breaks:
 # an unstripped "p-winston" never equals the excluded "winston".
 #
-# This is also the file's only fixture with a second destination, which makes
-# it the only place the "ride along to every destination" property of the
-# output-styles loop is observable — control 1 looks at DESTS[0] alone, and
-# nothing else here ever names dest-filtered. Styles are unfiltered, so the
-# assertion is presence, not absence: restricting that loop to DESTS[0] with a
-# one-line `[ "$i" -eq 0 ] || continue` left the suite fully green, while the
-# identical restriction on the skills or agents loop reds this control on the
-# two lines above.
+# This is also the only control that asserts against a second destination.
+# scaffold() gives every fixture two, but control 1 looks at DESTS[0] alone
+# and nothing else here ever names dest-filtered, which leaves this the only
+# place the "ride along to every destination" property of the output-styles
+# loop is observable. Styles are unfiltered, so the assertion is presence, not
+# absence: restricting that loop to DESTS[0] with a one-line
+# `[ "$i" -eq 0 ] || continue` left the suite fully green, while the identical
+# restriction on the skills or agents loop reds this control on the two lines
+# above.
 green=true
 [ -e "$src/dest-filtered/skills/clove" ] || green=false
 [ -e "$src/dest-filtered/agents/p-clove.md" ] || green=false
@@ -931,7 +932,7 @@ stray="$(ls -A "$work/fakehome" | grep -vx '.claude' || true)"
 # the escape. Anything reproducing this must keep its probe path under $TMPDIR.
 grep -Fqx "synced: skills + claude-agents + output-styles -> $work/fakehome/.claude" "$work/out" || green=false
 # The un-configured run says nothing on stderr, and that is the quiet half of
-# every warning in sync.sh. Five of its seven `>&2` sites are followed by
+# every warning in sync.sh. Four of its seven `>&2` sites are followed by
 # `exit`, so an `rc -eq 0` control already covers their silence, and the two
 # stale-exclusion warnings sit in loop bodies that do not run on empty lists.
 # The BACKUP_DIR warning is the one reachable warning whose quiet path nothing

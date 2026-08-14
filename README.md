@@ -174,7 +174,8 @@ because the copy is destination-first and would otherwise delete the sources
 it was asked to deploy, or drop untracked copies into the working tree where
 the target is the root. A `DESTS` entry that *is* a source directory aliases
 none of those and is not refused: it writes `skills/skills` and the like, and
-only ever removes what the same run created.
+only ever removes copies this script wrote there itself — on this run or an
+earlier one, never a source file or an untracked one.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
 written unprefixed — `winston`, never `p-winston`; the agent shim is matched
