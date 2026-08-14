@@ -253,27 +253,57 @@ else
   ok symlink-clobber-red "$green" "rm-before-cp removed and the outside file was not clobbered — control 12 proves nothing"
 fi
 
-# 14. Stale-exclusion warning: an EXCLUDES entry naming a skill directory
-# that does not exist warns on stderr and does not abort — sync.sh:58-68.
-# The other destination's files still land, proving the warning doesn't
-# quietly turn into a partial or skipped sync.
+# 14. Stale-exclusion warning: an entry naming a skill directory that does not
+# exist warns on stderr and does not abort — sync.sh's pre-flight exclusion
+# warnings, named rather than cited by line, because an edit upstream in that
+# file has already invalidated this citation once. Both lists are covered:
+# EXCLUDES per destination, and the CODEX_EXCLUDES pass beside it. The other
+# destination's files still land, proving the warning doesn't quietly turn
+# into a partial or skipped sync.
 scaffold stale
+mkdir -p "$src/codex-dest"
 cat >"$src/sync.local.sh" <<EOF
 DESTS=("$src/dest-all" "$src/dest-filtered")
 EXCLUDES=("" "ghost-persona")
+CODEX_DEST="$src/codex-dest"
+CODEX_EXCLUDES="ghost-codex"
 EOF
 run "$src"
 green=true
 [ "$rc" -eq 0 ] || green=false
 grep -q "stale exclusion for .*ghost-persona" "$work/err" || green=false
+grep -q "stale codex exclusion: ghost-codex" "$work/err" || green=false
 [ -e "$src/dest-filtered/skills/winston" ] || green=false
 [ -e "$src/dest-filtered/skills/clove" ] || green=false
-ok stale-exclusion "$green" "stale exclusion did not warn, aborted, or the sync did not complete (rc=$rc)"
 
-# 15. The same case with the warning line stripped must go red — otherwise
-# control 14 passes for some reason other than the warning. cmp against the
-# real file per control 9/13's own precedent, so a non-matching edit reports
-# "tested nothing" instead of a false green.
+# Second row of the same control: an exclusion written with a `*`. The lists
+# are split unquoted, so without `set -f` the `*` pathname-expands against the
+# caller's cwd — standing in a directory that holds a file named after a
+# persona then excludes that persona, an exclusion the user never wrote. The
+# cwd *is* the variable under test, so this row cannot go through run(). The
+# destination is cleared first: a clove.toml surviving from the row above
+# would leave the assertion below unable to fail.
+rm -rf "$src/codex-dest"
+mkdir -p "$src/globcwd"
+: >"$src/globcwd/clove"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-dest"
+CODEX_EXCLUDES='*'
+EOF
+globrc=0
+(cd "$src/globcwd" && HOME="$work/fakehome" "$src/sync.sh" >"$work/out" 2>"$work/err") || globrc=$?
+[ "$globrc" -eq 0 ] || green=false
+[ -f "$src/codex-dest/clove.toml" ] || green=false
+grep -q "stale codex exclusion: [*]" "$work/err" || green=false
+ok stale-exclusion "$green" "a stale exclusion did not warn on one of the two lists, a glob exclusion swallowed a persona nobody named, or the sync aborted (rc=$rc globrc=$globrc)"
+
+# 15. The same case with both warning lines stripped must go red — otherwise
+# control 14 passes for some reason other than the warnings. Both, not one: a
+# strip that left the codex line standing would let control 14's new arm pass
+# here too. cmp against the real file per control 9/13's own precedent, so a
+# non-matching edit reports "tested nothing" instead of a false green.
 scaffold stale-red
 python3 - "$src/sync.sh" <<'PY'
 import sys
@@ -284,23 +314,30 @@ old = ('    [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale exclusion for '
        'successor" >&2\n')
 assert old in s, 'not found: %r' % old
 s = s.replace(old, '', 1)
+old2 = ('  [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale codex exclusion: '
+        '$ex — renamed or removed? sync may now include its successor" >&2\n')
+assert old2 in s, 'not found: %r' % old2
+s = s.replace(old2, '', 1)
 open(p, 'w').write(s)
 PY
 chmod +x "$src/sync.sh"
 if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
   ok stale-exclusion-red false "the strip did not match — this control tested nothing"
 else
+  mkdir -p "$src/codex-dest"
   cat >"$src/sync.local.sh" <<EOF
 DESTS=("$src/dest-all" "$src/dest-filtered")
 EXCLUDES=("" "ghost-persona")
+CODEX_DEST="$src/codex-dest"
+CODEX_EXCLUDES="ghost-codex"
 EOF
   run "$src"
-  if grep -q "stale exclusion" "$work/err"; then
+  if grep -q "stale exclusion\|stale codex exclusion" "$work/err"; then
     green=false
   else
     green=true
   fi
-  ok stale-exclusion-red "$green" "warning line removed and the warning still appeared — control 14 proves nothing"
+  ok stale-exclusion-red "$green" "warning lines removed and a warning still appeared — control 14 proves nothing"
 fi
 
 # 16. Codex projections reach CODEX_DEST, honour CODEX_EXCLUDES, and leave a

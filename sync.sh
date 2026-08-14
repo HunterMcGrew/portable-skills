@@ -44,6 +44,23 @@ fi
 # contract — it describes the repo's own files, not your setup.
 AGENT_PREFIX="p-"
 
+# Exclusion lists are space-separated strings, so matching one means letting
+# the shell word-split it — and an unquoted expansion pathname-expands in the
+# same breath. CODEX_EXCLUDES="*" then becomes whatever files happen to sit
+# in the caller's cwd: it matches no persona, every toml deploys, and nothing
+# is said. `set -f` for the length of the split is the fix. Quoting is not —
+# a quoted expansion is one word, so a two-name list stops matching at all.
+# The lists stay strings because bash 3.2 has no arrays inside arrays.
+excluded() {  # excluded <name> <list> — true when name appears in the list
+  local name="$1" list="$2" ex rc=1
+  set -f
+  for ex in $list; do
+    if [ "$name" = "$ex" ]; then rc=0; break; fi
+  done
+  set +f
+  return "$rc"
+}
+
 # EXCLUDES and DESTS are parallel, so a missing slot means an unfiltered
 # destination. Left to ${EXCLUDES[i]:-} that degrades to "no exclusions"
 # without a word, which is the wrong direction to fail in — an override that
@@ -57,8 +74,10 @@ fi
 # Warn loudly on a stale exclusion (a listed name with no matching skills/
 # dir) before copying anything — a renamed or removed skill silently starts
 # syncing to that destination under its new name otherwise, and this is the
-# first run where that leak becomes visible. Silent when EXCLUDES is empty.
+# first run where that leak becomes visible. Silent when the lists are empty.
+# One `set -f` window covers both passes, for the reason excluded() gives.
 any_exclusions=false
+set -f
 for i in "${!DESTS[@]}"; do
   dst="${DESTS[$i]}"
   for ex in ${EXCLUDES[$i]:-}; do
@@ -66,6 +85,16 @@ for i in "${!DESTS[@]}"; do
     [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale exclusion for $dst: $ex — renamed or removed? sync may now include its successor" >&2
   done
 done
+# CODEX_EXCLUDES is not parallel to DESTS and names the one codex destination,
+# so it gets its own pass — and deliberately does not set any_exclusions, which
+# gates the AGENT_PREFIX check below: that check is about claude-agents shims
+# and has nothing to say about tomls, which deploy unprefixed. Warns whether or
+# not CODEX_DEST is set, like the loop above, which does not check that its own
+# destination exists either.
+for ex in ${CODEX_EXCLUDES:-}; do
+  [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale codex exclusion: $ex — renamed or removed? sync may now include its successor" >&2
+done
+set +f
 
 # Exclusions match on the agent name with AGENT_PREFIX stripped, so a prefix
 # that no longer matches the files on disk makes every exclusion silently
@@ -92,11 +121,7 @@ for i in "${!DESTS[@]}"; do
   for s in "$SRC"/skills/*/; do
     [ -d "$s" ] || continue
     name=$(basename "$s")
-    skip=false
-    for ex in ${EXCLUDES[$i]:-}; do
-      [ "$name" = "$ex" ] && skip=true && break
-    done
-    [ "$skip" = true ] && continue
+    if excluded "$name" "${EXCLUDES[$i]:-}"; then continue; fi
     rm -rf "${dst:?}/skills/${name:?}"  # removes old symlink or stale copy
     cp -R "$s" "$dst/skills/$name"
   done
@@ -128,11 +153,7 @@ for i in "${!DESTS[@]}"; do
     # exclusion silently stops matching and the excluded persona's shim ships
     # anyway. The pre-flight check above guarantees the strip actually bites.
     persona="${name#"$AGENT_PREFIX"}"
-    skip=false
-    for ex in ${EXCLUDES[$i]:-}; do
-      [ "$persona" = "$ex" ] && skip=true && break
-    done
-    [ "$skip" = true ] && continue
+    if excluded "$persona" "${EXCLUDES[$i]:-}"; then continue; fi
     # rm first, same as the skills loop: cp writes *through* a destination
     # symlink, clobbering whatever it points at outside the profile
     # directory.
@@ -174,11 +195,7 @@ if [ -n "$CODEX_DEST" ]; then
   for f in "$SRC"/codex-agents/*.toml; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .toml)
-    skip=false
-    for ex in ${CODEX_EXCLUDES:-}; do
-      [ "$name" = "$ex" ] && skip=true && break
-    done
-    [ "$skip" = true ] && continue
+    if excluded "$name" "${CODEX_EXCLUDES:-}"; then continue; fi
     # rm first, same as the agents loop: cp writes *through* a destination
     # symlink, clobbering whatever it points at outside the profile.
     rm -f "$CODEX_DEST/$name.toml"
