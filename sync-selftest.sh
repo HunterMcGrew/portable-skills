@@ -778,8 +778,10 @@ fi
 # Control 19's row 5 is the fixture, because a ./ segment is inode-equal and
 # textually different — so a string compare waves it through and the codex
 # loop unlinks the toml it is about to read. Without this twin, control 19
-# passes against a guard that only ever compares path text: measured, the same
-# mutation left every other control in this file green.
+# row 5 is the only row reaching the relation through a path that is textually
+# different without a symlink, and this twin is what shows that row's fixture
+# was the discriminating one: measured, the same mutation left every other
+# control in this file green.
 scaffold self-target-string-red
 python3 - "$src/sync.sh" <<'PY_ST' || true
 import sys
@@ -928,6 +930,16 @@ stray="$(ls -A "$work/fakehome" | grep -vx '.claude' || true)"
 # extra destination appended after the one it matched, which is the shape of
 # the escape. Anything reproducing this must keep its probe path under $TMPDIR.
 grep -Fqx "synced: skills + claude-agents + output-styles -> $work/fakehome/.claude" "$work/out" || green=false
+# The un-configured run says nothing on stderr, and that is the quiet half of
+# every warning in sync.sh. Five of its seven `>&2` sites are followed by
+# `exit`, so an `rc -eq 0` control already covers their silence, and the two
+# stale-exclusion warnings sit in loop bodies that do not run on empty lists.
+# The BACKUP_DIR warning is the one reachable warning whose quiet path nothing
+# asserted: dropping its guard to `if true` left the suite fully green while
+# every clone would be told, on every sync, to delete a setting it never made.
+# Asserting the whole stream rather than that one message covers any future
+# spurious warning on the path README calls the normal case.
+[ -s "$work/err" ] && { green=false; echo "  defaults row 1: the un-configured run wrote to stderr: $(head -1 "$work/err")" >&2; }
 # Second row: CODEX_DEST set, CODEX_EXCLUDES left at its default, so both
 # tomls must land. Control 12's codex row only ever names clove.toml, which
 # is why a default of "winston" survived it.

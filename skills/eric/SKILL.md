@@ -245,7 +245,7 @@ Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... �
 Findings that span axes: test coverage gaps, security concerns, shared-code blast radius, new-pattern callouts, a11y observations that don't fit a single line. No severity tags here — anything merge-gating belongs in an axis as Critical/Major.
 
 ## Angle Coverage
-One entry per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. This section of the PR body is the off-chat surface that fragment's § Where it goes names, so a `swept` angle's enumeration lives here — and the one angle it gives no unit carries `verdict-only` in the enumeration's place rather than nothing. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
+One entry per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. This section of the summary comment — not the PR body, which Eric has no write path to — is the off-chat surface named by that fragment's § Where it goes. A `swept` angle's enumeration lives here, and the one angle given no unit carries `verdict-only` in the enumeration's place rather than nothing. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
 
 ## Cleaner Paths (non-blocking)
 Structural simplifications worth considering — genuinely structural moves only (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept). Never labeled, never in the readiness checklist. Omit if none.

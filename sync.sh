@@ -35,6 +35,14 @@ EXCLUDES=("")
 CODEX_DEST=""
 CODEX_EXCLUDES=""
 
+# BACKUP_DIR is not part of the override contract — it is dead, and the
+# warning below exists to say so. Clearing it here is what makes that
+# warning mean "your sync.local.sh sets this" rather than "something in
+# your environment is called BACKUP_DIR": the four live overrides get an
+# unconditional default above, and this one got none, so the process
+# environment silently supplied it.
+unset BACKUP_DIR
+
 if [ -f "$SRC/sync.local.sh" ]; then
   # shellcheck source=/dev/null
   source "$SRC/sync.local.sh"
@@ -65,18 +73,18 @@ AGENT_PREFIX="p-"
 # The lists stay strings because bash 3.2 has no arrays inside arrays.
 #
 # The restore is conditional so this function cannot clear an option it never
-# owned. No call site reaches it that way as the file stands, and that is
-# measured rather than assumed: every call reports `$-=ehuB`, both with and
-# without a `set -f` in sync.local.sh, because the pre-flight window below
-# ends in an unconditional `set +f` that normalizes the option before the
-# first call. The branch is therefore inert today. It stays because restoring
-# what the caller had is the correct shape for a helper that touches a
-# shell-global option, and the unconditional alternative is safe only while
-# no call site sits inside a `set -f` window — a property of the call sites,
-# not of this function. `local -` is the idiomatic version and is not
-# available here: bash 3.2.57 rejects it outright with `-': not a valid
-# identifier`, leaving the option set, so the prior state is read and put back
-# by hand instead.
+# owned. It is inert today and cannot be made otherwise from outside this
+# file: the pre-flight window below ends in an unconditional `set +f`, so
+# every call reaches this function with `-f` already clear, whatever
+# sync.local.sh did. That also means no control can observe the branch —
+# replacing it with an unconditional `set +f` leaves the whole suite green,
+# recorded here rather than argued away. It stays because restoring what the
+# caller had is the right shape for a helper touching a shell-global option,
+# and the unconditional form is safe only while no call site sits inside a
+# `set -f` window — a property of the call sites, not of this function.
+# `local -` would be the idiom; bash 3.2.57 rejects it with `-': not a valid
+# identifier`, leaving the option set, so the state is read and put back by
+# hand.
 excluded() {  # excluded <name> <list> — true when name appears in the list
   local name="$1" list="$2" ex rc=1 had_noglob
   case $- in *f*) had_noglob=1 ;; *) had_noglob= ;; esac
@@ -127,7 +135,7 @@ refuse_self_target() {
   # is worth less with an exception in it than the guard costs.
   for s in "${SRC_DIRS[@]:-}"; do
     if [ "$dir" -ef "$s" ]; then
-      echo "sync.sh: $label resolves to this repo's own $s — the copy is destination-first, so syncing there would delete the files it deploys (destination: $dir)" >&2
+      echo "sync.sh: $label resolves to this repo's own $s — the copy is destination-first, so syncing there would delete the files it deploys, or drop untracked copies beside them where that path is the repo root (destination: $dir)" >&2
       exit 1
     fi
   done
@@ -161,8 +169,11 @@ done
 # so it gets its own pass — and deliberately does not set any_exclusions, which
 # gates the AGENT_PREFIX check below: that check is about claude-agents shims
 # and has nothing to say about tomls, which deploy unprefixed. Warns whether or
-# not CODEX_DEST is set, like the loop above, which does not check that its own
-# destination exists either.
+# not CODEX_DEST is set, and deliberately so: a stale name in the list is worth
+# hearing about on the sync before codex is switched on, not on the first sync
+# after. Not by analogy to the loop above — that one warns for a destination
+# that does not exist yet because the same run goes on to create it and deploy
+# there, which is exactly what an unset CODEX_DEST does not do.
 for ex in ${CODEX_EXCLUDES:-}; do
   [ -d "$SRC/skills/$ex" ] || echo "sync.sh: stale codex exclusion: $ex — renamed or removed? sync may now include its successor" >&2
 done

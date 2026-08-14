@@ -757,16 +757,16 @@ result; a *missing* enumeration is not.
 section. Refer to either by its surface rather than its heading level: the
 same string names briar's plan block and his chat section, so a consumer
 keyed to the level alone cannot tell them apart, and it is not eric's level
-at all. A `swept` angle carries its enumeration there; the one angle
-§ Enumeration gives no unit carries `verdict-only` in its place, which is
-that angle's enumeration slot filled, not left empty. The chat-side line
+at all. A `swept` angle carries its enumeration there. One angle is given no
+unit by § Enumeration. It carries `verdict-only` in that slot — the
+enumeration slot filled, not left empty. The chat-side line
 carries the angle, its status token
 verbatim, and the counts — nothing further. Verbatim includes the
 `— <reason>` that § Status vocabulary makes part of `n/a` and
 `not reached`: that reason is the token, not a defense of it, and two
 consumers parse it. The counts slot carries `<n> items enumerated,
-<n> verdicts` on `swept`, the word `verdict-only` on the one angle
-§ Enumeration gives no unit, and nothing at all on `n/a` and
+<n> verdicts` on `swept`, the word `verdict-only` on the one angle given no
+unit by § Enumeration, and nothing at all on `n/a` and
 `not reached`, which carry no enumeration. All three shapes in full:
 `Runtime behavior — swept — 12 items enumerated, 12 verdicts`,
 `Repo writing rules — swept — verdict-only` and
@@ -787,8 +787,8 @@ enumeration is not a fourth status — it is an incomplete report, and a
 consumer gating on coverage (review-loop's convergence predicate) reads it
 as bounded, the same treatment `not reached` already gets.
 
-That reading is scoped to the angles § Enumeration gives a unit. The one it
-gives none carries `verdict-only` in the enumeration's place and is read as
+That reading is scoped to the angles given a unit by § Enumeration. The one
+without carries `verdict-only` in the enumeration's place and is read as
 `swept`, complete, never bounded. The carve-out is load-bearing rather than
 tidy: without it `Repo writing rules — swept` is unsatisfiable by
 construction — the angle has no unit, so no pass can ever produce the

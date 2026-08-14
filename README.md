@@ -164,14 +164,17 @@ collide, and the fix then is `CODEX_EXCLUDES` or a prefix decided at that
 point. The deploy is per-file with no `--delete`, so a host repo's own
 differently-named agents in that directory survive untouched; one sharing a
 basename with a toml this repo ships is overwritten, which is the collision
-above. Any destination resolving to one of this repo's own source
-directories — or to the repo root itself — is refused outright, before
-anything is written: `CODEX_DEST` pointing at `codex-agents/`, and equally a
-`DESTS` entry whose `skills/`, `agents/` or `output-styles/` lands back in
-the repo, directly or through a symlink an earlier sync left behind. The
-copy is destination-first, so it would delete the sources it was asked to
-deploy; a destination resolving to the root instead drops untracked copies
-into the working tree.
+above. What is refused is a *write target* resolving to one of this repo's
+own source directories or to the repo root: `CODEX_DEST` itself, since that
+is where tomls land, and a `DESTS` entry whose `skills/`, `agents/` or
+`output-styles/` subdirectory resolves to `skills/`, `claude-agents/`,
+`output-styles/`, `codex-agents/` or the root — directly or through a symlink
+an earlier sync left behind. The refusal comes before anything is written,
+because the copy is destination-first and would otherwise delete the sources
+it was asked to deploy, or drop untracked copies into the working tree where
+the target is the root. A `DESTS` entry that *is* a source directory aliases
+none of those and is not refused: it writes `skills/skills` and the like, and
+only ever removes what the same run created.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
 written unprefixed — `winston`, never `p-winston`; the agent shim is matched
