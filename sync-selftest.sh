@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Controls for sync.sh's exclusion logic, in the same shape as
-# render-claude-agents.py's --selftest: every control asserts the green case
-# and then breaks the mechanism to prove the control goes red. A check that
-# cannot fail is not a check.
+# Controls for sync.sh, in the same shape as render-claude-agents.py's
+# --selftest: every control asserts the green case and then breaks the
+# mechanism to prove the control goes red. A check that cannot fail is not a
+# check. Exclusion logic is where this file started and is now a minority of
+# it — the copy semantics, the four abort conditions, the self-target refusal,
+# the codex arm and the un-configured defaults all have controls here, so read
+# the numbered comments rather than this line for the scope.
 #
 # `bash -n sync.sh` is a syntax check and would pass just as happily with the
 # prefix strip deleted, which is the one line whose failure is silent — an
@@ -262,7 +265,7 @@ DESTS=()
 EXCLUDES=()
 EOF
 if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
-  ok empty-dests-red false "the sed did not match — this control tested nothing"
+  ok empty-dests-red false "the mutation did not match — this control tested nothing"
 else
   run "$src"
   [ "$rc" -ne 0 ] && green=true || green=false
@@ -347,7 +350,7 @@ ok symlink-clobber "$green" "destination symlink survived the sync, or the outsi
 
 # 13. The same case with all four rm-before-cp lines stripped must go red
 # — otherwise control 12 passes for some reason other than the guard.
-# python3, not sed, per control 3/9's own precedent: four distinct lines
+# python3, not sed, per control 9's own precedent: four distinct lines
 # across four loops is easier to match exactly this way than to keep
 # four sed expressions in sync with the source.
 #
@@ -613,8 +616,9 @@ grep -q "codex-agents ->" "$work/out" && green=false
 # Second row of the same control: the other way a user turns codex off. An
 # override that says `unset CODEX_DEST` rather than assigning it "" is the
 # same intent and a different state under set -u, and a bare [ -n "$CODEX_DEST" ]
-# dies on it before any write. Same three assertions as the row above, against
-# the spelling that used to abort.
+# dies on it before any write. The row above's assertions less the
+# fakehome/.codex one, which is row 1's alone, against the spelling that used
+# to abort.
 cat >"$src/sync.local.sh" <<EOF
 DESTS=("$src/dest-all")
 EXCLUDES=("")
@@ -775,7 +779,7 @@ fi
 # textually different — so a string compare waves it through and the codex
 # loop unlinks the toml it is about to read. Without this twin, control 19
 # passes against a guard that only ever compares path text: measured, the same
-# mutation left the suite green at seventeen controls.
+# mutation left every other control in this file green.
 scaffold self-target-string-red
 python3 - "$src/sync.sh" <<'PY_ST' || true
 import sys
@@ -879,9 +883,11 @@ ok backup-inert "$green" "a stale BACKUP_DIR did not warn, aborted the sync, or 
 # declines to set it.
 #
 # Two rows, because the defaults are not all observable on one path.
-# Row 1 is the un-configured run. Row 2 sets CODEX_DEST and nothing else:
-# with CODEX_DEST empty the codex loop never runs, so the CODEX_EXCLUDES
-# default is unreadable from row 1 by construction.
+# Row 1 is the un-configured run. Row 2 is what it takes to reach the one
+# default row 1 cannot: a sync.local.sh replaces the defaults block rather
+# than adding to it, so setting CODEX_DEST means restating DESTS and EXCLUDES
+# beside it. With CODEX_DEST empty the codex loop never runs, which is why the
+# CODEX_EXCLUDES default is unreadable from row 1 by construction.
 #
 # No red twin, for control 24's reason: every assertion here is positive
 # about a documented default, so changing a default falsifies the control
@@ -940,6 +946,9 @@ ok defaults "$green" "an un-configured run did not deploy to \$HOME/.claude alon
 if [ "$fails" -eq 0 ]; then
   echo "selftest: $controls controls green"
 else
-  echo "selftest: $fails control(s) failed" >&2
+  # The denominator rides both exit paths, not just the green one: without it
+  # a control that never ran is indistinguishable from one that passed, which
+  # is exactly the reading a red run needs and the green run does not.
+  echo "selftest: $fails of $controls control(s) failed" >&2
   exit 1
 fi
