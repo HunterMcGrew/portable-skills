@@ -310,8 +310,16 @@ ok symlink-clobber "$green" "destination symlink survived the sync, or the outsi
 # python3, not sed, per control 3/9's own precedent: four distinct lines
 # across four loops is easier to match exactly this way than to keep
 # four sed expressions in sync with the source.
+#
+# `|| true` here and on every other python3 mutator below: a failed assert
+# exits non-zero, and under `set -e` that ends the run before the `cmp -s`
+# handler can name the control — the graceful path every red twin writes was
+# unreachable. Each mutator writes the file only after all of its asserts
+# pass, so a missed anchor leaves sync.sh byte-identical and cmp reports
+# "tested nothing", with the traceback still on stderr naming the anchor and
+# the remaining controls still running.
 scaffold symlink-red
-python3 - "$src/sync.sh" <<'PY'
+python3 - "$src/sync.sh" <<'PY' || true
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -410,7 +418,7 @@ ok stale-exclusion "$green" "a stale exclusion did not warn on one of the two li
 # here too. cmp against the real file per control 9/13's own precedent, so a
 # non-matching edit reports "tested nothing" instead of a false green.
 scaffold stale-red
-python3 - "$src/sync.sh" <<'PY'
+python3 - "$src/sync.sh" <<'PY' || true
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -488,7 +496,7 @@ ok codex-deploy "$green" "codex toml missing, exclusion ignored, a host agent wa
 # passing for some reason other than the loop running. cmp against the real
 # file first, per control 9/13/15's precedent.
 scaffold codex-red
-python3 - "$src/sync.sh" <<'PY_INNER'
+python3 - "$src/sync.sh" <<'PY_INNER' || true
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -641,7 +649,7 @@ ok self-target "$green" "a destination aliasing the source tree was not refused 
 # than as an absence, because an absence-only assertion passes just as well on
 # a harness that did nothing at all.
 scaffold self-target-red
-python3 - "$src/sync.sh" <<'PY_ST'
+python3 - "$src/sync.sh" <<'PY_ST' || true
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -677,7 +685,7 @@ fi
 # passes against a guard that only ever compares path text: measured, the same
 # mutation left the suite green at seventeen controls.
 scaffold self-target-string-red
-python3 - "$src/sync.sh" <<'PY_ST'
+python3 - "$src/sync.sh" <<'PY_ST' || true
 import sys
 p = sys.argv[1]
 s = open(p).read()
@@ -728,7 +736,7 @@ ok multi-exclude "$green" "a two-name exclusion list did not exclude both names,
 # is passing for some reason other than the word splitting. cmp against the
 # real file first, per controls 9/13/15/17/20/21's precedent.
 scaffold multi-exclude-red
-python3 - "$src/sync.sh" <<'PY_MX'
+python3 - "$src/sync.sh" <<'PY_MX' || true
 import sys
 p = sys.argv[1]
 s = open(p).read()
