@@ -122,11 +122,14 @@ converge until that angle later reads `swept` or `n/a`.
 
 **The enumeration refinement.** `swept` on its own is not enough for this
 gate — `_shared/review-angles.md` § Enumeration requires a `swept` angle to
-carry its enumeration. A `swept` with no enumeration is read as bounded for
-this predicate, the same treatment as `not reached — enumeration absent`,
-evaluated loop-side over the reviewer's already-returned report. The three
-status tokens do not change; this is a refinement of how `swept` is read,
-not a fourth token.
+carry its enumeration. Read it on the off-chat surface named by that
+fragment's § Where it goes — briar's plan block, eric's summary comment.
+Never on the chat line, which carries counts in place of the enumeration by
+construction and would read as unbounded on every angle. A `swept` with no
+enumeration there is read as bounded for this predicate, the same treatment
+as `not reached — enumeration absent`, evaluated loop-side over the
+reviewer's already-returned report. The three status tokens do not change;
+this is a refinement of how `swept` is read, not a fourth token.
 
 **Structural exemption — the one case a `not reached` is terminal.** The
 rule above assumes the reason names the *pass*: time-boxed, diff too large,

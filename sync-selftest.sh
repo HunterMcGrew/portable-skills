@@ -17,6 +17,10 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
+# run() redirects HOME here. It has to exist for an assertion about what is
+# *not* under it to be an observation rather than a vacancy — the only mkdir
+# for it used to live inside a control that has since been deleted.
+mkdir -p "$work/fakehome"
 fails=0
 
 # Two personas is the smallest tree that can tell "excluded" from "empty":
@@ -361,7 +365,23 @@ green=true
 [ -e "$src/codex-dest/winston.toml" ] && green=false
 [ -f "$src/codex-dest/thrive-architect.toml" ] || green=false
 grep -q "codex-agents ->" "$work/out" || green=false
-ok codex-deploy "$green" "codex toml missing, exclusion ignored, a host agent was pruned, or the summary line stayed silent (rc=$rc)"
+
+# Second row of the same control: CODEX_DEST pointed at the source tree's own
+# codex-agents/. The rm+cp is destination-first, so with no guard it unlinks
+# the toml it is about to copy and set -e halts with the tracked file already
+# deleted — reproduced exactly that way. The abort must fire, and the source
+# must still be on disk afterwards, which is the arm that goes red if the
+# guard is removed (rc is non-zero either way; only the file tells them apart).
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-agents"
+EOF
+run "$src"
+[ "$rc" -ne 0 ] || green=false
+[ -f "$src/codex-agents/clove.toml" ] || green=false
+grep -q "CODEX_DEST resolves to" "$work/err" || green=false
+ok codex-deploy "$green" "codex toml missing, exclusion ignored, a host agent was pruned, the summary line stayed silent, or a self-aliasing CODEX_DEST ate its own sources (rc=$rc)"
 
 # 17. The same case with the copy stripped must go red, or control 16 is
 # passing for some reason other than the loop running. cmp against the real

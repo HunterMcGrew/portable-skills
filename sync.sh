@@ -18,16 +18,18 @@ fi
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Defaults: one destination, no exclusions. This is the whole
+# Defaults: one destination, no exclusions, no codex deploy. This is the whole
 # story for most clones — just run the script.
 #
 # A gitignored sync.local.sh next to this file, if present, is sourced below
-# and can override any of the three: DESTS (profile roots to sync into),
-# EXCLUDES (parallel array — EXCLUDES[i] is a space-separated list of skill/
-# agent names to skip for DESTS[i], "" for none; kept parallel instead of an
-# associative array because the macOS-shipped bash is 3.2, which predates
-# them). Its absence is the normal case, not a degraded one — how you sync is
-# your own affair; see README.md for the override shape and a worked example.
+# and can override any of these: DESTS (profile roots to sync into), EXCLUDES
+# (parallel array — EXCLUDES[i] is a space-separated list of skill/agent names
+# to skip for DESTS[i], "" for none; kept parallel instead of an associative
+# array because the macOS-shipped bash is 3.2, which predates them), CODEX_DEST
+# (the single directory codex tomls deploy to; empty deploys none and creates
+# nothing) and CODEX_EXCLUDES (a flat space-separated list for that directory
+# alone). A missing sync.local.sh is the normal case, not a degraded one — how
+# you sync is your own affair; README.md has the shape and a worked example.
 DESTS=("$HOME/.claude")
 EXCLUDES=("")
 CODEX_DEST=""
@@ -189,9 +191,24 @@ done
 #
 # Same per-file, no --delete semantics as every loop above, and it matters
 # most here: a host repo's own agents (thrive-*.toml and the like) live in
-# this same directory and must survive a sync that knows nothing about them.
+# this same directory and must survive a sync that knows nothing about them
+# — differently-named ones. A host agent sharing a basename with one this
+# repo ships is overwritten by the rm+cp below, which README.md § sync.sh
+# states plainly and this comment used to promise away.
 if [ -n "$CODEX_DEST" ]; then
   mkdir -p "$CODEX_DEST"
+  # The rm+cp below unlinks the destination before writing it, so a CODEX_DEST
+  # that resolves to this repo's own codex-agents/ deletes the source it is
+  # about to copy — the cp then fails under set -e, halfway through, with the
+  # tracked file already gone. -ef compares device and inode rather than
+  # strings, per the post-mortem on the path guard this repo removed for
+  # getting exactly this wrong: trailing slashes, . and .. segments,
+  # symlinks, relative paths and a case-insensitive volume each defeat a
+  # string compare, and none of them defeat this one.
+  if [ "$CODEX_DEST" -ef "$SRC/codex-agents" ]; then
+    echo "sync.sh: CODEX_DEST resolves to this repo's own codex-agents/ — that would delete the tomls it deploys" >&2
+    exit 1
+  fi
   for f in "$SRC"/codex-agents/*.toml; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .toml)

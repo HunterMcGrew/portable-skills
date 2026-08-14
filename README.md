@@ -161,8 +161,12 @@ repo's own agents, and on the Codex surface the repos observed so far
 namespace their own (`thrive-*.toml`). That is their convention holding, not
 a guarantee this repo enforces: a host repo with bare-named codex agents would
 collide, and the fix then is `CODEX_EXCLUDES` or a prefix decided at that
-point. The deploy is per-file with no `--delete`, so a host repo's own agents
-in that directory always survive.
+point. The deploy is per-file with no `--delete`, so a host repo's own
+differently-named agents in that directory survive untouched; one sharing a
+basename with a toml this repo ships is overwritten, which is the collision
+above. `CODEX_DEST` pointing at this repo's own `codex-agents/` is refused
+outright — the copy is destination-first, so it would delete the sources it
+was asked to deploy.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
 written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
@@ -174,14 +178,18 @@ file's `skills:` field preloads the same-named skill, so shipping the shim
 without the skill produces an agent pointing at nothing. `sync.sh` warns on a
 stale exclusion (a listed name with no matching `skills/` dir) so a rename
 doesn't silently start leaking the renamed skill into a profile that meant to
-exclude it.
+exclude it; `CODEX_EXCLUDES` gets the same warning on its own pass. Both
+lists are matched with globbing off, so a `*` in a name matches literally
+instead of expanding against whatever directory you happened to run from.
 
 `./sync-selftest.sh` covers that logic in seventeen controls — exclusions, the
-prefix strip, the no-`--delete` guarantee, an empty `DESTS`, the codex deploy
-and its unset default, and the three abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
-redirected there, so it never touches a real profile. Several are paired red
-controls: they break the mechanism under test and assert the check goes red,
-so the control it guards cannot pass by testing nothing.
+prefix strip, the no-`--delete` guarantee, the symlink-clobber guard, the
+stale-exclusion warning, an empty `DESTS`, the codex deploy and its unset
+default, and the four abort conditions — against a fabricated tree in
+`$TMPDIR` with `HOME` redirected there, so it never touches a real profile.
+Several are paired red controls: they break the mechanism under test and
+assert the check goes red, so the control it guards cannot pass by testing
+nothing.
 `render-claude-agents.py --selftest` applies that discipline to all three of
 its own.
 
