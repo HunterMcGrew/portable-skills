@@ -79,12 +79,22 @@ ok baseline "$green" "unfiltered destination is missing files (rc=$rc)"
 # skill and a shim, while clove — the control against an empty sync — is
 # present in both. This is the case that fails if the prefix strip breaks:
 # an unstripped "p-winston" never equals the excluded "winston".
+#
+# This is also the file's only fixture with a second destination, which makes
+# it the only place the "ride along to every destination" property of the
+# output-styles loop is observable — control 1 looks at DESTS[0] alone, and
+# nothing else here ever names dest-filtered. Styles are unfiltered, so the
+# assertion is presence, not absence: restricting that loop to DESTS[0] with a
+# one-line `[ "$i" -eq 0 ] || continue` left the suite fully green, while the
+# identical restriction on the skills or agents loop reds this control on the
+# two lines above.
 green=true
 [ -e "$src/dest-filtered/skills/clove" ] || green=false
 [ -e "$src/dest-filtered/agents/p-clove.md" ] || green=false
+[ -e "$src/dest-filtered/output-styles/scannable.md" ] || green=false
 [ ! -e "$src/dest-filtered/skills/winston" ] || green=false
 [ ! -e "$src/dest-filtered/agents/p-winston.md" ] || green=false
-ok exclusion "$green" "excluded persona leaked, or the destination is empty"
+ok exclusion "$green" "excluded persona leaked, an output style never reached the second destination, or the destination is empty"
 
 # 3. The same case with the prefix strip removed must go red — otherwise
 # control 2 was passing for some reason other than the strip.
@@ -101,16 +111,28 @@ else
   ok strip-red "$green" "strip removed and the exclusion still held — control 2 proves nothing"
 fi
 
-# 4. No --delete: a file only the profile knows about survives a sync.
+# 4. No --delete: a file only the profile knows about survives a sync. One
+# fixture per arm README.md makes the promise for — a skill, an agent, *or a
+# style* you keep only in your profile survives a re-sync untouched — because
+# the promise is made three times and was seeded twice. A true --delete on the
+# output-styles loop alone (prune destination files with no source counterpart,
+# every shipped style still arriving) left all controls green while a
+# profile-only style was destroyed; the identical regression on the skills loop
+# reds this control immediately. A crude whole-directory wipe is caught by
+# empty-dests-red and symlink-clobber-red, but only incidentally — neither of
+# those is the no-delete property.
 scaffold nodelete
-mkdir -p "$src/dest-all/skills/local-only" "$src/dest-all/agents"
+mkdir -p "$src/dest-all/skills/local-only" "$src/dest-all/agents" \
+  "$src/dest-all/output-styles"
 echo local >"$src/dest-all/skills/local-only/SKILL.md"
 echo local >"$src/dest-all/agents/some-other-agent.md"
+echo local >"$src/dest-all/output-styles/local-only-style.md"
 run "$src"
 green=true
 [ -e "$src/dest-all/skills/local-only/SKILL.md" ] || green=false
 [ -e "$src/dest-all/agents/some-other-agent.md" ] || green=false
-ok no-delete "$green" "a profile-only file was removed by the sync"
+[ -e "$src/dest-all/output-styles/local-only-style.md" ] || green=false
+ok no-delete "$green" "a profile-only skill, agent, or style was removed by the sync"
 
 # 5. Parallel-array guard: fewer EXCLUDES than DESTS must abort rather than
 # silently leave the trailing destination unfiltered.
@@ -160,11 +182,11 @@ ok parity-guard "$green" "a non-parallel EXCLUDES was accepted, an empty one was
 # 6. Prefix-drift guard: an agent file that does not carry AGENT_PREFIX must
 # abort while exclusions are configured, since none of them can match it.
 #
-# Two rows, for control 5's reason plus one specific to the `case`. Row 1's
-# fixture is rejected by any pattern that does not name `winston`, so on its
-# own it is satisfied by a `case` widened to persona-name globs
-# (`p-*|clove*|briar*`) — measured green on the one-row form, as was
-# garbling the message.
+# Three rows, for control 5's reason plus one specific to the `case` plus the
+# gate's other direction. Row 1's fixture is rejected by any pattern that does
+# not name `winston`, so on its own it is satisfied by a `case` widened to
+# persona-name globs (`p-*|clove*|briar*`) — measured green on the one-row
+# form, as was garbling the message.
 scaffold drift
 echo 'name: winston' >"$src/claude-agents/winston.md"
 run "$src"
@@ -181,7 +203,25 @@ echo 'name: clove' >"$src/claude-agents/clove-extra.md"
 run "$src"
 [ "$rc" -ne 0 ] || green=false
 grep -q "does not start with AGENT_PREFIX" "$work/err" || green=false
-ok drift-guard "$green" "an unprefixed agent file synced with exclusions live, or the abort was not the prefix guard (rc=$rc)"
+
+# Row 3: the gate rather than the check. sync.sh runs the prefix check only
+# when an exclusion is configured — with none, the prefix is irrelevant to this
+# script and a mismatch harms nothing — and rows 1 and 2 assert only that the
+# abort fires. Nothing asserted it stays silent, so `any_exclusions` could be
+# pinned true, deleting the gate, with the suite fully green. Same unprefixed
+# file as row 2 and no exclusions anywhere: the sync has to complete, say
+# nothing about the prefix, and still deploy.
+scaffold drift-off
+echo 'name: clove' >"$src/claude-agents/clove-extra.md"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+EOF
+run "$src"
+[ "$rc" -eq 0 ] || { green=false; echo "  drift-guard row 3: an unprefixed file aborted a run with no exclusions (rc=$rc): $(tail -1 "$work/err")" >&2; }
+grep -q "does not start with AGENT_PREFIX" "$work/err" && { green=false; echo "  drift-guard row 3: the prefix check ran with no exclusion configured" >&2; }
+[ -f "$src/dest-all/agents/p-clove.md" ] || { green=false; echo "  drift-guard row 3: the sync did not deploy" >&2; }
+ok drift-guard "$green" "an unprefixed agent file synced with exclusions live, the check fired with none configured, or the abort was not the prefix guard (rc=$rc)"
 
 # (7 was the BACKUP_DIR guard. BACKUP_DIR was removed rather than repaired —
 # its guard accepted 23 of 28 spellings, and the feature mirrored a repo git
@@ -372,7 +412,8 @@ fi
 # file has already invalidated this citation once. Both lists are covered:
 # EXCLUDES per destination, and the CODEX_EXCLUDES pass beside it. The other
 # destination's files still land, proving the warning doesn't quietly turn
-# into a partial or skipped sync.
+# into a partial or skipped sync. Four rows: the two lists firing, the glob
+# that must not expand, the live names that must not warn, and the ordering.
 scaffold stale
 mkdir -p "$src/codex-dest"
 cat >"$src/sync.local.sh" <<EOF
@@ -410,7 +451,41 @@ globrc=0
 [ "$globrc" -eq 0 ] || green=false
 [ -f "$src/codex-dest/clove.toml" ] || green=false
 grep -q "stale codex exclusion: [*]" "$work/err" || green=false
-ok stale-exclusion "$green" "a stale exclusion did not warn on one of the two lists, a glob exclusion swallowed a persona nobody named, or the sync aborted (rc=$rc globrc=$globrc)"
+
+# Row 3: the other direction of both `-d` tests. The rows above assert that a
+# name with no skills/ directory warns; nothing asserted that a name with one
+# stays silent, so both tests could be deleted — warn unconditionally, on every
+# exclusion anyone writes — with the suite fully green. Live names on both
+# lists, and neither warning may appear.
+rm -rf "$src/codex-dest"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all" "$src/dest-filtered")
+EXCLUDES=("" "winston")
+CODEX_DEST="$src/codex-dest"
+CODEX_EXCLUDES="clove"
+EOF
+run "$src"
+[ "$rc" -eq 0 ] || green=false
+grep -q "stale exclusion for" "$work/err" && { green=false; echo "  stale-exclusion row 3: a live exclusion warned" >&2; }
+grep -q "stale codex exclusion" "$work/err" && { green=false; echo "  stale-exclusion row 3: a live codex exclusion warned" >&2; }
+
+# Row 4: the ordering sync.sh states for these warnings — before copying
+# anything. The rows above assert the text and that the sync completes, never
+# that the warnings precede the rest of the pre-flight; relocating the whole
+# warn block below all four copy loops left the suite fully green, and in that
+# shape any earlier abort suppresses the warnings entirely. The fixture is a
+# stale exclusion on a destination that also aliases the source tree, so the
+# self-target refusal fires: the warning has to be on stderr beside it, which
+# it can only be if it was printed first.
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src")
+EXCLUDES=("ghost-persona")
+EOF
+run "$src"
+[ "$rc" -ne 0 ] || { green=false; echo "  stale-exclusion row 4: the aliasing destination was not refused" >&2; }
+grep -q "resolves to this repo's own" "$work/err" || { green=false; echo "  stale-exclusion row 4: the abort was not the self-target refusal" >&2; }
+grep -q "stale exclusion for .*ghost-persona" "$work/err" || { green=false; echo "  stale-exclusion row 4: the warning did not precede the refusal that ended the run" >&2; }
+ok stale-exclusion "$green" "a stale exclusion did not warn on one of the two lists, a live one warned anyway, a glob exclusion swallowed a persona nobody named, the warning did not precede the pre-flight abort, or the sync aborted (rc=$rc globrc=$globrc)"
 
 # 15. The same case with both warning lines stripped must go red — otherwise
 # control 14 passes for some reason other than the warnings. Both, not one: a
@@ -554,7 +629,9 @@ ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a d
 # 19. Self-target refusal: a destination resolving to one of this repo's own
 # source directories must abort before any write, with every source file still
 # on disk. Seven rows — four arms, one relation, one list entry, and one
-# destination index above zero. Row 5 is
+# destination index above zero. Rows 5 and 7 each carry a second assertion
+# about *when* the refusal runs rather than that it ran, because "before any
+# write" is half the property and the half no row used to check. Row 5 is
 # the relation: a ./ segment makes the destination inode-equal but not
 # string-equal, which is exactly what control 21 proves a string compare
 # misses. Row 6 is SRC_DIRS' own "$SRC" entry, the one no arm reaches: a
@@ -611,6 +688,12 @@ EXCLUDES=("")
 CODEX_DEST="$src/./codex-agents"
 EOF
 st_row 5 "$src/codex-agents/clove.toml"
+# The refusal's *ordering*, on the CODEX_DEST arm: DESTS here is benign, so
+# lowering this refusal out of the pre-flight to just above `mkdir -p
+# "$CODEX_DEST"` still aborts with every source file intact — every assertion
+# st_row makes — after all three DESTS loops have already rewritten a profile.
+# Measured green at every control before this line existed.
+[ ! -e "$src/dest-all/skills" ] || { green=false; echo "  self-target row 5: the benign DESTS entry was written before the CODEX_DEST refusal" >&2; }
 
 # Row 6: the "$SRC" entry of SRC_DIRS, which the four arms above never touch —
 # they all resolve to a subdirectory. A destination whose skills/ points at the
@@ -641,6 +724,15 @@ EOF
 st_row 7 "$src/skills/clove/SKILL.md"
 grep -q "DESTS\[1\]" "$work/err" || { green=false; echo "  self-target row 7: refusal did not name the second destination" >&2; }
 [ "$(ls "$src/skills" | wc -l | tr -d ' ')" = "$before" ] || { green=false; echo "  self-target row 7: a source skill directory was destroyed" >&2; }
+# The refusal's *ordering*, on the DESTS arm. Every assertion above is about
+# the refusal firing and the sources surviving; none is about the destination
+# the run walked past first. De-hoisting the pre-flight into the deploy loop
+# satisfies all of them — the refusal still fires naming DESTS[1] with every
+# source intact — while dest-two has already been rewritten, no summary line
+# prints, and the user cannot tell which profiles are current. Measured green
+# at every control before this line existed. This is the property the hoist in
+# sync.sh exists for, and it is ordering, not content.
+[ -z "$(ls -A "$src/dest-two")" ] || { green=false; echo "  self-target row 7: the benign first destination was written before the refusal" >&2; }
 ok self-target "$green" "a destination aliasing the source tree was not refused before writing, or a source file did not survive"
 
 # 20. The same case with the pre-flight's three DESTS calls stripped must go
@@ -817,6 +909,19 @@ green=true
 # pointed one level up, or a CODEX_DEST default that starts creating ~/.codex.
 stray="$(ls -A "$work/fakehome" | grep -vx '.claude' || true)"
 [ -z "$stray" ] || green=false
+# Every assertion above is scoped to the redirected $HOME, which makes a
+# default naming a path *outside* the fabricated tree invisible to all of
+# them: DESTS defaulting to ("$HOME/.claude" "<somewhere else>") leaves each
+# one true and deploys a full roster outside the sandbox, with the suite
+# reporting every control green. That is the harness's core safety property —
+# nothing escapes the fabricated tree — and it was unasserted. The summary line
+# names every destination the run actually used, so matching it whole pins the
+# DESTS default's contents *and* its count, and an empty CODEX_DEST default
+# with them: the `; codex-agents ->` suffix is absent only when CODEX_DEST is.
+# Fixed-string and whole-line on purpose — a substring match is satisfied by an
+# extra destination appended after the one it matched, which is the shape of
+# the escape. Anything reproducing this must keep its probe path under $TMPDIR.
+grep -Fqx "synced: skills + claude-agents + output-styles -> $work/fakehome/.claude" "$work/out" || green=false
 # Second row: CODEX_DEST set, CODEX_EXCLUDES left at its default, so both
 # tomls must land. Control 12's codex row only ever names clove.toml, which
 # is why a default of "winston" survived it.
