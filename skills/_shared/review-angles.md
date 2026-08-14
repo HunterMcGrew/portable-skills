@@ -125,7 +125,11 @@ result; a *missing* enumeration is not.
   missed major sat in; state it in full and do not compress it, on the same
   grounds this fragment already gives this angle.
 - **Repo writing rules** — verdict-only; no natural enumerable unit. Its
-  absence here is decided, not forgotten.
+  absence here is decided, not forgotten. `verdict-only` is a shape on *both*
+  surfaces, not a chat-side abbreviation: the word stands where the
+  enumeration would go in the off-chat block exactly as it stands in the chat
+  line's counts slot. That is what makes `Repo writing rules — swept` a
+  complete report rather than a permanently incomplete one.
 - **Security** — each trust boundary the diff touches.
 - **Docs impact** — each changed feature, component, or module with a
   matching docs file.
@@ -134,7 +138,13 @@ result; a *missing* enumeration is not.
 
 **Where it goes.** To the reviewer's off-chat surface — briar's plan
 `### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
-section. The chat-side line carries the angle, its status token
+section. Refer to either by its surface rather than its heading level: the
+same string names briar's plan block and his chat section, so a consumer
+keyed to the level alone cannot tell them apart, and it is not eric's level
+at all. A `swept` angle carries its enumeration there; the one angle
+§ Enumeration gives no unit carries `verdict-only` in its place, which is
+that angle's enumeration slot filled, not left empty. The chat-side line
+carries the angle, its status token
 verbatim, and the counts — nothing further. Verbatim includes the
 `— <reason>` that § Status vocabulary makes part of `n/a` and
 `not reached`: that reason is the token, not a defense of it, and two
@@ -160,6 +170,14 @@ under § Status vocabulary.
 enumeration is not a fourth status — it is an incomplete report, and a
 consumer gating on coverage (review-loop's convergence predicate) reads it
 as bounded, the same treatment `not reached` already gets.
+
+That reading is scoped to the angles § Enumeration gives a unit. The one it
+gives none carries `verdict-only` in the enumeration's place and is read as
+`swept`, complete, never bounded. The carve-out is load-bearing rather than
+tidy: without it `Repo writing rules — swept` is unsatisfiable by
+construction — the angle has no unit, so no pass can ever produce the
+enumeration the gate is waiting for — and a review phase carrying it runs to
+budget exhaustion every time instead of converging.
 
 ## Finding anatomy
 

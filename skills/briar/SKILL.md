@@ -332,7 +332,7 @@ After the review analysis, check whether the diff touches areas that have corres
 The plan is the persistent record; the chat summary is a presentation of what's already in the plan.
 
 1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues. A zero-findings pass writes the `No issues found — <YYYY-MM-DD> [<branch>]` line.
-2. Add/update `### Angle Coverage` under `## Review Issues`, one line per angle from `_shared/review-angles.md`, each carrying its status token per that fragment's vocabulary — quote the fragment, never restate it. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle). Emit all nine angles on every pass, including a clean pass — this block is exempt from conditional-emit.
+2. Add/update `### Angle Coverage` under `## Review Issues`, one line per angle from `_shared/review-angles.md`, each carrying its status token per that fragment's vocabulary — quote the fragment, never restate it. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle); the one angle that fragment gives no unit carries `verdict-only` in the enumeration's place, which is what keeps a consumer gating on coverage from reading it as bounded forever. Emit all nine angles on every pass, including a clean pass — this block is exempt from conditional-emit.
 
    **Assembling coverage from partial answers.** The slice subagents return
    per-angle statuses scoped to one slice each, so no single answer
@@ -384,10 +384,13 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Aggregate:** one line — findings per axis and the worst within each.
 
-**Angle Coverage (`### Angle Coverage`):** all nine `_shared/review-angles.md`
-angles, each carrying the status token that fragment's vocabulary gives
-it — the same statuses already written to the plan, shaped for chat per
-that fragment's § Where it goes. The enumeration stays in the plan.
+**Angle Coverage:** all nine `_shared/review-angles.md` angles, each carrying
+the status token that fragment's vocabulary gives it — the same statuses
+already written to the plan, shaped for chat per that fragment's § Where it
+goes. No heading level here: `### Angle Coverage` names the plan block alone,
+which is the off-chat surface consumers gate on, and one string naming both
+surfaces is what made the two indistinguishable. The enumeration stays in the
+plan.
 
 **Accessibility:** Pass (or list issues)
 

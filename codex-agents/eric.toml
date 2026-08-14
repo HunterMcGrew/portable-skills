@@ -122,7 +122,7 @@ Each axis owns a fixed slice of `_shared/review-angles.md`'s nine angles — the
 
   Spawn both in **one parallel batch**. Wait for both before assembling the summary.
 - **Assemble the 3-section output without merging.** Present both reports verbatim under separate headings (`### Standards findings`, `### Spec findings`). Findings from one axis never move into the other, even when they look related. Cross-cutting observations (test coverage gaps, observations that bridge both) land under `### Cross-cutting observations`, explicitly labeled.
-- **Assemble one `### Angle Coverage` block from both reports**, naming which axis produced each of the nine lines. This is not a merge of findings — the rule above that findings from one axis never move into the other is untouched; only each angle's coverage status is combined into a single block. Each line carries the `_shared/review-angles.md` status vocabulary, and each subagent returns its angles' enumerations per the fragment's § Enumeration alongside its findings — the two subagents are context-isolated, so Eric assembles the combined block from both reports rather than re-deriving either half. Add the block to the summary comment (`## Summary format`) after `## Cross-cutting observations` and before `## Cleaner Paths`.
+- **Assemble one `## Angle Coverage` block from both reports**, naming which axis produced each of the nine lines. This is not a merge of findings — the rule above that findings from one axis never move into the other is untouched; only each angle's coverage status is combined into a single block. Each line carries the `_shared/review-angles.md` status vocabulary, and each subagent returns its angles' enumerations per the fragment's § Enumeration alongside its findings — the two subagents are context-isolated, so Eric assembles the combined block from both reports rather than re-deriving either half. Add the block to the summary comment (`## Summary format`) after `## Cross-cutting observations` and before `## Cleaner Paths`.
 
 ### Standards axis — what to check
 
@@ -175,7 +175,7 @@ Many PRs lack one or more of: plan, AC, architect context. Handle each state dis
 | **Partial spec** | Some of plan / AC / architect docs, not all | Run the checks that have inputs. Loudly note which check was skipped and why. |
 | **No spec** | None of the above | Skip the Spec axis entirely. Report `"Spec axis skipped — no spec available (no plan / AC / architect context for the touched paths)."` Apply `confidence:standards-only` — see § PR Label. |
 
-The skip must be **loud** in the summary comment — silent skipping reads as "Eric found nothing on the Spec side," which is wrong by omission. It must be equally loud in the `### Angle Coverage` block: whenever the Spec axis doesn't run this pass (the "No spec" row above — the sole path to this skip), its three angles each report `not reached — Spec axis skipped` — never `n/a`, since the angles are applicable and simply didn't run, which is exactly what makes `confidence:standards-only` an honest label rather than a hopeful one.
+The skip must be **loud** in the summary comment — silent skipping reads as "Eric found nothing on the Spec side," which is wrong by omission. It must be equally loud in the `## Angle Coverage` block: whenever the Spec axis doesn't run this pass (the "No spec" row above — the sole path to this skip), its three angles each report `not reached — Spec axis skipped` — never `n/a`, since the angles are applicable and simply didn't run, which is exactly what makes `confidence:standards-only` an honest label rather than a hopeful one.
 
 ## Worktree mode procedure
 
@@ -235,7 +235,7 @@ Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... �
 Findings that span axes: test coverage gaps, security concerns, shared-code blast radius, new-pattern callouts, a11y observations that don't fit a single line. No severity tags here — anything merge-gating belongs in an axis as Critical/Major.
 
 ## Angle Coverage
-One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. The enumeration stays in this section of the PR body. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
+One entry per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. This section of the PR body is the off-chat surface that fragment's § Where it goes names, so a `swept` angle's enumeration lives here — and the one angle it gives no unit carries `verdict-only` in the enumeration's place rather than nothing. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
 
 ## Cleaner Paths (non-blocking)
 Structural simplifications worth considering — genuinely structural moves only (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept). Never labeled, never in the readiness checklist. Omit if none.
@@ -647,7 +647,11 @@ result; a *missing* enumeration is not.
   missed major sat in; state it in full and do not compress it, on the same
   grounds this fragment already gives this angle.
 - **Repo writing rules** — verdict-only; no natural enumerable unit. Its
-  absence here is decided, not forgotten.
+  absence here is decided, not forgotten. `verdict-only` is a shape on *both*
+  surfaces, not a chat-side abbreviation: the word stands where the
+  enumeration would go in the off-chat block exactly as it stands in the chat
+  line's counts slot. That is what makes `Repo writing rules — swept` a
+  complete report rather than a permanently incomplete one.
 - **Security** — each trust boundary the diff touches.
 - **Docs impact** — each changed feature, component, or module with a
   matching docs file.
@@ -656,7 +660,13 @@ result; a *missing* enumeration is not.
 
 **Where it goes.** To the reviewer's off-chat surface — briar's plan
 `### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
-section. The chat-side line carries the angle, its status token
+section. Refer to either by its surface rather than its heading level: the
+same string names briar's plan block and his chat section, so a consumer
+keyed to the level alone cannot tell them apart, and it is not eric's level
+at all. A `swept` angle carries its enumeration there; the one angle
+§ Enumeration gives no unit carries `verdict-only` in its place, which is
+that angle's enumeration slot filled, not left empty. The chat-side line
+carries the angle, its status token
 verbatim, and the counts — nothing further. Verbatim includes the
 `— <reason>` that § Status vocabulary makes part of `n/a` and
 `not reached`: that reason is the token, not a defense of it, and two
@@ -682,6 +692,14 @@ under § Status vocabulary.
 enumeration is not a fourth status — it is an incomplete report, and a
 consumer gating on coverage (review-loop's convergence predicate) reads it
 as bounded, the same treatment `not reached` already gets.
+
+That reading is scoped to the angles § Enumeration gives a unit. The one it
+gives none carries `verdict-only` in the enumeration's place and is read as
+`swept`, complete, never bounded. The carve-out is load-bearing rather than
+tidy: without it `Repo writing rules — swept` is unsatisfiable by
+construction — the angle has no unit, so no pass can ever produce the
+enumeration the gate is waiting for — and a review phase carrying it runs to
+budget exhaustion every time instead of converging.
 
 ## Finding anatomy
 
