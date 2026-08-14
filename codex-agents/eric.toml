@@ -660,13 +660,14 @@ result; a *missing* enumeration is not.
 
 **Where it goes.** To the reviewer's off-chat surface — briar's plan
 `### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
-section. Refer to either by its surface rather than its heading level: the
-same string names briar's plan block and his chat section, so a consumer
-keyed to the level alone cannot tell them apart, and it is not eric's level
-at all. A `swept` angle carries its enumeration there. One angle is given no
-unit by § Enumeration. It carries `verdict-only` in that slot — the
-enumeration slot filled, not left empty. The chat-side line
-carries the angle, its status token
+section. Refer to either by its surface rather than its heading level: one
+string named briar's plan block and her chat section, so a consumer keyed to
+the level alone could not tell them apart, and that level is not eric's at
+all. briar's chat section has since dropped its heading; the rule does not
+rest on that, because restoring it would reintroduce the collision. A `swept`
+angle carries its enumeration there. One angle is given no unit by
+§ Enumeration. It carries `verdict-only` in that slot — the enumeration slot
+filled, not left empty. The chat-side line carries the angle, its status token
 verbatim, and the counts — nothing further. Verbatim includes the
 `— <reason>` that § Status vocabulary makes part of `n/a` and
 `not reached`: that reason is the token, not a defense of it, and two

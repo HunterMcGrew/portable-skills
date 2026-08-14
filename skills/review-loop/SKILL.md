@@ -116,10 +116,13 @@ confirms the first was not an accident of timing.
 applicability map must read `swept` or `n/a — <reason>` in that reviewer's
 off-chat Angle Coverage block — briar's, in the plan; eric's, in the summary
 comment — before a pass counts toward the two-clean-pass exit. The block is
-identified by surface, never by heading level: the same `### Angle Coverage`
-string names both briar's plan block and his chat section, and eric's summary
+identified by surface, never by heading level: one `### Angle Coverage`
+string named both briar's plan block and her chat section, and eric's summary
 comment carries `## Angle Coverage`, so a gate keyed to the level finds
-nothing on the eric phase and cannot tell briar's two apart.
+nothing on the eric phase and could not tell briar's two apart. briar's chat
+section has since dropped its heading level; the rule does not rest on that,
+because restoring the heading would reintroduce the collision and eric's `##`
+against briar's `###` is live regardless.
 
 A `not reached — <reason>` angle means that pass is not clean — it
 does not reset the consecutive-clean-pass counter the way an admissible
@@ -138,8 +141,8 @@ the reviewer's already-returned report. The one angle that fragment gives no
 unit carries the word `verdict-only` in the enumeration's place, and that
 reads as `swept`: an angle with no unit can never grow an enumeration, so a
 predicate holding out for one would keep the phase open until its budget ran
-out. The three status tokens do not change;
-this is a refinement of how `swept` is read, not a fourth token.
+out. The three status tokens do not change; this is a refinement of how
+`swept` is read, not a fourth token.
 
 **Structural exemption — the one case a `not reached` is terminal.** The
 rule above assumes the reason names the *pass*: time-boxed, diff too large,
