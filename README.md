@@ -133,13 +133,15 @@ If your setup is more than one profile — say, a personal `~/.claude` and a
 second profile for a specific client or repo that ships its own
 similarly-named personas and shouldn't get this roster's colliding ones —
 drop a `sync.local.sh` next to `sync.sh`. It's gitignored, sourced before the
-sync runs if present, and sets three things:
+sync runs if present, and sets these:
 
 ```bash
 # sync.local.sh — untracked, not read by anyone else's clone
 DESTS=("$HOME/.claude" "$HOME/.claude-work")
 EXCLUDES=("" "some-persona-name")   # parallel to DESTS; "" means no exclusions
 BACKUP_DIR="$HOME/Downloads/portable-skills-backup"  # optional; omit or leave "" to skip
+CODEX_DEST="$HOME/.codex/agents"    # optional; omit to deploy no codex tomls at all
+CODEX_EXCLUDES=""                   # space-separated skill names, for CODEX_DEST only
 ```
 
 **`BACKUP_DIR` is a mirror, not an additive copy.** It runs
@@ -149,6 +151,27 @@ and nothing else — never an existing documents, downloads, or cloud-synced
 folder that holds anything you care about. `sync.sh` refuses the three
 targets that would be unrecoverable (`$HOME`, the repo itself, `/`), but it
 cannot detect a directory you merely share with something else.
+
+**`CODEX_DEST` is a single directory, not a parallel array.** `~/.codex/agents`
+is one global directory with no work/personal split to mirror, so
+`CODEX_EXCLUDES` is a plain space-separated list applying to it alone. Leave
+`CODEX_DEST` unset — the default — and no codex toml is deployed and no
+directory is created, which is right for a machine with no Codex install.
+
+The exclusion means something different on this surface. A `claude-agents`
+shim preloads its same-named skill, so shipping it without the skill produces
+an agent with nothing to be; a codex toml inlines the persona's whole body
+(§ The codex-agents toml surface) and stands alone. Excluding one is a
+preference about the machine, not a consistency requirement.
+
+Codex tomls deploy **unprefixed** — `briar.toml`, not `p-briar.toml` — unlike
+the `claude-agents` shims. The prefix exists to stop collisions with a host
+repo's own agents, and on the Codex surface the repos observed so far
+namespace their own (`thrive-*.toml`). That is their convention holding, not
+a guarantee this repo enforces: a host repo with bare-named codex agents would
+collide, and the fix then is `CODEX_EXCLUDES` or a prefix decided at that
+point. The deploy is per-file with no `--delete`, so a host repo's own agents
+in that directory always survive.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
 written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
@@ -162,10 +185,10 @@ stale exclusion (a listed name with no matching `skills/` dir) so a rename
 doesn't silently start leaking the renamed skill into a profile that meant to
 exclude it.
 
-`./sync-selftest.sh` covers that logic in nine controls — exclusions, the
-prefix strip, the no-`--delete` guarantee, an empty `DESTS`, and the three
-abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
-redirected there, so it never touches a real profile. Two are paired red
+`./sync-selftest.sh` covers that logic in eighteen controls — exclusions, the
+prefix strip, the no-`--delete` guarantee, an empty `DESTS`, the codex deploy
+and its unset default, and the three abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
+redirected there, so it never touches a real profile. Several are paired red
 controls: they break the mechanism under test and assert the check goes red,
 so the control it guards cannot pass by testing nothing.
 `render-claude-agents.py --selftest` applies that discipline to all three of

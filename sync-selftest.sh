@@ -23,12 +23,14 @@ fails=0
 # clove goes everywhere, winston is excluded from the second destination.
 scaffold() {
   src="$work/$1"
-  mkdir -p "$src"/{skills/winston,skills/clove,claude-agents,output-styles}
+  mkdir -p "$src"/{skills/winston,skills/clove,claude-agents,output-styles,codex-agents}
   echo skill >"$src/skills/winston/SKILL.md"
   echo skill >"$src/skills/clove/SKILL.md"
   echo 'name: p-winston' >"$src/claude-agents/p-winston.md"
   echo 'name: p-clove' >"$src/claude-agents/p-clove.md"
   echo style >"$src/output-styles/scannable.md"
+  echo 'name = "winston"' >"$src/codex-agents/winston.toml"
+  echo 'name = "clove"' >"$src/codex-agents/clove.toml"
   cp "$REPO/sync.sh" "$src/sync.sh"
   chmod +x "$src/sync.sh"
   cat >"$src/sync.local.sh" <<EOF
@@ -311,8 +313,76 @@ EOF
   ok stale-exclusion-red "$green" "warning line removed and the warning still appeared — control 14 proves nothing"
 fi
 
+# 16. Codex projections reach CODEX_DEST, honour CODEX_EXCLUDES, and leave a
+# host repo's own agents alone. That last one is the whole reason this loop
+# is per-file with no --delete: ~/.codex/agents is shared with whatever repo
+# you are standing in, and a sync that pruned it would delete agents it has
+# never heard of.
+scaffold codex
+mkdir -p "$src/codex-dest"
+echo 'name = "thrive-architect"' >"$src/codex-dest/thrive-architect.toml"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-dest"
+CODEX_EXCLUDES="winston"
+EOF
+run "$src"
+green=true
+[ "$rc" -eq 0 ] || green=false
+[ -f "$src/codex-dest/clove.toml" ] || green=false
+[ -e "$src/codex-dest/winston.toml" ] && green=false
+[ -f "$src/codex-dest/thrive-architect.toml" ] || green=false
+grep -q "codex-agents ->" "$work/out" || green=false
+ok codex-deploy "$green" "codex toml missing, exclusion ignored, a host agent was pruned, or the summary line stayed silent (rc=$rc)"
+
+# 17. The same case with the copy stripped must go red, or control 16 is
+# passing for some reason other than the loop running. cmp against the real
+# file first, per control 9/13/15's precedent.
+scaffold codex-red
+python3 - "$src/sync.sh" <<'PY_INNER'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+old = '    cp "$f" "$CODEX_DEST/$name.toml"\n'
+assert old in s, 'not found: %r' % old
+s = s.replace(old, '', 1)
+open(p, 'w').write(s)
+PY_INNER
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok codex-deploy-red false "the strip did not match — this control tested nothing"
+else
+  mkdir -p "$src/codex-dest"
+  cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-dest"
+EOF
+  run "$src"
+  if [ -f "$src/codex-dest/clove.toml" ]; then
+    green=false
+  else
+    green=true
+  fi
+  ok codex-deploy-red "$green" "copy removed and the toml still arrived — control 16 proves nothing"
+fi
+
+# 18. Unset CODEX_DEST is the default for every clone, and it must deploy
+# nothing rather than creating a stray directory next to the profile. A loop
+# that ran unconditionally would silently make ~/.codex on a machine that has
+# no Codex install.
+scaffold codex-off
+run "$src"
+green=true
+[ "$rc" -eq 0 ] || green=false
+[ -e "$src/codex-dest" ] && green=false
+[ -e "$work/fakehome/.codex" ] && green=false
+grep -q "codex-agents ->" "$work/out" && green=false
+ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a directory (rc=$rc)"
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 15 controls green"
+  echo "selftest: 18 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1

@@ -33,6 +33,8 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESTS=("$HOME/.claude")
 EXCLUDES=("")
 BACKUP_DIR=""
+CODEX_DEST=""
+CODEX_EXCLUDES=""
 
 if [ -f "$SRC/sync.local.sh" ]; then
   # shellcheck source=/dev/null
@@ -157,6 +159,43 @@ for i in "${!DESTS[@]}"; do
   done
 done
 
+# Codex agent projections, deployed only when CODEX_DEST is set — a clone on
+# a machine with no Codex install does nothing rather than creating the
+# directory. Rendered by render-agents.py from the same skills/ sources as
+# claude-agents/, and deployed here for the same reason: rendering mutates
+# tracked files, syncing only copies committed ones.
+#
+# One destination rather than a DESTS-parallel array, because ~/.codex/agents
+# is a single global directory with no work/personal split to mirror.
+# CODEX_EXCLUDES is a plain space-separated list for that one destination.
+#
+# The exclusion means something different here than it does above. A
+# claude-agents shim preloads a same-named skill, so shipping it without the
+# skill produces a persona with nothing to be; a codex toml inlines the
+# persona's whole body (README.md § The codex-agents toml surface) and is
+# self-contained. Excluding one is a preference about this machine, not a
+# consistency requirement.
+#
+# Same per-file, no --delete semantics as every loop above, and it matters
+# most here: a host repo's own agents (thrive-*.toml and the like) live in
+# this same directory and must survive a sync that knows nothing about them.
+if [ -n "$CODEX_DEST" ]; then
+  mkdir -p "$CODEX_DEST"
+  for f in "$SRC"/codex-agents/*.toml; do
+    [ -e "$f" ] || continue
+    name=$(basename "$f" .toml)
+    skip=false
+    for ex in ${CODEX_EXCLUDES:-}; do
+      [ "$name" = "$ex" ] && skip=true && break
+    done
+    [ "$skip" = true ] && continue
+    # rm first, same as the agents loop: cp writes *through* a destination
+    # symlink, clobbering whatever it points at outside the profile.
+    rm -f "$CODEX_DEST/$name.toml"
+    cp "$f" "$CODEX_DEST/$name.toml"
+  done
+fi
+
 # BACKUP_DIR is a mirror, not an additive copy: --delete means anything in it
 # that this repo does not ship is removed on every run. Point it at a
 # directory dedicated to this backup and nothing else. The guard below
@@ -178,4 +217,4 @@ fi
 # ${DESTS[*]:-} rather than ${DESTS[*]}: on bash 3.2 an empty array expands to
 # an unbound variable under set -u, which would abort here after every loop had
 # already correctly done nothing.
-echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]:-(none)}${BACKUP_DIR:+; full tree -> $BACKUP_DIR}"
+echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]:-(none)}${CODEX_DEST:+; codex-agents -> $CODEX_DEST}${BACKUP_DIR:+; full tree -> $BACKUP_DIR}"
