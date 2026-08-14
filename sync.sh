@@ -73,12 +73,14 @@ AGENT_PREFIX="p-"
 # The lists stay strings because bash 3.2 has no arrays inside arrays.
 #
 # The restore is conditional so this function cannot clear an option it never
-# owned. It is inert today and cannot be made otherwise from outside this
-# file: the pre-flight window below ends in an unconditional `set +f`, so
-# every call reaches this function with `-f` already clear, whatever
-# sync.local.sh did. That also means no control can observe the branch —
-# replacing it with an unconditional `set +f` leaves the whole suite green,
-# recorded here rather than argued away. It stays because restoring what the
+# owned. The branch is unreachable through any supported invocation: the
+# pre-flight window below ends in an unconditional `set +f`, so every call
+# site in this file arrives with `-f` already clear, and sync.local.sh is
+# sourced before this function is defined. A control *can* be written — a
+# harness that sources this file rather than running it can call excluded()
+# from inside its own `set -f` window, and that discriminates the branch — but
+# it would exercise a path no supported invocation reaches, which is why the
+# suite has no such row. It stays because restoring what the
 # caller had is the right shape for a helper touching a shell-global option,
 # and the unconditional form is safe only while no call site sits inside a
 # `set -f` window — a property of the call sites, not of this function.
