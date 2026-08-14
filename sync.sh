@@ -63,6 +63,46 @@ excluded() {  # excluded <name> <list> — true when name appears in the list
   return "$rc"
 }
 
+# Every copy loop below is destination-first: it unlinks the destination path
+# and then writes onto it. If a destination directory *is* one of this repo's
+# own source directories, the unlink deletes the tracked file the copy is
+# about to read, and set -e halts partway with that file already gone. Two
+# ways in, both reproduced: DESTS=("$SRC") directly, and a profile whose
+# skills/ is a symlink back into the repo — the state a previous sync under a
+# different scheme leaves behind.
+#
+# The relation is equality of the *write target*, not containment of the repo
+# by the destination. The loops only ever touch "$dst/<fixed-subdir>", so
+# DESTS=("$HOME") with this repo somewhere under $HOME aliases nothing and is
+# fine, while DESTS=("$SRC") aliases $SRC/skills exactly. -ef compares device
+# and inode, so trailing slashes, . and .. segments, symlinks, relative paths
+# and a case-insensitive volume all collapse to one answer — none of which a
+# string compare survives, which is what the removed BACKUP_DIR guard got
+# wrong. There is no realpath or readlink -f here to build an ancestor walk
+# on, and none is needed.
+#
+# A destination that does not exist yet compares false on bash 3.2 — measured,
+# both-missing and one-missing — and is correctly allowed: mkdir -p then makes
+# a fresh directory, which cannot be a source. Do not "fix" that case.
+#
+# $SRC leads the list rather than only the four directories the loops read: a
+# destination subdirectory resolving to the repo root drops untracked copies
+# into the working tree, and the walk is already happening.
+SRC_DIRS=("$SRC" "$SRC/skills" "$SRC/claude-agents" "$SRC/output-styles" "$SRC/codex-agents")
+
+# refuse_self_target <label> <dir> — aborts when dir resolves to a source
+# directory. One owner for all four arms: four inline guards is the shape
+# that let three of them ship unguarded.
+refuse_self_target() {
+  local label="$1" dir="$2" s
+  for s in "${SRC_DIRS[@]}"; do
+    if [ "$dir" -ef "$s" ]; then
+      echo "sync.sh: $label resolves to this repo's own $s — the copy is destination-first, so syncing there would delete the files it deploys (destination: $dir)" >&2
+      exit 1
+    fi
+  done
+}
+
 # EXCLUDES and DESTS are parallel, so a missing slot means an unfiltered
 # destination. Left to ${EXCLUDES[i]:-} that degrades to "no exclusions"
 # without a word, which is the wrong direction to fail in — an override that
@@ -115,6 +155,23 @@ if [ "$any_exclusions" = true ]; then
         ;;
     esac
   done
+fi
+
+# Runs before the first mkdir, across every destination and every arm, so a
+# bad entry late in DESTS cannot be discovered after an earlier destination
+# has already been rewritten. Abort rather than skip: an aliasing destination
+# is a configuration error in sync.local.sh, and skipping it would print a
+# summary line for a sync that did not happen. Index form "${!DESTS[@]}", not
+# the value form — an empty array under set -u on bash 3.2 is the landmine
+# control 9 exists for.
+for i in "${!DESTS[@]}"; do
+  dst="${DESTS[$i]}"
+  refuse_self_target "DESTS[$i]'s skills destination" "$dst/skills"
+  refuse_self_target "DESTS[$i]'s agents destination" "$dst/agents"
+  refuse_self_target "DESTS[$i]'s output-styles destination" "$dst/output-styles"
+done
+if [ -n "$CODEX_DEST" ]; then
+  refuse_self_target "CODEX_DEST" "$CODEX_DEST"
 fi
 
 for i in "${!DESTS[@]}"; do
@@ -196,19 +253,9 @@ done
 # repo ships is overwritten by the rm+cp below, which README.md § sync.sh
 # states plainly and this comment used to promise away.
 if [ -n "$CODEX_DEST" ]; then
+  # Self-target refusal for this destination happens with the others, in the
+  # pre-flight above — hoisted so no mkdir precedes a refusal.
   mkdir -p "$CODEX_DEST"
-  # The rm+cp below unlinks the destination before writing it, so a CODEX_DEST
-  # that resolves to this repo's own codex-agents/ deletes the source it is
-  # about to copy — the cp then fails under set -e, halfway through, with the
-  # tracked file already gone. -ef compares device and inode rather than
-  # strings, per the post-mortem on the path guard this repo removed for
-  # getting exactly this wrong: trailing slashes, . and .. segments,
-  # symlinks, relative paths and a case-insensitive volume each defeat a
-  # string compare, and none of them defeat this one.
-  if [ "$CODEX_DEST" -ef "$SRC/codex-agents" ]; then
-    echo "sync.sh: CODEX_DEST resolves to this repo's own codex-agents/ — that would delete the tomls it deploys" >&2
-    exit 1
-  fi
   for f in "$SRC"/codex-agents/*.toml; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .toml)

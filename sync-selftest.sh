@@ -206,11 +206,10 @@ fi
 # under a different scheme) must be replaced with a fresh regular file,
 # never written through — cp follows a destination symlink to its target,
 # so writing through it would silently clobber whatever that target is.
-# output-styles is the loop this control exercises because it is the one
-# of the three rm-then-cp loops (skills, agents, output-styles) with no
-# other control behind it; the skills and agents loops both ride through
-# controls 2/3's exclusion mechanics, which already touch the same
-# rm-before-cp shape.
+# Of the four rm-then-cp loops (skills, agents, output-styles, codex), this
+# control exercises output-styles and codex — the two with no other control
+# behind them. The skills and agents loops both ride through controls 2/3's
+# exclusion mechanics, which already touch the same rm-before-cp shape.
 scaffold symlink
 mkdir -p "$src/outside" "$src/dest-all/output-styles"
 echo original-precious-content >"$src/outside/precious"
@@ -219,13 +218,27 @@ run "$src"
 green=true
 [ -L "$src/dest-all/output-styles/scannable.md" ] && green=false
 [ "$(cat "$src/outside/precious")" = original-precious-content ] || green=false
+# Second row of the same control: the codex loop, whose rm-before-cp had no
+# control behind it at all. Deleting that one line leaves every other control
+# green while a file outside the profile is destroyed through a symlink.
+echo original-precious-toml >"$src/outside/precious-toml"
+mkdir -p "$src/codex-dest"
+ln -s "$src/outside/precious-toml" "$src/codex-dest/clove.toml"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-dest"
+EOF
+run "$src"
+[ -L "$src/codex-dest/clove.toml" ] && green=false
+[ "$(cat "$src/outside/precious-toml")" = original-precious-toml ] || green=false
 ok symlink-clobber "$green" "destination symlink survived the sync, or the outside file was clobbered"
 
-# 13. The same case with all three rm-before-cp lines stripped must go red
+# 13. The same case with all four rm-before-cp lines stripped must go red
 # — otherwise control 12 passes for some reason other than the guard.
-# python3, not sed, per control 3/9's own precedent: three distinct lines
-# across three loops is easier to match exactly this way than to keep
-# three sed expressions in sync with the source.
+# python3, not sed, per control 3/9's own precedent: four distinct lines
+# across four loops is easier to match exactly this way than to keep
+# four sed expressions in sync with the source.
 scaffold symlink-red
 python3 - "$src/sync.sh" <<'PY'
 import sys
@@ -235,6 +248,7 @@ targets = (
     'rm -rf "${dst:?}/skills/${name:?}"  # removes old symlink or stale copy\n',
     'rm -f "$dst/agents/$name.md"\n',
     'rm -f "$dst/output-styles/$(basename "$f")"  # see the agents loop above\n',
+    '    rm -f "$CODEX_DEST/$name.toml"\n',
 )
 for old in targets:
     assert old in s, 'not found: %r' % old
@@ -245,16 +259,24 @@ chmod +x "$src/sync.sh"
 if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
   ok symlink-clobber-red false "the strip did not match — this control tested nothing"
 else
-  mkdir -p "$src/outside" "$src/dest-all/output-styles"
+  mkdir -p "$src/outside" "$src/dest-all/output-styles" "$src/codex-dest"
   echo original-precious-content >"$src/outside/precious"
+  echo original-precious-toml >"$src/outside/precious-toml"
   ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
+  ln -s "$src/outside/precious-toml" "$src/codex-dest/clove.toml"
+  cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-dest"
+EOF
   run "$src"
-  if [ "$(cat "$src/outside/precious")" != original-precious-content ]; then
+  if [ "$(cat "$src/outside/precious")" != original-precious-content ] &&
+    [ "$(cat "$src/outside/precious-toml")" != original-precious-toml ]; then
     green=true
   else
     green=false
   fi
-  ok symlink-clobber-red "$green" "rm-before-cp removed and the outside file was not clobbered — control 12 proves nothing"
+  ok symlink-clobber-red "$green" "rm-before-cp removed and an outside file was not clobbered — control 12 proves nothing"
 fi
 
 # 14. Stale-exclusion warning: an entry naming a skill directory that does not
@@ -428,8 +450,128 @@ green=true
 grep -q "codex-agents ->" "$work/out" && green=false
 ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a directory (rc=$rc)"
 
+# 19. Self-target refusal: a destination resolving to one of this repo's own
+# source directories must abort before any write, with every source file still
+# on disk. Five rows — four arms and one relation. Row 5 is the relation: a ./
+# segment makes the destination inode-equal but not string-equal, which is
+# exactly what control 21 proves a string compare misses. Rows share one
+# scaffold because a refusal writes nothing, so the tree is unchanged between
+# them; dest-all is rebuilt per row.
+scaffold self-target
+green=true
+st_row() {  # st_row <row> <file that must survive>
+  run "$src"
+  [ "$rc" -ne 0 ] || { green=false; echo "  self-target row $1: expected abort, got rc=0" >&2; }
+  [ -e "$2" ] || { green=false; echo "  self-target row $1: source $2 was destroyed" >&2; }
+  grep -q "resolves to this repo's own" "$work/err" || { green=false; echo "  self-target row $1: no refusal on stderr" >&2; }
+}
+
+# Row 1: DESTS pointed straight at the source root, with no symlink anywhere
+# — the reproduction that needs nothing left over from a previous sync.
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src")
+EXCLUDES=("")
+EOF
+st_row 1 "$src/skills/clove/SKILL.md"
+
+# Rows 2-4: one arm each, reached through a symlink sitting in the profile —
+# the realistic case, and the state a previous sync under a different scheme
+# leaves behind.
+rm -rf "$src/dest-all"; mkdir -p "$src/dest-all"
+ln -s "$src/skills" "$src/dest-all/skills"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+EOF
+st_row 2 "$src/skills/clove/SKILL.md"
+
+rm -rf "$src/dest-all"; mkdir -p "$src/dest-all"
+ln -s "$src/claude-agents" "$src/dest-all/agents"
+st_row 3 "$src/claude-agents/p-clove.md"
+
+rm -rf "$src/dest-all"; mkdir -p "$src/dest-all"
+ln -s "$src/output-styles" "$src/dest-all/output-styles"
+st_row 4 "$src/output-styles/scannable.md"
+
+# Row 5: the relation rather than a fourth arm. dest-all stays a plain empty
+# directory; the ./ segment is the whole fixture.
+rm -rf "$src/dest-all"; mkdir -p "$src/dest-all"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/./codex-agents"
+EOF
+st_row 5 "$src/codex-agents/clove.toml"
+ok self-target "$green" "a destination aliasing the source tree was not refused before writing, or a source file did not survive"
+
+# 20. The same case with the pre-flight's three DESTS calls stripped must go
+# red, or control 19 is passing for some reason other than the refusal. The
+# green condition is stated positively — the source file is *gone* — rather
+# than as an absence, because an absence-only assertion passes just as well on
+# a harness that did nothing at all.
+scaffold self-target-red
+python3 - "$src/sync.sh" <<'PY_ST'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+targets = (
+    '  refuse_self_target "DESTS[$i]\'s skills destination" "$dst/skills"\n',
+    '  refuse_self_target "DESTS[$i]\'s agents destination" "$dst/agents"\n',
+    '  refuse_self_target "DESTS[$i]\'s output-styles destination" "$dst/output-styles"\n',
+)
+for old in targets:
+    assert old in s, 'not found: %r' % old
+    s = s.replace(old, '', 1)
+open(p, 'w').write(s)
+PY_ST
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok self-target-red false "the strip did not match — this control tested nothing"
+else
+  mkdir -p "$src/dest-all"
+  ln -s "$src/skills" "$src/dest-all/skills"
+  cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+EOF
+  run "$src"
+  [ ! -e "$src/skills/clove/SKILL.md" ] && green=true || green=false
+  ok self-target-red "$green" "the refusal was stripped and the source survived anyway — control 19 proves nothing"
+fi
+
+# 21. The relation rather than the presence: -ef replaced by a string compare.
+# Control 19's row 5 is the fixture, because a ./ segment is inode-equal and
+# textually different — so a string compare waves it through and the codex
+# loop unlinks the toml it is about to read. Without this twin, control 19
+# passes against a guard that only ever compares path text: measured, the same
+# mutation left the suite green at seventeen controls.
+scaffold self-target-string-red
+python3 - "$src/sync.sh" <<'PY_ST'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+old = 'if [ "$dir" -ef "$s" ]; then\n'
+assert old in s, 'not found: %r' % old
+s = s.replace(old, 'if [ "$dir" = "$s" ]; then\n', 1)
+open(p, 'w').write(s)
+PY_ST
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok self-target-string-red false "the strip did not match — this control tested nothing"
+else
+  mkdir -p "$src/dest-all"
+  cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/./codex-agents"
+EOF
+  run "$src"
+  [ ! -e "$src/codex-agents/clove.toml" ] && green=true || green=false
+  ok self-target-string-red "$green" "a string compare refused an inode-equal destination — control 19 row 5 proves nothing"
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 17 controls green"
+  echo "selftest: 20 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1
