@@ -245,7 +245,7 @@ Same shape, citing the spec element being tested (e.g. "AC item 3: Given X... �
 Findings that span axes: test coverage gaps, security concerns, shared-code blast radius, new-pattern callouts, a11y observations that don't fit a single line. No severity tags here — anything merge-gating belongs in an axis as Critical/Major.
 
 ## Angle Coverage
-One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. A `swept` angle carries its enumeration per the fragment's § Enumeration (the unit named there, per angle) — this is where the list lives; chat stays token-plus-counts only. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
+One line per angle in `_shared/review-angles.md`, each naming the axis that produced it and carrying that fragment's status vocabulary. The enumeration stays in this section of the PR body. Emitted on every pass, including clean ones — a gap typed into the deliverable is harder to skip than a gap mentioned in an instruction.
 
 ## Cleaner Paths (non-blocking)
 Structural simplifications worth considering — genuinely structural moves only (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept). Never labeled, never in the readiness checklist. Omit if none.
