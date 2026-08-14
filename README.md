@@ -185,12 +185,14 @@ exclude it; `CODEX_EXCLUDES` gets the same warning on its own pass. Both
 lists are matched with globbing off, so a `*` in a name matches literally
 instead of expanding against whatever directory you happened to run from.
 
-`./sync-selftest.sh` covers that logic in twenty controls — exclusions, the
-prefix strip, the no-`--delete` guarantee, the symlink-clobber guard, the
-self-target refusal, the stale-exclusion warning, an empty `DESTS`, the
-codex deploy and its unset default, and the four abort conditions — against
-a fabricated tree in
-`$TMPDIR` with `HOME` redirected there, so it never touches a real profile.
+`./sync-selftest.sh` covers that logic and reports how many controls it ran
+on the line it exits with, so the count lives in the suite rather than in
+this paragraph — exclusions, the prefix strip, the no-`--delete` guarantee,
+the symlink-clobber guard, the self-target refusal, the stale-exclusion
+warning, a multi-name exclusion list, a stale backup setting, an empty
+`DESTS`, the codex deploy and its unset default, and the four abort
+conditions — against a fabricated tree in `$TMPDIR` with `HOME` redirected
+there, so it never touches a real profile.
 Several are paired red controls: they break the mechanism under test and
 assert the check goes red, so the control it guards cannot pass by testing
 nothing.

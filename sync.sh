@@ -40,6 +40,16 @@ if [ -f "$SRC/sync.local.sh" ]; then
   source "$SRC/sync.local.sh"
 fi
 
+# BACKUP_DIR was an override once and is now read by nothing. A gitignored
+# sync.local.sh that still sets it is sourced without complaint, so the
+# setting looks live while no backup runs — the same silent-config failure
+# the CODEX_DEST default was fixed for. Warn rather than abort: the lost
+# artifact mirrored a repo that git already backs up, so nothing is at risk
+# except the user's belief.
+if [ -n "${BACKUP_DIR:-}" ]; then
+  echo "sync.sh: BACKUP_DIR is set but nothing reads it — the backup was removed, git history is the mirror. Delete it from sync.local.sh." >&2
+fi
+
 # Must equal render-claude-agents.py's AGENT_PREFIX. That file owns the
 # value; this is a copy, and the pre-flight check below is what stops the
 # copy from drifting silently. Not part of the sync.local.sh override
@@ -53,13 +63,22 @@ AGENT_PREFIX="p-"
 # is said. `set -f` for the length of the split is the fix. Quoting is not —
 # a quoted expansion is one word, so a two-name list stops matching at all.
 # The lists stay strings because bash 3.2 has no arrays inside arrays.
+#
+# The restore is conditional because this function is called from inside the
+# second `set -f` window below. An unconditional `set +f` would re-enable
+# globbing for the remainder of that window — the caller's option, cleared by
+# a helper that never owned it. `local -` is the idiomatic fix and is not
+# available here: bash 3.2.57 rejects it outright with `-': not a valid
+# identifier`, leaving the option set, so the prior state is read and put back
+# by hand instead.
 excluded() {  # excluded <name> <list> — true when name appears in the list
-  local name="$1" list="$2" ex rc=1
+  local name="$1" list="$2" ex rc=1 had_noglob
+  case $- in *f*) had_noglob=1 ;; *) had_noglob= ;; esac
   set -f
   for ex in $list; do
     if [ "$name" = "$ex" ]; then rc=0; break; fi
   done
-  set +f
+  [ -n "$had_noglob" ] || set +f
   return "$rc"
 }
 

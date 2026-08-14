@@ -1104,6 +1104,15 @@ def check_all(root=ROOT):
         % (len(removed_targets), '' if len(removed_targets) == 1 else 's'))
     multi, total = _citation_multi_match_stats(root)
     notes.append('%d of %d § citations match more than one target' % (multi, total))
+    # The harvest and the surviving-target set are both globbed over
+    # skills/**/*.md plus codex-agents/*.toml, so a `§` citation written into
+    # README.md or a shell script resolves by hand and by nothing else. The
+    # branch that added the first of those found the gap only by reading the
+    # glob; stating the corpus where the result is stated is the property
+    # AC-53 names, and it is cheaper than widening a check nobody asked for.
+    notes.append('citation corpus: skills/**/*.md and codex-agents/*.toml '
+                 'only — § citations in README.md, shell scripts, or any '
+                 'other file are unchecked')
 
     # v accumulated as (kind, arm, detail) triples (D46) so an arm id exists
     # at the site that emits it; the public return stays (kind, detail)

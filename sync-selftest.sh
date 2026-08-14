@@ -673,6 +673,25 @@ EOF
   ok multi-exclude-red "$green" "the split was quoted and a two-name exclusion still held — control 22 proves nothing"
 fi
 
+# 24. A BACKUP_DIR left in an existing sync.local.sh is inert, and the script
+# says so instead of letting the setting look live. No red twin: the assertion
+# is positive — this exact warning is on stderr and the run still succeeds — so
+# deleting the echo falsifies it directly, the same reasoning control 19's rows
+# 6 and 7 record.
+scaffold backup-inert
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+BACKUP_DIR="$src/somewhere"
+EOF
+run "$src"
+green=true
+[ "$rc" -eq 0 ] || green=false
+grep -q "BACKUP_DIR is set but nothing reads it" "$work/err" || green=false
+[ -e "$src/somewhere" ] && green=false
+[ -f "$src/dest-all/skills/clove/SKILL.md" ] || green=false
+ok backup-inert "$green" "a stale BACKUP_DIR did not warn, aborted the sync, or something created the directory (rc=$rc)"
+
 if [ "$fails" -eq 0 ]; then
   echo "selftest: $controls controls green"
 else
