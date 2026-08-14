@@ -134,7 +134,14 @@ result; a *missing* enumeration is not.
 
 **Where it goes.** To the reviewer's off-chat surface — briar's plan
 `### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
-section. The chat-side line carries the token plus counts, never the list.
+section. The chat-side line carries the token plus counts and nothing else — no
+justification, no caveats, no evidence marks, no sentence explaining why
+an angle came back clean. Banning only the list is not enough: prose
+defending a status restores the same wall of text the counts exist to
+replace, and a reader who skims nine paragraphs of "checked, fine" stops
+reading the block that carries the loop's coverage signal. An angle whose
+status needs explaining gets that explanation on the off-chat surface,
+where a consumer can go looking for it.
 
 **Status interaction.** The three tokens are unchanged. A `swept` with no
 enumeration is not a fourth status — it is an incomplete report, and a
