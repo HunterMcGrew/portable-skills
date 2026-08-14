@@ -448,15 +448,32 @@ green=true
 [ -e "$src/codex-dest" ] && green=false
 [ -e "$work/fakehome/.codex" ] && green=false
 grep -q "codex-agents ->" "$work/out" && green=false
+# Second row of the same control: the other way a user turns codex off. An
+# override that says `unset CODEX_DEST` rather than assigning it "" is the
+# same intent and a different state under set -u, and a bare [ -n "$CODEX_DEST" ]
+# dies on it before any write. Same three assertions as the row above, against
+# the spelling that used to abort.
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+unset CODEX_DEST
+EOF
+run "$src"
+[ "$rc" -eq 0 ] || { green=false; echo "  codex-default-off row 2: unset CODEX_DEST aborted (rc=$rc): $(tail -1 "$work/err")" >&2; }
+[ -e "$src/codex-dest" ] && green=false
+grep -q "codex-agents ->" "$work/out" && green=false
 ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a directory (rc=$rc)"
 
 # 19. Self-target refusal: a destination resolving to one of this repo's own
 # source directories must abort before any write, with every source file still
-# on disk. Five rows — four arms and one relation. Row 5 is the relation: a ./
-# segment makes the destination inode-equal but not string-equal, which is
-# exactly what control 21 proves a string compare misses. Rows share one
-# scaffold because a refusal writes nothing, so the tree is unchanged between
-# them; dest-all is rebuilt per row.
+# on disk. Six rows — four arms, one relation, and one list entry. Row 5 is
+# the relation: a ./ segment makes the destination inode-equal but not
+# string-equal, which is exactly what control 21 proves a string compare
+# misses. Row 6 is SRC_DIRS' own "$SRC" entry, the one no arm reaches: a
+# destination subdirectory resolving to the repo *root*, whose damage is
+# untracked copies landing in the working tree rather than a source file
+# deleted. Rows share one scaffold because a refusal writes nothing, so the
+# tree is unchanged between them; dest-all is rebuilt per row.
 scaffold self-target
 green=true
 st_row() {  # st_row <row> <file that must survive>
@@ -502,6 +519,21 @@ EXCLUDES=("")
 CODEX_DEST="$src/./codex-agents"
 EOF
 st_row 5 "$src/codex-agents/clove.toml"
+
+# Row 6: the "$SRC" entry of SRC_DIRS, which the four arms above never touch —
+# they all resolve to a subdirectory. A destination whose skills/ points at the
+# repo root writes *into* the root: rm -rf finds nothing to unlink and cp -R
+# then drops $src/clove beside the tracked directories. Pollution rather than
+# deletion, so the surviving-source assertion cannot catch it and the stray
+# copy is asserted directly.
+rm -rf "$src/dest-all"; mkdir -p "$src/dest-all"
+ln -s "$src" "$src/dest-all/skills"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+EOF
+st_row 6 "$src/skills/clove/SKILL.md"
+[ -e "$src/clove" ] && { green=false; echo "  self-target row 6: untracked copies landed in the repo root" >&2; }
 ok self-target "$green" "a destination aliasing the source tree was not refused before writing, or a source file did not survive"
 
 # 20. The same case with the pre-flight's three DESTS calls stripped must go

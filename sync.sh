@@ -170,7 +170,7 @@ for i in "${!DESTS[@]}"; do
   refuse_self_target "DESTS[$i]'s agents destination" "$dst/agents"
   refuse_self_target "DESTS[$i]'s output-styles destination" "$dst/output-styles"
 done
-if [ -n "$CODEX_DEST" ]; then
+if [ -n "${CODEX_DEST:-}" ]; then
   refuse_self_target "CODEX_DEST" "$CODEX_DEST"
 fi
 
@@ -252,7 +252,7 @@ done
 # — differently-named ones. A host agent sharing a basename with one this
 # repo ships is overwritten by the rm+cp below, which README.md § sync.sh
 # states plainly and this comment used to promise away.
-if [ -n "$CODEX_DEST" ]; then
+if [ -n "${CODEX_DEST:-}" ]; then
   # Self-target refusal for this destination happens with the others, in the
   # pre-flight above — hoisted so no mkdir precedes a refusal.
   mkdir -p "$CODEX_DEST"
