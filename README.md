@@ -125,9 +125,9 @@ ls ~/.claude/agents | grep -v '^p-'   # look first
 ls ~/.claude/agents | grep -v '^p-' | sed "s|^|$HOME/.claude/agents/|" | xargs rm
 ```
 
-The same applies to any future rename of a generated file. `sync.sh` will not
-tell you — nothing compares the destination against the repo — so the release
-note is the only warning you get.
+The same applies to any future rename of a generated file. `sync.sh` will
+not tell you — nothing compares the destination's *contents* against the
+repo — so the release note is the only warning you get.
 
 If your setup is more than one profile — say, a personal `~/.claude` and a
 second profile for a specific client or repo that ships its own

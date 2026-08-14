@@ -64,10 +64,16 @@ AGENT_PREFIX="p-"
 # a quoted expansion is one word, so a two-name list stops matching at all.
 # The lists stay strings because bash 3.2 has no arrays inside arrays.
 #
-# The restore is conditional because this function is called from inside the
-# second `set -f` window below. An unconditional `set +f` would re-enable
-# globbing for the remainder of that window — the caller's option, cleared by
-# a helper that never owned it. `local -` is the idiomatic fix and is not
+# The restore is conditional so this function cannot clear an option it never
+# owned. No call site reaches it that way as the file stands, and that is
+# measured rather than assumed: every call reports `$-=ehuB`, both with and
+# without a `set -f` in sync.local.sh, because the pre-flight window below
+# ends in an unconditional `set +f` that normalizes the option before the
+# first call. The branch is therefore inert today. It stays because restoring
+# what the caller had is the correct shape for a helper that touches a
+# shell-global option, and the unconditional alternative is safe only while
+# no call site sits inside a `set -f` window — a property of the call sites,
+# not of this function. `local -` is the idiomatic version and is not
 # available here: bash 3.2.57 rejects it outright with `-': not a valid
 # identifier`, leaving the option set, so the prior state is read and put back
 # by hand instead.
