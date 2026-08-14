@@ -114,22 +114,74 @@ ok no-delete "$green" "a profile-only file was removed by the sync"
 
 # 5. Parallel-array guard: fewer EXCLUDES than DESTS must abort rather than
 # silently leave the trailing destination unfiltered.
+#
+# Three rows, because a bare `rc -ne 0` cannot tell "the guard I name fired"
+# from "the script died for any other reason", and the shortest fixture alone
+# is satisfied by conditions that are not the parity property. Measured on
+# the one-row form: garbling the message, and replacing the condition with
+# `[ "${#EXCLUDES[@]}" -eq 1 ] && [ "${#DESTS[@]}" -eq 2 ]` — which matches
+# this fixture exactly and asserts nothing about parallelism — both left the
+# suite fully green.
 scaffold parity
 cat >"$src/sync.local.sh" <<EOF
 DESTS=("$src/dest-all" "$src/dest-filtered")
 EXCLUDES=("")
 EOF
 run "$src"
-[ "$rc" -ne 0 ] && green=true || green=false
-ok parity-guard "$green" "a short EXCLUDES array was accepted (rc=$rc)"
+green=true
+[ "$rc" -ne 0 ] || green=false
+grep -q "must be parallel" "$work/err" || green=false
+# The guard runs pre-flight, so the abort has to precede the first mkdir.
+[ ! -e "$src/dest-all/skills" ] || green=false
+# Row 2, the other direction: more EXCLUDES than DESTS. Non-parallel is
+# non-parallel, and this is the row that separates `-ne` from `-lt` — the
+# latter accepts a long EXCLUDES silently, which is the shape where a
+# destination gained a slot and the array did not lose one.
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("" "winston")
+EOF
+run "$src"
+[ "$rc" -ne 0 ] || green=false
+grep -q "must be parallel" "$work/err" || green=false
+# Row 3: an empty EXCLUDES beside a live DESTS is legal and means no
+# exclusions anywhere. Without it the `-ne 0` legality clause can be deleted
+# and nothing notices — control 8's fixture empties both arrays, so the
+# clause is never load-bearing there.
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=()
+EOF
+run "$src"
+[ "$rc" -eq 0 ] || green=false
+[ -f "$src/dest-all/skills/winston/SKILL.md" ] || green=false
+ok parity-guard "$green" "a non-parallel EXCLUDES was accepted, an empty one was rejected, or the abort was not the parity guard (rc=$rc)"
 
 # 6. Prefix-drift guard: an agent file that does not carry AGENT_PREFIX must
 # abort while exclusions are configured, since none of them can match it.
+#
+# Two rows, for control 5's reason plus one specific to the `case`. Row 1's
+# fixture is rejected by any pattern that does not name `winston`, so on its
+# own it is satisfied by a `case` widened to persona-name globs
+# (`p-*|clove*|briar*`) — measured green on the one-row form, as was
+# garbling the message.
 scaffold drift
 echo 'name: winston' >"$src/claude-agents/winston.md"
 run "$src"
-[ "$rc" -ne 0 ] && green=true || green=false
-ok drift-guard "$green" "an unprefixed agent file synced with exclusions live (rc=$rc)"
+green=true
+[ "$rc" -ne 0 ] || green=false
+grep -q "does not start with AGENT_PREFIX" "$work/err" || green=false
+[ ! -e "$src/dest-all/skills" ] || green=false
+# Row 2: a file that starts with a persona's own name but not the prefix.
+# The property is the prefix, not the persona, and this is the drift shape
+# that actually happens — a renamed shim that kept its persona and lost its
+# `p-`.
+scaffold drift-persona
+echo 'name: clove' >"$src/claude-agents/clove-extra.md"
+run "$src"
+[ "$rc" -ne 0 ] || green=false
+grep -q "does not start with AGENT_PREFIX" "$work/err" || green=false
+ok drift-guard "$green" "an unprefixed agent file synced with exclusions live, or the abort was not the prefix guard (rc=$rc)"
 
 # (7 was the BACKUP_DIR guard. BACKUP_DIR was removed rather than repaired —
 # its guard accepted 23 of 28 spellings, and the feature mirrored a repo git
@@ -208,18 +260,35 @@ fi
 # under a different scheme) must be replaced with a fresh regular file,
 # never written through — cp follows a destination symlink to its target,
 # so writing through it would silently clobber whatever that target is.
-# Of the four rm-then-cp loops (skills, agents, output-styles, codex), this
-# control exercises output-styles and codex — the two with no other control
-# behind them. The skills and agents loops both ride through controls 2/3's
-# exclusion mechanics, which already touch the same rm-before-cp shape.
+# All four rm-then-cp loops (skills, agents, output-styles, codex) get a
+# fixture here. Two of them used to be justified away with "the skills and
+# agents loops both ride through controls 2/3's exclusion mechanics, which
+# already touch the same rm-before-cp shape" — but controls 2/3 exercise that
+# the loop *runs*, never that it refuses to write through a destination
+# symlink, which is the only property this control exists to prove. Both
+# uncovered arms were reproduced: with the rm stripped, `cp -R` drops
+# SKILL.md *inside* the outside directory and `cp` writes *through* the agent
+# symlink. Sharing a code shape is not coverage.
 scaffold symlink
-mkdir -p "$src/outside" "$src/dest-all/output-styles"
+mkdir -p "$src/outside" "$src/outside/skilldir" "$src/dest-all/output-styles" \
+  "$src/dest-all/skills" "$src/dest-all/agents"
 echo original-precious-content >"$src/outside/precious"
+echo original-precious-agent >"$src/outside/precious-agent"
 ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
+# A directory symlink for the skills loop: `rm -rf` on one unlinks rather
+# than descends, so the guard's whole job here is to unlink before `cp -R`
+# copies the source directory *into* whatever it points at.
+ln -s "$src/outside/skilldir" "$src/dest-all/skills/clove"
+ln -s "$src/outside/precious-agent" "$src/dest-all/agents/p-clove.md"
 run "$src"
 green=true
 [ -L "$src/dest-all/output-styles/scannable.md" ] && green=false
 [ "$(cat "$src/outside/precious")" = original-precious-content ] || green=false
+[ -L "$src/dest-all/skills/clove" ] && green=false
+[ -e "$src/outside/skilldir/SKILL.md" ] && green=false
+[ -f "$src/dest-all/skills/clove/SKILL.md" ] || green=false
+[ -L "$src/dest-all/agents/p-clove.md" ] && green=false
+[ "$(cat "$src/outside/precious-agent")" = original-precious-agent ] || green=false
 # Second row of the same control: the codex loop, whose rm-before-cp had no
 # control behind it at all. Deleting that one line leaves every other control
 # green while a file outside the profile is destroyed through a symlink.
@@ -261,19 +330,27 @@ chmod +x "$src/sync.sh"
 if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
   ok symlink-clobber-red false "the strip did not match — this control tested nothing"
 else
-  mkdir -p "$src/outside" "$src/dest-all/output-styles" "$src/codex-dest"
+  mkdir -p "$src/outside" "$src/outside/skilldir" "$src/dest-all/output-styles" \
+    "$src/dest-all/skills" "$src/dest-all/agents" "$src/codex-dest"
   echo original-precious-content >"$src/outside/precious"
   echo original-precious-toml >"$src/outside/precious-toml"
+  echo original-precious-agent >"$src/outside/precious-agent"
   ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
   ln -s "$src/outside/precious-toml" "$src/codex-dest/clove.toml"
+  ln -s "$src/outside/skilldir" "$src/dest-all/skills/clove"
+  ln -s "$src/outside/precious-agent" "$src/dest-all/agents/p-clove.md"
   cat >"$src/sync.local.sh" <<EOF
 DESTS=("$src/dest-all")
 EXCLUDES=("")
 CODEX_DEST="$src/codex-dest"
 EOF
   run "$src"
+  # One arm per stripped line, so the twin reds for all four reasons control
+  # 12 now covers rather than for the two it used to.
   if [ "$(cat "$src/outside/precious")" != original-precious-content ] &&
-    [ "$(cat "$src/outside/precious-toml")" != original-precious-toml ]; then
+    [ "$(cat "$src/outside/precious-toml")" != original-precious-toml ] &&
+    [ "$(cat "$src/outside/precious-agent")" != original-precious-agent ] &&
+    [ -e "$src/outside/skilldir/SKILL.md" ]; then
     green=true
   else
     green=false
@@ -691,6 +768,61 @@ grep -q "BACKUP_DIR is set but nothing reads it" "$work/err" || green=false
 [ -e "$src/somewhere" ] && green=false
 [ -f "$src/dest-all/skills/clove/SKILL.md" ] || green=false
 ok backup-inert "$green" "a stale BACKUP_DIR did not warn, aborted the sync, or something created the directory (rc=$rc)"
+
+# 25. The defaults block itself. Every other control in this file writes a
+# sync.local.sh before running, so the path README calls the normal case — no
+# sync.local.sh at all — was exercised by nothing, and DESTS, EXCLUDES and
+# CODEX_EXCLUDES could be changed to anything with the suite still fully
+# green. Measured before this control existed: DESTS -> ("$HOME") green,
+# DESTS -> an arbitrary absolute path green, CODEX_EXCLUDES -> "winston"
+# green. Only CODEX_DEST had a control behind it, because control 18 alone
+# declines to set it.
+#
+# Two rows, because the defaults are not all observable on one path.
+# Row 1 is the un-configured run. Row 2 sets CODEX_DEST and nothing else:
+# with CODEX_DEST empty the codex loop never runs, so the CODEX_EXCLUDES
+# default is unreadable from row 1 by construction.
+#
+# No red twin, for control 24's reason: every assertion here is positive
+# about a documented default, so changing a default falsifies the control
+# directly rather than through a mechanism that could rot.
+scaffold defaults
+rm -f "$src/sync.local.sh"
+# A fresh HOME so "nowhere else under $HOME" is an observation rather than a
+# claim about whatever earlier controls happened to leave behind.
+rm -rf "$work/fakehome"
+mkdir -p "$work/fakehome"
+run "$src"
+green=true
+[ "$rc" -eq 0 ] || green=false
+# The DESTS default is "$HOME/.claude" — assert the subdirectory *and* that
+# nothing landed beside it, since DESTS=("$HOME") writes a skills/ tree that
+# is one level up and otherwise identical.
+[ -f "$work/fakehome/.claude/skills/clove/SKILL.md" ] || green=false
+[ -f "$work/fakehome/.claude/agents/p-clove.md" ] || green=false
+[ -f "$work/fakehome/.claude/output-styles/scannable.md" ] || green=false
+# The EXCLUDES default is ("") — no exclusions, so the persona every other
+# fixture filters out has to arrive here.
+[ -f "$work/fakehome/.claude/skills/winston/SKILL.md" ] || green=false
+[ -f "$work/fakehome/.claude/agents/p-winston.md" ] || green=false
+# Nothing anywhere else under HOME. This is what catches a DESTS default
+# pointed one level up, or a CODEX_DEST default that starts creating ~/.codex.
+stray="$(ls -A "$work/fakehome" | grep -vx '.claude' || true)"
+[ -z "$stray" ] || green=false
+# Second row: CODEX_DEST set, CODEX_EXCLUDES left at its default, so both
+# tomls must land. Control 12's codex row only ever names clove.toml, which
+# is why a default of "winston" survived it.
+scaffold codex-defaults
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+CODEX_DEST="$src/codex-dest"
+EOF
+run "$src"
+[ "$rc" -eq 0 ] || green=false
+[ -f "$src/codex-dest/clove.toml" ] || green=false
+[ -f "$src/codex-dest/winston.toml" ] || green=false
+ok defaults "$green" "an un-configured run did not deploy to \$HOME/.claude alone, or a default excluded something (rc=$rc)"
 
 if [ "$fails" -eq 0 ]; then
   echo "selftest: $controls controls green"
