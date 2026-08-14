@@ -385,12 +385,9 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 **Aggregate:** one line — findings per axis and the worst within each.
 
 **Angle Coverage (`### Angle Coverage`):** all nine `_shared/review-angles.md`
-angles, each with its status token per that fragment's vocabulary — the
-same block just written to the plan, not a re-derivation. The chat line
-carries the token plus counts only (`swept — <n> items enumerated, <n>
-verdicts`) — never the enumeration list and never a sentence justifying
-the status, both of which stay in the plan, per that fragment's § Where
-it goes.
+angles, each carrying the status token that fragment's vocabulary gives
+it — the same statuses already written to the plan, shaped for chat per
+that fragment's § Where it goes. The enumeration stays in the plan.
 
 **Accessibility:** Pass (or list issues)
 
