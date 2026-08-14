@@ -113,20 +113,36 @@ something about the repair rather than the subject, so the second clean pass
 confirms the first was not an accident of timing.
 
 **The coverage gate.** Every angle in the reviewer's angle-sweep
-applicability map must read `swept` or `n/a — <reason>` in its
-`### Angle Coverage` block before a pass counts toward the two-clean-pass
-exit. A `not reached — <reason>` angle means that pass is not clean — it
+applicability map must read `swept` or `n/a — <reason>` in that reviewer's
+off-chat Angle Coverage block — briar's, in the plan; eric's, in the summary
+comment — before a pass counts toward the two-clean-pass exit. The block is
+identified by surface, never by heading level: one `### Angle Coverage`
+string named both briar's plan block and her chat section, and eric's summary
+comment carries `## Angle Coverage`, so a gate keyed to the level finds
+nothing on the eric phase and could not tell briar's two apart. briar's chat
+section has since dropped its heading level; the rule does not rest on that,
+because restoring the heading would reintroduce the collision and eric's `##`
+against briar's `###` is live regardless.
+
+A `not reached — <reason>` angle means that pass is not clean — it
 does not reset the consecutive-clean-pass counter the way an admissible
 finding would, but it holds the counter where it is: the phase cannot
 converge until that angle later reads `swept` or `n/a`.
 
 **The enumeration refinement.** `swept` on its own is not enough for this
 gate — `_shared/review-angles.md` § Enumeration requires a `swept` angle to
-carry its enumeration. A `swept` with no enumeration is read as bounded for
-this predicate, the same treatment as `not reached — enumeration absent`,
-evaluated loop-side over the reviewer's already-returned report. The three
-status tokens do not change; this is a refinement of how `swept` is read,
-not a fourth token.
+carry its enumeration. Read it on the off-chat surface named by that
+fragment's § Where it goes — briar's plan block, eric's summary comment.
+Never on the chat line, which carries counts in place of the enumeration by
+construction and would therefore read as bounded on every angle at once. A
+`swept` with no enumeration there is read as bounded for this predicate, the
+same treatment as `not reached — enumeration absent`, evaluated loop-side over
+the reviewer's already-returned report. The one angle that fragment gives no
+unit carries the word `verdict-only` in the enumeration's place, and that
+reads as `swept`: an angle with no unit can never grow an enumeration, so a
+predicate holding out for one would keep the phase open until its budget ran
+out. The three status tokens do not change; this is a refinement of how
+`swept` is read, not a fourth token.
 
 **Structural exemption — the one case a `not reached` is terminal.** The
 rule above assumes the reason names the *pass*: time-boxed, diff too large,
@@ -149,8 +165,8 @@ grades itself against, the failure mode that cost PRISM's gated personas
 their final turns satisfying their own gate instead of doing the work. The
 reviewers now cap their own verdict on a bounded angle (`_shared/review-angles.md`)
 — that is a label on output, not this predicate: the loop continues to
-evaluate coverage from the `### Angle Coverage` block alone and never reads
-the reviewer's verdict string or labels as a convergence input. The
+evaluate coverage from that off-chat Angle Coverage block alone and never
+reads the reviewer's verdict string or labels as a convergence input. The
 distinction is load-bearing for the reason above: a predicate the reviewer
 can satisfy by declaring itself finished is the PRISM failure; a label that
 can only move downward is not. The
@@ -240,14 +256,14 @@ and routes as a subject finding on the next run.
 - **Sibling and angle coverage.** Reviewer passes follow
   `_shared/review-exhaustiveness.md` for multi-arm constructs (findings carry
   per-sibling coverage) and their own angle sweep for angle coverage (every
-  pass's `### Angle Coverage` block is read against the applicability
+  pass's off-chat Angle Coverage block is read against the applicability
   map). A defect surfacing on a later pass in an arm — or an angle — an
   earlier pass's construct already covered, or already reported `swept`, is
   a coverage miss by that earlier pass — note it on its own scoreboard line;
   it is not a strike against the fix.
 - **Always-on-content trip-wire.** Generalized off directory membership —
   any `skills/_shared/*.md` fragment, not off frontmatter, since the
-  fragments carry none. If a pass's `### Angle Coverage` block reports
+  fragments carry none. If a pass's off-chat Angle Coverage block reports
   anything other than `swept` for an angle a fragment declares always-on,
   that mismatch fires the trip-wire: the loop records the discrepancy (which
   angle, which fragment, which status) on its own scoreboard line and does

@@ -125,7 +125,11 @@ result; a *missing* enumeration is not.
   missed major sat in; state it in full and do not compress it, on the same
   grounds this fragment already gives this angle.
 - **Repo writing rules** — verdict-only; no natural enumerable unit. Its
-  absence here is decided, not forgotten.
+  absence here is decided, not forgotten. `verdict-only` is a shape on *both*
+  surfaces, not a chat-side abbreviation: the word stands where the
+  enumeration would go in the off-chat block exactly as it stands in the chat
+  line's counts slot. That is what makes `Repo writing rules — swept` a
+  complete report rather than a permanently incomplete one.
 - **Security** — each trust boundary the diff touches.
 - **Docs impact** — each changed feature, component, or module with a
   matching docs file.
@@ -134,12 +138,47 @@ result; a *missing* enumeration is not.
 
 **Where it goes.** To the reviewer's off-chat surface — briar's plan
 `### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
-section. The chat-side line carries the token plus counts, never the list.
+section. Refer to either by its surface rather than its heading level: one
+string named briar's plan block and her chat section, so a consumer keyed to
+the level alone could not tell them apart, and that level is not eric's at
+all. briar's chat section has since dropped its heading; the rule does not
+rest on that, because restoring it would reintroduce the collision. A `swept`
+angle carries its enumeration there. One angle is given no unit by
+§ Enumeration. It carries `verdict-only` in that slot — the enumeration slot
+filled, not left empty. The chat-side line carries the angle, its status token
+verbatim, and the counts — nothing further. Verbatim includes the
+`— <reason>` that § Status vocabulary makes part of `n/a` and
+`not reached`: that reason is the token, not a defense of it, and two
+consumers parse it. The counts slot carries `<n> items enumerated,
+<n> verdicts` on `swept`, the word `verdict-only` on the one angle given no
+unit by § Enumeration, and nothing at all on `n/a` and
+`not reached`, which carry no enumeration. All three shapes in full:
+`Runtime behavior — swept — 12 items enumerated, 12 verdicts`,
+`Repo writing rules — swept — verdict-only` and
+`Accessibility — n/a — no UI in the pinned range`.
+
+What is banned is everything after that — no caveat, no second
+sentence, no explanation of why an angle came back clean. Banning only
+the list is not enough: prose defending a status restores the same wall
+of text the counts exist to replace, and a reader who skims nine
+paragraphs of "checked, fine" stops reading the block that carries the
+loop's coverage signal. An angle whose status needs
+explaining does not get a slot to explain it in: neither destination's
+shape admits free text, and the status already has to stand on its own
+under § Status vocabulary.
 
 **Status interaction.** The three tokens are unchanged. A `swept` with no
 enumeration is not a fourth status — it is an incomplete report, and a
 consumer gating on coverage (review-loop's convergence predicate) reads it
 as bounded, the same treatment `not reached` already gets.
+
+That reading is scoped to the angles given a unit by § Enumeration. The one
+without carries `verdict-only` in the enumeration's place and is read as
+`swept`, complete, never bounded. The carve-out is load-bearing rather than
+tidy: without it `Repo writing rules — swept` is unsatisfiable by
+construction — the angle has no unit, so no pass can ever produce the
+enumeration the gate is waiting for — and a review phase carrying it runs to
+budget exhaustion every time instead of converging.
 
 ## Finding anatomy
 

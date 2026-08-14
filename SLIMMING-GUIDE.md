@@ -161,7 +161,7 @@ A mode that fires on one invocation in twenty is paying full price on the other 
 5. **Collapse the output template** (rule 5) if sections are conditionally omitted.
 6. **Move rare modes to `references/`** (Part 4) with a pointer — or extract them as their own skill when they stand alone, the way Devil's Advocate did.
 7. **Compress the personality block to a `## Voice` paragraph** (rule 8), keeping any cognitive lens that reduces to a single working instruction.
-8. **Re-render, then deploy** — `render-agents.py` regenerates `codex-agents/` and `render-claude-agents.py` regenerates `claude-agents/`; edits made directly in either directory get overwritten. `sync.sh` regenerates nothing — it copies the already-committed `skills/`, `claude-agents/`, and `output-styles/` out to the profiles, so it runs after the renderers, not instead of them.
+8. **Re-render, then deploy** — `render-agents.py` regenerates `codex-agents/` and `render-claude-agents.py` regenerates `claude-agents/`; edits made directly in either directory get overwritten. `sync.sh` regenerates nothing — it copies the already-committed `skills/`, `claude-agents/`, and `output-styles/` out to the profiles, plus `codex-agents/` when `CODEX_DEST` is set, so it runs after the renderers, not instead of them.
 
 Change one thing per measured run where you can. The bake-off's clearest confound was slim Winston's pass 2 changing output style *and* three hand edits at once, which made a +202% swing uninterpretable.
 

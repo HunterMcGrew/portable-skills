@@ -100,8 +100,8 @@ in **no** repo's tree.
 `sync.sh` in the repo root does what the manual `cp -R` above does, plus the
 agent shims and output styles, minus the parts you'd have to remember: run it
 with no setup and it copies `skills/`, `claude-agents/`, and `output-styles/`
-into `~/.claude`. That's the whole story for one profile — no exclusions, no
-backup, nothing to configure.
+into `~/.claude`. That's the whole story for one profile — no exclusions,
+nothing to configure.
 
 `sync.sh` takes no arguments — there is no `--check`/`--dry-run` mode, only
 the real deploy. Any argument exits 2 with a usage line before anything is
@@ -125,49 +125,85 @@ ls ~/.claude/agents | grep -v '^p-'   # look first
 ls ~/.claude/agents | grep -v '^p-' | sed "s|^|$HOME/.claude/agents/|" | xargs rm
 ```
 
-The same applies to any future rename of a generated file. `sync.sh` will not
-tell you — nothing compares the destination against the repo — so the release
-note is the only warning you get.
+The same applies to any future rename of a generated file. `sync.sh` will
+not tell you — nothing compares the destination's *contents* against the
+repo — so the release note is the only warning you get.
 
 If your setup is more than one profile — say, a personal `~/.claude` and a
 second profile for a specific client or repo that ships its own
 similarly-named personas and shouldn't get this roster's colliding ones —
 drop a `sync.local.sh` next to `sync.sh`. It's gitignored, sourced before the
-sync runs if present, and sets three things:
+sync runs if present, and sets these:
 
 ```bash
 # sync.local.sh — untracked, not read by anyone else's clone
 DESTS=("$HOME/.claude" "$HOME/.claude-work")
 EXCLUDES=("" "some-persona-name")   # parallel to DESTS; "" means no exclusions
-BACKUP_DIR="$HOME/Downloads/portable-skills-backup"  # optional; omit or leave "" to skip
+CODEX_DEST="$HOME/.codex/agents"    # optional; omit to deploy no codex tomls at all
+CODEX_EXCLUDES=""                   # space-separated skill names, for CODEX_DEST only
 ```
 
-**`BACKUP_DIR` is a mirror, not an additive copy.** It runs
-`rsync -a --delete`, so anything in that directory that this repo doesn't
-ship is deleted on every sync. Give it a directory dedicated to this backup
-and nothing else — never an existing documents, downloads, or cloud-synced
-folder that holds anything you care about. `sync.sh` refuses the three
-targets that would be unrecoverable (`$HOME`, the repo itself, `/`), but it
-cannot detect a directory you merely share with something else.
+**`CODEX_DEST` is a single directory, not a parallel array.** `~/.codex/agents`
+is one global directory with no work/personal split to mirror, so
+`CODEX_EXCLUDES` is a plain space-separated list applying to it alone. Leave
+`CODEX_DEST` unset — the default — and no codex toml is deployed and no
+directory is created, which is right for a machine with no Codex install.
+
+The exclusion means something different on this surface. A `claude-agents`
+shim preloads its same-named skill, so shipping it without the skill produces
+an agent with nothing to be; a codex toml inlines the persona's whole body
+(§ The codex-agents toml surface) and stands alone. Excluding one is a
+preference about the machine, not a consistency requirement.
+
+Codex tomls deploy **unprefixed** — `briar.toml`, not `p-briar.toml` — unlike
+the `claude-agents` shims. The prefix exists to stop collisions with a host
+repo's own agents, and on the Codex surface the repos observed so far
+namespace their own (`thrive-*.toml`). That is their convention holding, not
+a guarantee this repo enforces: a host repo with bare-named codex agents would
+collide, and the fix then is `CODEX_EXCLUDES` or a prefix decided at that
+point. The deploy is per-file with no `--delete`, so a host repo's own
+differently-named agents in that directory survive untouched; one sharing a
+basename with a toml this repo ships is overwritten, which is the collision
+above. What is refused is a *write target* resolving to one of this repo's
+own source directories or to the repo root: `CODEX_DEST` itself, since that
+is where tomls land, and a `DESTS` entry whose `skills/`, `agents/` or
+`output-styles/` subdirectory resolves to `skills/`, `claude-agents/`,
+`output-styles/`, `codex-agents/` or the root — directly or through a symlink
+an earlier sync left behind. The refusal comes before anything is written,
+because the copy is destination-first and would otherwise delete the sources
+it was asked to deploy, or drop untracked copies into the working tree where
+the target is the root. A `DESTS` entry that *is* a source directory aliases
+none of those and is not refused: it writes `skills/skills` and the like, and
+only ever removes copies this script wrote there itself — on this run or an
+earlier one, never a source file or an untracked one.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
-written unprefixed — `winston`, never `p-winston`; the agent shim is matched on
-its stripped name, so the prefixed form matches nothing. It's parallel-array
-rather than an associative array because the
-bash macOS ships (3.2) predates them. An excluded name is skipped for both
-the skill directory and its `claude-agents/*.md` shim together: the agent
-file's `skills:` field preloads the same-named skill, so shipping the shim
-without the skill produces an agent pointing at nothing. `sync.sh` warns on a
-stale exclusion (a listed name with no matching `skills/` dir) so a rename
-doesn't silently start leaking the renamed skill into a profile that meant to
-exclude it.
+written unprefixed — `winston`, never `p-winston`; the agent shim is matched
+on its stripped name, so the prefixed form matches nothing. It's
+parallel-array rather than an associative array because the bash macOS ships
+(3.2) predates them. An excluded name is skipped for both the skill directory
+and its `claude-agents/*.md` shim together: the agent file's `skills:` field
+preloads the same-named skill, so shipping the shim without the skill produces
+an agent pointing at nothing. `sync.sh` warns on a stale exclusion (a listed
+name with no matching `skills/` dir) so a rename doesn't silently start
+leaking the renamed skill into a profile that meant to exclude it;
+`CODEX_EXCLUDES` gets the same warning on its own pass. Both lists are matched
+with globbing off, so a `*` in a name matches literally instead of expanding
+against whatever directory you happened to run from.
 
-`./sync-selftest.sh` covers that logic in nine controls — exclusions, the
-prefix strip, the no-`--delete` guarantee, an empty `DESTS`, and the three
-abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
-redirected there, so it never touches a real profile. Two are paired red
-controls: they break the mechanism under test and assert the check goes red,
-so the control it guards cannot pass by testing nothing.
+`./sync-selftest.sh` covers that logic and reports how many controls it ran
+on the line it exits with, so the count lives in the suite rather than in
+this paragraph — exclusions, the prefix strip, the no-`--delete` guarantee,
+the symlink-clobber guard, the self-target refusal, the stale-exclusion
+warning, a multi-name exclusion list, a stale backup setting, an empty
+`DESTS`, the codex deploy and its unset default, the un-configured defaults
+with no `sync.local.sh` at all, and the other three abort conditions —
+against a fabricated tree in `$TMPDIR` with `HOME` redirected there. That
+last part is asserted rather than assumed: the defaults control matches the
+summary line whole, so a destination outside the fabricated tree fails it.
+Several are paired red controls: they break the mechanism under test and
+assert the check goes red, so the control it guards cannot pass by testing
+nothing.
 `render-claude-agents.py --selftest` applies that discipline to all three of
 its own.
 
