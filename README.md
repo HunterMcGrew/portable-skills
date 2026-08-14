@@ -190,8 +190,8 @@ on the line it exits with, so the count lives in the suite rather than in
 this paragraph — exclusions, the prefix strip, the no-`--delete` guarantee,
 the symlink-clobber guard, the self-target refusal, the stale-exclusion
 warning, a multi-name exclusion list, a stale backup setting, an empty
-`DESTS`, the codex deploy and its unset default, and the four abort
-conditions — against a fabricated tree in `$TMPDIR` with `HOME` redirected
+`DESTS`, the codex deploy and its unset default, the un-configured defaults
+with no `sync.local.sh` at all, and the four abort conditions — against a fabricated tree in `$TMPDIR` with `HOME` redirected
 there, so it never touches a real profile.
 Several are paired red controls: they break the mechanism under test and
 assert the check goes red, so the control it guards cannot pass by testing
