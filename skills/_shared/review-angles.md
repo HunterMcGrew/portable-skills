@@ -153,8 +153,8 @@ of text the counts exist to replace, and a reader who skims nine
 paragraphs of "checked, fine" stops reading the block that carries the
 loop's coverage signal. An angle whose status needs
 explaining does not get a slot to explain it in: neither destination's
-shape admits free text, and § Status vocabulary already requires the
-status to stand on its own.
+shape admits free text, and the status already has to stand on its own
+under § Status vocabulary.
 
 **Status interaction.** The three tokens are unchanged. A `swept` with no
 enumeration is not a fourth status — it is an incomplete report, and a
