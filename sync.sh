@@ -18,7 +18,7 @@ fi
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Defaults: one destination, no exclusions, no backup. This is the whole
+# Defaults: one destination, no exclusions. This is the whole
 # story for most clones — just run the script.
 #
 # A gitignored sync.local.sh next to this file, if present, is sourced below
@@ -26,13 +26,10 @@ SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # EXCLUDES (parallel array — EXCLUDES[i] is a space-separated list of skill/
 # agent names to skip for DESTS[i], "" for none; kept parallel instead of an
 # associative array because the macOS-shipped bash is 3.2, which predates
-# them), and BACKUP_DIR (a mirror of this repo, not an additive copy — see
-# the guard above the rsync at the bottom before pointing it anywhere). Its
-# absence is the normal case, not a degraded one — how you sync is your own
-# affair; see README.md for the override shape and a worked example.
+# them). Its absence is the normal case, not a degraded one — how you sync is
+# your own affair; see README.md for the override shape and a worked example.
 DESTS=("$HOME/.claude")
 EXCLUDES=("")
-BACKUP_DIR=""
 CODEX_DEST=""
 CODEX_EXCLUDES=""
 
@@ -196,25 +193,7 @@ if [ -n "$CODEX_DEST" ]; then
   done
 fi
 
-# BACKUP_DIR is a mirror, not an additive copy: --delete means anything in it
-# that this repo does not ship is removed on every run. Point it at a
-# directory dedicated to this backup and nothing else. The guard below
-# catches the three targets that would be unrecoverable rather than merely
-# surprising; it cannot catch a merely-shared directory, which is why the
-# sentence above matters more than the check.
-if [ -n "$BACKUP_DIR" ]; then
-  backup_norm="${BACKUP_DIR%/}"
-  case "$backup_norm" in
-    "" | "${HOME%/}" | "${SRC%/}")
-      echo "sync.sh: refusing to use '$BACKUP_DIR' as BACKUP_DIR — rsync --delete would prune everything in it that this repo does not ship; use a directory dedicated to the backup" >&2
-      exit 1
-      ;;
-  esac
-  mkdir -p "$BACKUP_DIR"
-  rsync -a --delete "$SRC/" "$BACKUP_DIR/"
-fi
-
 # ${DESTS[*]:-} rather than ${DESTS[*]}: on bash 3.2 an empty array expands to
 # an unbound variable under set -u, which would abort here after every loop had
 # already correctly done nothing.
-echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]:-(none)}${CODEX_DEST:+; codex-agents -> $CODEX_DEST}${BACKUP_DIR:+; full tree -> $BACKUP_DIR}"
+echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]:-(none)}${CODEX_DEST:+; codex-agents -> $CODEX_DEST}"

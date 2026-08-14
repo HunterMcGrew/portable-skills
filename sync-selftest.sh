@@ -125,20 +125,10 @@ run "$src"
 [ "$rc" -ne 0 ] && green=true || green=false
 ok drift-guard "$green" "an unprefixed agent file synced with exclusions live (rc=$rc)"
 
-# 7. Backup guard: a BACKUP_DIR that is not a dedicated directory must abort
-# before rsync --delete runs. HOME is the fake one, so a broken guard prunes
-# scratch rather than a home directory.
-scaffold backup
-mkdir -p "$work/fakehome"
-echo precious >"$work/fakehome/unrelated-file"
-cat >>"$src/sync.local.sh" <<EOF
-BACKUP_DIR="$work/fakehome"
-EOF
-run "$src"
-green=true
-[ "$rc" -ne 0 ] || green=false
-[ -e "$work/fakehome/unrelated-file" ] || green=false
-ok backup-guard "$green" "BACKUP_DIR=\$HOME was accepted, or rsync --delete ran (rc=$rc)"
+# (7 was the BACKUP_DIR guard. BACKUP_DIR was removed rather than repaired —
+# its guard accepted 23 of 28 spellings, and the feature mirrored a repo git
+# already backs up. The numbering keeps its gap so the cross-references below
+# still name the controls they mean.)
 
 # 8. An empty DESTS is a clean no-op, not a crash. Every array expansion the
 # script performs has to be the index form or :--guarded, because on bash 3.2
@@ -382,7 +372,7 @@ grep -q "codex-agents ->" "$work/out" && green=false
 ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a directory (rc=$rc)"
 
 if [ "$fails" -eq 0 ]; then
-  echo "selftest: 18 controls green"
+  echo "selftest: 17 controls green"
 else
   echo "selftest: $fails control(s) failed" >&2
   exit 1

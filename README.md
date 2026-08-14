@@ -100,8 +100,8 @@ in **no** repo's tree.
 `sync.sh` in the repo root does what the manual `cp -R` above does, plus the
 agent shims and output styles, minus the parts you'd have to remember: run it
 with no setup and it copies `skills/`, `claude-agents/`, and `output-styles/`
-into `~/.claude`. That's the whole story for one profile — no exclusions, no
-backup, nothing to configure.
+into `~/.claude`. That's the whole story for one profile — no exclusions,
+nothing to configure.
 
 `sync.sh` takes no arguments — there is no `--check`/`--dry-run` mode, only
 the real deploy. Any argument exits 2 with a usage line before anything is
@@ -139,18 +139,9 @@ sync runs if present, and sets these:
 # sync.local.sh — untracked, not read by anyone else's clone
 DESTS=("$HOME/.claude" "$HOME/.claude-work")
 EXCLUDES=("" "some-persona-name")   # parallel to DESTS; "" means no exclusions
-BACKUP_DIR="$HOME/Downloads/portable-skills-backup"  # optional; omit or leave "" to skip
 CODEX_DEST="$HOME/.codex/agents"    # optional; omit to deploy no codex tomls at all
 CODEX_EXCLUDES=""                   # space-separated skill names, for CODEX_DEST only
 ```
-
-**`BACKUP_DIR` is a mirror, not an additive copy.** It runs
-`rsync -a --delete`, so anything in that directory that this repo doesn't
-ship is deleted on every sync. Give it a directory dedicated to this backup
-and nothing else — never an existing documents, downloads, or cloud-synced
-folder that holds anything you care about. `sync.sh` refuses the three
-targets that would be unrecoverable (`$HOME`, the repo itself, `/`), but it
-cannot detect a directory you merely share with something else.
 
 **`CODEX_DEST` is a single directory, not a parallel array.** `~/.codex/agents`
 is one global directory with no work/personal split to mirror, so
@@ -185,7 +176,7 @@ stale exclusion (a listed name with no matching `skills/` dir) so a rename
 doesn't silently start leaking the renamed skill into a profile that meant to
 exclude it.
 
-`./sync-selftest.sh` covers that logic in eighteen controls — exclusions, the
+`./sync-selftest.sh` covers that logic in seventeen controls — exclusions, the
 prefix strip, the no-`--delete` guarantee, an empty `DESTS`, the codex deploy
 and its unset default, and the three abort conditions — against a fabricated tree in `$TMPDIR` with `HOME`
 redirected there, so it never touches a real profile. Several are paired red
