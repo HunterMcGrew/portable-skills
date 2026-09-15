@@ -37,7 +37,7 @@ The six questions every retro answers, per item, from whichever evidence source 
 5. Did we do anything wrong? What could we do better?
 6. Are the tests passing? (retro reading: what did the CI record show — red cycles, late catches, cost)
 
-**Two-source rule:** plan sections carry **intent** (what was decided, what was supposed to happen); the execution record — merged diffs, PR review threads, CI conclusions — carries **outcome** (what actually happened). Every charter item is answered from whichever source can answer it. Items 4/5 (standards adherence, "did we do anything wrong") draw on both: `## Review Issues` (a `/code-review` self-review, a plan-borne intent-side source) alongside PR-thread findings (eric's review, execution-record). An item that can't be answered from any reached source is reported as unanswered — never papered over.
+**Two-source rule:** plan sections carry **intent** (what was decided, what was supposed to happen); the execution record — merged diffs, PR review threads, CI conclusions — carries **outcome** (what actually happened). Every charter item is answered from whichever source can answer it. Items 4/5 (standards adherence, "did we do anything wrong") draw on both: `## Review Issues` (a `/review-changes` self-review, a plan-borne intent-side source) alongside PR-thread findings (eric's review, execution-record). An item that can't be answered from any reached source is reported as unanswered — never papered over.
 
 ## Two grains
 
@@ -131,7 +131,7 @@ Gap values: `not available in this repo` (source doesn't exist here), `unreachab
 
 1. Mine `## History` summaries for persona-attribution language ("eric flagged", "reese verified", "eli documented").
 2. Mine `## Implementation Tasks` persona headings — a persona heading with at least one task counts as a voice that touched the work.
-3. Mine `## Debugged Issues` (implies the debugger) and `## Review Issues` (implies `/code-review` or eric) for owner attribution.
+3. Mine `## Debugged Issues` (implies the debugger) and `## Review Issues` (implies `/review-changes` or eric) for owner attribution.
 4. Dedupe into a voices list: persona, short role descriptor, count of evidence entries attributed.
 5. Skip personas with zero evidence — scripting in absentees is fiction.
 

@@ -38,7 +38,7 @@ Save one report per ticket to `<plans>/qa/ac-verification-<ticket-id>.md`:
 
 ### After saving
 
-Append one line to the plan's `## History`: date, report path, and the MET/UNMET/UNGRADEABLE counts. The plan is the content bus — eric, code-review, and iris discover the report through this pointer; `<plans>/qa/` is invisible to them otherwise.
+Append one line to the plan's `## History`: date, report path, and the MET/UNMET/UNGRADEABLE counts. The plan is the content bus — eric, review-changes, and iris discover the report through this pointer; `<plans>/qa/` is invisible to them otherwise.
 
 ### The report-back verdict (dispatched)
 

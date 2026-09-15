@@ -94,7 +94,7 @@ The extension test runs here in batch A; the classification is **finalized after
 **Pin the review range.** Resolve two shas and freeze them for the run. If the PR's base or head can't be resolved automatically — an ambiguous or missing `baseRefName`, no PR found for the branch — ask the user for the fixed point to pin against rather than guessing.
 
 - `<head>` = `loopBase` when the invocation names one, otherwise the PR's live head — rev-parsed to a full sha.
-- `<base>` = `git merge-base origin/<baseRefName> <head>`, rev-parsed to a full sha. The base branch is always `origin/<baseRefName>` — the field batch A just fetched and, until now, never used; **never hardcode the repo's default branch as the base**, or a PR stacked on an epic gets the wrong file list. **Take the merge-base, never the base branch's tip.** `origin/<baseRefName>..<head>` is a two-dot diff between two tips, so every commit the base branch gained since the fork shows up as a reverse-deletion of files the PR never touched; `gh pr diff` — the command being replaced here — already used merge-base semantics, and dropping to a two-dot tip range would swap a wrong-head bug for a wrong-base one. `git merge-base` first, then `<base>..<head>`, mirrors how `code-review` finds the diff for a branch.
+- `<base>` = `git merge-base origin/<baseRefName> <head>`, rev-parsed to a full sha. The base branch is always `origin/<baseRefName>` — the field batch A just fetched and, until now, never used; **never hardcode the repo's default branch as the base**, or a PR stacked on an epic gets the wrong file list. **Take the merge-base, never the base branch's tip.** `origin/<baseRefName>..<head>` is a two-dot diff between two tips, so every commit the base branch gained since the fork shows up as a reverse-deletion of files the PR never touched; `gh pr diff` — the command being replaced here — already used merge-base semantics, and dropping to a two-dot tip range would swap a wrong-head bug for a wrong-base one. `git merge-base` first, then `<base>..<head>`, mirrors how `review-changes` finds the diff for a branch.
 
 This is a bug fix, not an enhancement: eric's own § Inside a review loop already promises to review `merge-base..loopBase`, but every command that actually fetches content — the name-only list above, the full diff and source reads in batch C, and `headRefOid` in batch B — resolves the PR's *live* head regardless of that promise. Inside a loop, after a fix commit, HEAD has advanced past `loopBase`; an unpinned eric reviews repairs he was explicitly told not to review and anchors inline comments outside the range he claims to be reviewing. **When `loopBase` is named**, replace the name-only list above with `git diff <base>..<head> --name-only`.
 
@@ -109,7 +109,7 @@ This is a bug fix, not an enhancement: eric's own § Inside a review loop alread
   ```
 - **Existing summary comment check** — so you know whether to create or update:
   ```
-  gh api repos/<owner>/<repo>/issues/<pr-number>/comments --jq '.[] | select(.body | contains("<!-- code-review-pr-summary -->")) | .id'
+  gh api repos/<owner>/<repo>/issues/<pr-number>/comments --jq '.[] | select(.body | contains("<!-- review-changes-pr-summary -->")) | .id'
   ```
 - **Commit SHA** for inline comments: `gh pr view <pr-number> --json headRefOid --jq '.headRefOid'` — or, when `loopBase` is named, use `loopBase` itself as the commit id; it is already a full sha, and it is the revision eric is reviewing. `commit_id` is the commit a comment's `line`/`side` position resolves against, and it is the record of which revision the comment was written against. Per GitHub's documentation for `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments`, a `commit_id` that is not the latest sha **may render the comment outdated** if a later commit modified the line being pointed at. So passing `loopBase` keeps the record honest and the position resolved against the reviewed revision — it does **not** control whether GitHub displays the comment where eric meant it. What eric guarantees is that the file, the line, and the quoted content all come from the pinned diff; GitHub's rendering is not his to guarantee.
 
@@ -213,7 +213,7 @@ Every thread reply, resolve mutation, inline comment, label, and the summary com
     -f path="path/to/file.ts" -F line=42 -f side="RIGHT"
   ```
   The `line` must fall within a diff hunk. Two cases route to the same remedy: the API rejects the post (a 422 — the line isn't in a hunk), or the pinned content at the target line differs from the live content, so the comment would land against text eric did not read. In both, move that observation to the summary comment instead of retrying, quoting the file, the line, and the **pinned** content verbatim. **Never re-post at the live head to make the call succeed** — that anchors a comment against text the pinned range never reviewed, which is the exact defect the pin exists to prevent. When one root cause shows up at more than one line, the additional inline comments are pointers back to the single finding ("same root cause as the comment above/below") — never independent findings with their own severity (`_shared/review-angles.md` § Finding anatomy).
-- **Create or update the single summary comment** — write the body to a temp file with a bash heredoc (`cat > /tmp/pr-review-summary.md << 'EOF' ... EOF`), then PATCH the existing comment (id from batch B) or POST a new one. The `<!-- code-review-pr-summary -->` marker must be the literal first line — the re-run check greps for it; dropping it creates a duplicate. Never prepend a greeting or heading above the marker; Eric's greeting is chat-only. Exactly one summary comment per PR.
+- **Create or update the single summary comment** — write the body to a temp file with a bash heredoc (`cat > /tmp/pr-review-summary.md << 'EOF' ... EOF`), then PATCH the existing comment (id from batch B) or POST a new one. The `<!-- review-changes-pr-summary -->` marker must be the literal first line — the re-run check greps for it; dropping it creates a duplicate. Never prepend a greeting or heading above the marker; Eric's greeting is chat-only. Exactly one summary comment per PR.
 - **Apply labels + ready-flip** — REST POST (GraphQL label edits fail on Projects Classic repos):
   ```bash
   gh api repos/<owner>/<repo>/issues/<pr-number>/labels -X POST --input - <<EOF
@@ -230,7 +230,7 @@ Every thread reply, resolve mutation, inline comment, label, and the summary com
 The two-axis structure is load-bearing: findings under `### Standards findings` and `### Spec findings` stay in their axes — never re-ranked or merged across axes. The composed comment body:
 
 ```markdown
-<!-- code-review-pr-summary -->
+<!-- review-changes-pr-summary -->
 
 ## Summary
 One paragraph: what this branch does and readiness. On a clean re-review, state how many prior threads were resolved.
@@ -299,7 +299,7 @@ subject surface (`merge-base..loopBase`) at the full bar every pass, and the
 repair surface (`loopBase..HEAD`) as regression-only — findings there must
 name one of review-loop's four admissibility anchors (its § Admissibility on
 the repair surface is already in context). The subject range never advances
-mid-run, not even across the code-review → eric boundary.
+mid-run, not even across the review-changes → eric boundary.
 
 ## Close bullet — edge recall
 

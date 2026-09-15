@@ -28,10 +28,10 @@ never sends outreach), tess (data/metrics), remy (customer success),
 penny (recruiting), lex (legal — never legal advice).
 
 **Utilities (no persona):** handoff (compact a session into a resumable
-document), review-loop (self-review via `/code-review`, then the eric
+document), review-loop (self-review via `/review-changes`, then the eric
 gauntlet), devils-advocate (red-teams a finished plan, PRD, strategy, model,
-or diagnosis and hands back findings — never edits the artifact), code-review
-(plain self-review pass, no persona, invoked as `/code-review`).
+or diagnosis and hands back findings — never edits the artifact), review-changes
+(plain self-review pass, no persona, invoked as `/review-changes`).
 
 devils-advocate has no name or voice on purpose: a character with a
 personality is tempted to *perform* skepticism, and performance is the failure

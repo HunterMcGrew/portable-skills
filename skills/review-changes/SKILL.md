@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: review-changes
 description: >
   Reviews a diff against its spec and the codebase's own rules, and returns
   findings classified by kind (bug, security risk, standards violation,

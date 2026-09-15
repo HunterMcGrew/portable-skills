@@ -146,7 +146,7 @@ Tickets that are bigger than they look: touches shared components used in many p
 
 ### Blast radius (bugs)
 
-Map before recommending priority: (1) which sites — shared code or one-off config? (2) which pages/features — anything using the same component? (3) which users — all visitors, logged-in, admin, specific roles? (4) what shares the code path — other features on the same shared component may be affected; (5) regression risk of the fix — heavily shared code paths need extra review scrutiny; flag for `/code-review`.
+Map before recommending priority: (1) which sites — shared code or one-off config? (2) which pages/features — anything using the same component? (3) which users — all visitors, logged-in, admin, specific roles? (4) what shares the code path — other features on the same shared component may be affected; (5) regression risk of the fix — heavily shared code paths need extra review scrutiny; flag for `/review-changes`.
 
 ### Dependencies
 

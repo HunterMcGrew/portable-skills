@@ -1,6 +1,6 @@
 # Review angles
 
-Read by code-review and eric only — an opt-in fragment, not core content. A review
+Read by review-changes and eric only — an opt-in fragment, not core content. A review
 pass with no coverage obligation ends when the reviewer runs out of ideas,
 not out of check space — that's how a diff gets four passes on one defect
 class and zero on the other eight. This fragment is the check space: nine
@@ -43,7 +43,7 @@ reported with a status.
 
 ## Axis split
 
-code-review and eric both split their review into two parallel, context-isolated
+review-changes and eric both split their review into two parallel, context-isolated
 axes — Standards and Spec — and never merge findings across them. This
 section is the single owner of which angle runs on which axis; both
 personas cite it rather than restating the assignment.
@@ -136,12 +136,12 @@ result; a *missing* enumeration is not.
 - **Accessibility** — each interactive or focusable element the diff adds
   or changes.
 
-**Where it goes.** To the reviewer's off-chat surface — code-review's
+**Where it goes.** To the reviewer's off-chat surface — review-changes's
 `### Angle Coverage` block, eric's summary-comment `## Angle Coverage`
 section. Refer to either by its surface rather than its heading level: one
-string named code-review's block and its chat section, so a consumer keyed to
+string named review-changes's block and its chat section, so a consumer keyed to
 the level alone could not tell them apart, and that level is not eric's at
-all. code-review's chat section has since dropped its heading; the rule does not
+all. review-changes's chat section has since dropped its heading; the rule does not
 rest on that, because restoring it would reintroduce the collision. A `swept`
 angle carries its enumeration there. One angle is given no unit by
 § Enumeration. It carries `verdict-only` in that slot — the enumeration slot

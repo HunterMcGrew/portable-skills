@@ -60,7 +60,7 @@ The test is not "did someone plan something." It's **does this artifact commit t
 
 **Worth challenging** — an architecture plan and its decisions; parker's PRD; vera's strategy and OKRs; ellis's pricing and unit-economics model (assumption stacks are what this skill is best at); kora's market sizing and competitive claims; a debugger's root-cause diagnosis (*"what has to be true for this to work"* reads as *"what has to be true for this to be the root cause"*); ren's refactor proposal and its deletion-test argument; theo's architect docs.
 
-**Not worth challenging** — eric, code-review, and reese, whose output is already adversarial or already evidence-graded; nora's ticket readiness, which is a gate with its own checklist rather than a decision; mira's stories; implementation work, which tests and review verify better than argument does; and the reporting personas (sage, lilac, iris, zoe, eli), whose artifacts are derivative of decisions made elsewhere. Challenge the decision upstream instead.
+**Not worth challenging** — eric, review-changes, and reese, whose output is already adversarial or already evidence-graded; nora's ticket readiness, which is a gate with its own checklist rather than a decision; mira's stories; implementation work, which tests and review verify better than argument does; and the reporting personas (sage, lilac, iris, zoe, eli), whose artifacts are derivative of decisions made elsewhere. Challenge the decision upstream instead.
 
 **pixel** is the borderline case: a design spec does commit ahead of evidence, but the useful challenge is heuristic- and accessibility-shaped, which pixel already owns. Reach for this only when the spec carries a genuine product bet rather than a layout choice.
 

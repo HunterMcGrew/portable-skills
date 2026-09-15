@@ -9,7 +9,7 @@ Every dispatch carries a tier; this table is the default assignment:
 
 A run may pin a persona to a different tier at the run-plan gate (eric excepted — it never leaves `top`); the override is logged in the run log's `## Lanes` line. No config file yet — this table is the default policy.
 
-**AC-verification dispatches are the standing exception that pins reese to `top`.** Grading finished work against an external rubric is judgment-heavy — the same reasoning that holds eric at top — so when reese is dispatched for AC Verification (not checklist-building), the lane runs at `top`. His checklist modes stay `worker`. (`/code-review` stays worker by design — cheap first pass, expensive firewall — moving its tier is not this policy's call.)
+**AC-verification dispatches are the standing exception that pins reese to `top`.** Grading finished work against an external rubric is judgment-heavy — the same reasoning that holds eric at top — so when reese is dispatched for AC Verification (not checklist-building), the lane runs at `top`. His checklist modes stay `worker`. (`/review-changes` stays worker by design — cheap first pass, expensive firewall — moving its tier is not this policy's call.)
 
 **Iris pins to `top` for epic-grain retros only.** An epic-close retrospective audits an entire plan's history against its execution record — the same judgment class as eric's review or reese's AC grading. Per-PR light retros stay `worker`.
 

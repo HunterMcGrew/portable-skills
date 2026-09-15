@@ -2,7 +2,7 @@
 name: review-loop
 description: >
   Orchestrate the review gauntlet on a PR — a self-review loop (via
-  `/code-review`) with fixes until a zero-findings pass, then PR review the
+  `/review-changes`) with fixes until a zero-findings pass, then PR review the
   same way; cleaner-path findings route by certainty (clear-cut → implement,
   uncertain → pause for user). Pass budget, three-strike survival rule
   with mandatory diagnosis, scoreboard TLDR; PR stays draft. Explicit
@@ -13,7 +13,7 @@ argument-hint: "[PR number or branch — e.g. '#76' or 'current branch']"
 
 Orchestrate the full review gauntlet on the target PR. This is a utility, not a
 persona — no greeting, no character; it runs in the current conversation's
-voice. It sequences `/code-review` and eric for review passes, and fixes land
+voice. It sequences `/review-changes` and eric for review passes, and fixes land
 directly in this conversation — it never reviews or writes findings itself.
 The reviewers keep their own plan hygiene (`## Review Issues` entries,
 `## History` appends, the orientation battery) exactly as if invoked by hand.
@@ -28,7 +28,7 @@ belongs to the personas this utility invokes, not to the utility itself.
 ## Lifecycle
 
 1. Resolve the target — PR (or branch), plan file, repo map.
-2. **Self-review loop (`/code-review`)** — self-review → fix in this
+2. **Self-review loop (`/review-changes`)** — self-review → fix in this
    conversation → re-review, until the phase converges (two consecutive
    clean passes — see § The review base).
 3. **eric loop** — PR review → fix in this conversation → re-review, until
@@ -41,7 +41,7 @@ belongs to the personas this utility invokes, not to the utility itself.
   PR yet? The self-review loop can start on the branch; the PR ships before
   the eric loop (authors ship — see the shared core's house rules).
 - Resolve the repo map per the shared core; find or create the plan file at
-  `<plans>/<ticket-id>.md`. The plan is the content bus: `/code-review` writes
+  `<plans>/<ticket-id>.md`. The plan is the content bus: `/review-changes` writes
   `## Review Issues`, and fixes land there directly.
 - Verification commands (type-check, tests, build) come from the repo map's
   `verification` role — the personas run them; the loop just confirms the
@@ -76,7 +76,7 @@ un-freezing. `loopBase` travels in `## Gauntlet state` (see Guardrails).
 | **Ledger**  | the plan's `## Review Issues` and `## History`, plus the repo's lessons file (per the repo map; no `lessons` role → just those two plan sections) | Not a review target during the loop. |
 | **Meta**    | prose *about* the work: PR title/body/labels, readiness lines, plan hygiene | One batch after the subject converges — see `## Meta findings`. Never loop fuel. |
 
-The ledger is the loop's own bookkeeping: code-review and eric write it as they go,
+The ledger is the loop's own bookkeeping: review-changes and eric write it as they go,
 so reviewing it mid-run is the loop grading its own notes, and each grading
 pass writes more ledger for the next pass to grade. It re-enters review
 normally on a future run, once it is part of someone else's subject surface.
@@ -115,15 +115,15 @@ confirms the first was not an accident of timing.
 
 **The coverage gate.** Every angle in the reviewer's angle-sweep
 applicability map must read `swept` or `n/a — <reason>` in that reviewer's
-off-chat Angle Coverage block — code-review's, in the plan; eric's, in the
+off-chat Angle Coverage block — review-changes's, in the plan; eric's, in the
 summary comment — before a pass counts toward the two-clean-pass exit. The
 block is identified by surface, never by heading level: one `### Angle
-Coverage` string named both code-review's plan block and its chat section,
+Coverage` string named both review-changes's plan block and its chat section,
 and eric's summary comment carries `## Angle Coverage`, so a gate keyed to
-the level finds nothing on the eric phase and could not tell code-review's
-two apart. code-review's chat section has since dropped its heading level;
+the level finds nothing on the eric phase and could not tell review-changes's
+two apart. review-changes's chat section has since dropped its heading level;
 the rule does not rest on that, because restoring the heading would
-reintroduce the collision and eric's `##` against code-review's `###` is
+reintroduce the collision and eric's `##` against review-changes's `###` is
 live regardless.
 
 A `not reached — <reason>` angle means that pass is not clean — it
@@ -134,7 +134,7 @@ converge until that angle later reads `swept` or `n/a`.
 **The enumeration refinement.** `swept` on its own is not enough for this
 gate — `_shared/review-angles.md` § Enumeration requires a `swept` angle to
 carry its enumeration. Read it on the off-chat surface named by that
-fragment's § Where it goes — code-review's plan block, eric's summary comment.
+fragment's § Where it goes — review-changes's plan block, eric's summary comment.
 Never on the chat line, which carries counts in place of the enumeration by
 construction and would therefore read as bounded on every angle at once. A
 `swept` with no enumeration there is read as bounded for this predicate, the
@@ -185,7 +185,7 @@ subject-surface findings count toward, or reset, the two-clean-pass exit.
 ## How personas are invoked
 
 A review loop is inherently serial — each pass depends on the last — so
-invoke each reviewer in-conversation for each iteration: `/code-review` for
+invoke each reviewer in-conversation for each iteration: `/review-changes` for
 a self-review pass, eric for a PR review pass. Fixes are applied directly in
 this conversation between passes. Let each reviewer run its full startup and
 rules, then resume orchestration when it finishes. Don't spawn parallel lanes
@@ -198,12 +198,12 @@ shared core's dispatch idiom — never a question into the void.
 
 ## The ladder
 
-1. **Self-review loop (`/code-review`).** Run `/code-review` on the branch.
+1. **Self-review loop (`/review-changes`).** Run `/review-changes` on the branch.
    Every finding, any severity (critical, major, minor, nit, cleanup), gets
    fixed directly in this conversation — review-fix commits stay separate
    commits, never amends, so the reviewer can diff what changed since its
-   last pass. Re-run `/code-review`. Repeat until the phase converges per
-   § The review base. Name `loopBase` in every `/code-review` invocation so
+   last pass. Re-run `/review-changes`. Repeat until the phase converges per
+   § The review base. Name `loopBase` in every `/review-changes` invocation so
    it reviews against the frozen base.
 2. **eric loop (PR review).** Same shape on the PR: eric reviews and posts
    findings, fixes land directly in this conversation, eric re-reviews. Eric
@@ -238,7 +238,7 @@ one batch, after the subject (code or AC) has already converged, not
 interleaved with review/fix passes. Route them the same way as any other
 finding — fixed directly in this conversation, the reviewer confirms — but track them on their own
 line in the scoreboard so a prose-only cleanup pass doesn't read as another
-code-review strike.
+review-changes strike.
 
 Only subject-surface findings count toward — or reset — the
 two-consecutive-clean-pass exit. The meta batch runs after that exit and
