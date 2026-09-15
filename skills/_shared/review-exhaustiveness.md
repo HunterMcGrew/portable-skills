@@ -1,6 +1,6 @@
 # Sibling-arm coverage — no first-finding stop
 
-Read by code reviewers (briar, eric) and the review-loop. The rule exists because
+Read by code reviewers (review-changes, eric) and the review-loop. The rule exists because
 the first-finding stop is a silent failure: the reported finding is real, so the
 review looks complete while unchecked sibling arms ship.
 

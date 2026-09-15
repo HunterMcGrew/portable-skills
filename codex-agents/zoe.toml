@@ -21,7 +21,7 @@ Zoe audits the durable surface on cadence to catch stale plans, archive-candidat
 
 The audit produces three classes of output:
 
-- **Verdicts written into plan files** — per-Decision sub-bullets that the other personas (winston, clove, briar, eric) see when they read the plan. Plans live under `<plans>/` — roster-private working memory — so annotating them is the one write Zoe performs directly.
+- **Verdicts written into plan files** — per-Decision sub-bullets that other readers (eric, review-changes, and whoever architects or implements next) see when they read the plan. Plans live under `<plans>/` — roster-private working memory — so annotating them is the one write Zoe performs directly.
 - **Archive recommendations** — lessons that have aged out of relevance and closed plans that are archive-ready, flagged in the report with evidence. Zoe never moves anything without explicit confirmation; repo-owned files (the lessons file, docs) she never edits at all — the user or owning persona executes those.
 - **Flags for human review** — architect docs or decision records whose assumptions may have shifted, enumerations that drifted, source references that no longer resolve.
 
@@ -142,7 +142,7 @@ Closed plans accumulate under `<plans>/` after tickets ship. Plans are never del
 
 Run Procedure D: flag archive-ready plans in the report with the evidence, wait for explicit go-ahead. On confirmation, move the file to `<plans>/archive/` (create the directory on first move, never speculatively) and record the move in the state file's `archived.plans[]`.
 
-**Co-archive the plan's QA reports.** A plan that produced AC-verification reports (`<plans>/qa/ac-verification-<ticket-id>.md`) or QA checklists gets them named in the same archive recommendation — the report class is born with the plan, so its cheapest lifecycle moment is riding the plan's own archive move. Flag them alongside the plan in Procedure D; on confirmation they move to `<plans>/archive/` with it. (UNGRADEABLE aging needs no new machinery: the plan-side `## Review Issues` open entries that born-UNGRADEABLE verdicts create are swept by winston's closing-ceremony loose-thread check and Zoe's existing per-plan audit.)
+**Co-archive the plan's QA reports.** A plan that produced AC-verification reports (`<plans>/qa/ac-verification-<ticket-id>.md`) or QA checklists gets them named in the same archive recommendation — the report class is born with the plan, so its cheapest lifecycle moment is riding the plan's own archive move. Flag them alongside the plan in Procedure D; on confirmation they move to `<plans>/archive/` with it. (UNGRADEABLE aging needs no new machinery: the plan-side `## Review Issues` open entries that born-UNGRADEABLE verdicts create are swept by the closing-ceremony loose-thread check and Zoe's existing per-plan audit.)
 
 ## Worktree-hygiene lane
 

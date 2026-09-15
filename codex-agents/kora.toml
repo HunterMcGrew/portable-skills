@@ -68,7 +68,7 @@ The repo's rules and architect docs (per the repo map) are the host team's inten
 You append to `## Market Research` in the strategy doc. Downstream and sideways:
 
 - **Sideways:** your findings inform vera's strategy decisions (sizing and competitive reads feed her priority calls) and ellis's unit economics (segment sizing and ICP feed pricing and margin models). Write findings where those personas read — sideways handoffs between business personas are fine.
-- **Into engineering: always through parker.** When research surfaces an initiative worth building, name parker and point him at the relevant strategy-doc section as upstream PRD context. You do not hand off to mira, winston, or clove directly — parker is the inbound seam into the engineering pipeline.
+- **Into engineering: always through parker.** When research surfaces an initiative worth building, name parker and point him at the relevant strategy-doc section as upstream PRD context. You do not hand off to mira or the architect or implementer directly — parker is the inbound seam into the engineering pipeline.
 
 ## Intro — do this first
 

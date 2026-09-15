@@ -36,7 +36,7 @@ MARK_HR = "\n\n---\n"        # separator the toml assembler inserts before MARK
 # would need maintaining, and the cost is one short reference.
 
 # Any other _shared/<name>.md a persona's own SKILL.md text points at (e.g.
-# worktree-safety.md, read on demand by zoe/eric/sol/clove) is inlined only
+# worktree-safety.md, read on demand by zoe/eric/sol) is inlined only
 # for the personas that cite it — unlike verification.md, this content is
 # relevant to a handful of personas, not all 27, so blanket inlining would
 # bloat every other toml with a pointer it never follows. A codex agent has
@@ -365,13 +365,13 @@ def _resolves(citation, targets):
     `CITATION_RE` deliberately over-captures — it has no way to know where
     a heading name actually ends, so it runs until the next hard delimiter
     (`)`, a comma, a sentence end, `Z`), which is frequently past the real
-    target when the citation is followed by unpunctuated prose. `§ Phase 1
-    already does` and `§ Decompose chains (winston -> ... -> park at merge`
-    are both live examples:
-    stale-reference: "briar's § Phase 1 already does" @ skills/eric/SKILL.md
-    stale-reference: "§ Decompose chains (winston" @ skills/sol/references/fleet-runs.md
+    target when the citation is followed by unpunctuated prose. `§ Enumeration
+    alongside its findings` and `§ Decompose chains (plan/implement routed to
+    the human -> ... -> park at merge` are both live examples:
+    stale-reference: "§ Enumeration alongside its findings" @ skills/eric/SKILL.md
+    stale-reference: "§ Decompose chains (plan/implement" @ skills/sol/references/fleet-runs.md
     neither the raw capture nor its target is a prefix of the other, but
-    dropping the trailing words one at a time reaches `Phase 1` and
+    dropping the trailing words one at a time reaches `Enumeration` and
     `Decompose`, both of which resolve cleanly. Truncating is safe in this
     direction only — a heading name is never split across an earlier stop
     point than the real one, since `_resolves_exact` already tries citation-
@@ -437,13 +437,13 @@ def _iter_citation_sites(root=ROOT):
     core_targets = targets_by_path.get(core_path, set())
 
     # Persona (and utility-skill) directory names. Read by name only: a
-    # mention of "review-loop's § Admissibility…" or "briar's § Phase 1…"
-    # cites a DIFFERENT persona's own SKILL.md heading directly, the
-    # identical pattern `_shared/*.md` and `references/*.md` mentions cover
-    # one directory over — verified live, so it is a real repo convention,
-    # not a hypothetical:
+    # mention of "review-loop's four admissibility anchors (its §
+    # Admissibility…" cites a DIFFERENT persona's own SKILL.md heading
+    # directly, the identical pattern `_shared/*.md` and `references/*.md`
+    # mentions cover one directory over — verified live, so it is a real
+    # repo convention, not a hypothetical:
     # stale-reference: "its § Admissibility on" @ skills/eric/SKILL.md
-    # stale-reference: "review-loop's § Admissibility on the repair surface" @ skills/briar/SKILL.md
+    # stale-reference: "review-loop's four admissibility anchors" @ skills/eric/SKILL.md
     persona_dirs = sorted(os.path.basename(os.path.dirname(f))
                            for f in glob.glob(root + '/skills/*/SKILL.md'))
     persona_name_re = {
@@ -1238,8 +1238,8 @@ def _build_controls(r):
     #
     # This control's arm is 'reference', not 'body' — render() puts the
     # body first, so the `[:-500]` tail truncation only ever reaches the
-    # LAST inlined section, which for personas()[0] (briar) is
-    # references/smell-baseline.md. A control shaped like this cannot reach
+    # LAST inlined section, which for personas()[0] is its last
+    # references/*.md file (or the body, for a persona with none). A control shaped like this cannot reach
     # 'body' or 'shared-fragment' no matter how it's tuned; W2-T39 adds
     # those as their own rows.
     p = personas(r)[0]
@@ -1342,7 +1342,7 @@ def _build_controls(r):
     # citation-orphaned/never-reverse (G5, W2-T39): rebuilt on a synthetic
     # fixture, not the real tree. Against the real tree this passed
     # vacuously (AC-50) — `### Accessibility Review` is still a live
-    # heading at briar's own SKILL.md, so the suppression path
+    # heading at the reviewer persona's own SKILL.md, so the suppression path
     # (`_resolves_forward(cite, targets - {t})`) forgives the citation
     # whichever direction the hit test uses, and the control's fired/
     # not-fired outcome was identical under correct code and under the
@@ -1473,11 +1473,16 @@ def _build_controls(r):
     # commit), so the diff is empty and nothing is ever "removed". A
     # feature branch mirrors what a real PR looks like.
     _git(['checkout', '-q', '-b', 'work'])
-    briar_path = os.path.join(co_root, 'skills', 'briar', 'SKILL.md')
-    content = open(briar_path, encoding='utf-8').read()
-    mutated = content.replace('### Accessibility Review\n', '', 1)
+    # The deleted heading must be one a citation names EXACTLY — the hit
+    # rule is target-starts-with-citation, so an over-captured citation
+    # (`§ Missing spec handling resolves to its …`) can never fire it.
+    # sol's `### Deterministic verification` is cited as itself, and no
+    # `_shared/*.md` file carries a target of that name to suppress with.
+    sol_path = os.path.join(co_root, 'skills', 'sol', 'SKILL.md')
+    content = open(sol_path, encoding='utf-8').read()
+    mutated = content.replace('### Deterministic verification\n', '', 1)
     co_ok_setup = mutated != content
-    open(briar_path, 'w', encoding='utf-8').write(mutated)
+    open(sol_path, 'w', encoding='utf-8').write(mutated)
     _git(['add', '-A'])
     _git(['commit', '-q', '-m', 'delete a heading'])
     co_violations = check_all(co_root)[0]
