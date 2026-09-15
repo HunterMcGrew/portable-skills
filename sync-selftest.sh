@@ -31,7 +31,7 @@ controls=0
 # clove goes everywhere, winston is excluded from the second destination.
 scaffold() {
   src="$work/$1"
-  mkdir -p "$src"/{skills/winston,skills/clove,claude-agents,output-styles,codex-agents}
+  mkdir -p "$src"/{skills/winston,skills/clove,claude-agents,output-styles,codex-agents,hooks}
   echo skill >"$src/skills/winston/SKILL.md"
   echo skill >"$src/skills/clove/SKILL.md"
   echo 'name: p-winston' >"$src/claude-agents/p-winston.md"
@@ -40,6 +40,12 @@ scaffold() {
   echo style >"$src/output-styles/winston.md"
   echo 'name = "winston"' >"$src/codex-agents/winston.toml"
   echo 'name = "clove"' >"$src/codex-agents/clove.toml"
+  # One hook plus the two files that must stay behind. Executable, so the
+  # baseline can see whether the copy kept the bit a shell hook needs.
+  echo hook >"$src/hooks/architect-enforce.mjs"
+  chmod +x "$src/hooks/architect-enforce.mjs"
+  echo test >"$src/hooks/architect-enforce.test.mjs"
+  echo readme >"$src/hooks/README.md"
   cp "$REPO/sync.sh" "$src/sync.sh"
   chmod +x "$src/sync.sh"
   cat >"$src/sync.local.sh" <<EOF
@@ -73,11 +79,16 @@ scaffold baseline
 run "$src"
 green=true
 for p in skills/winston skills/clove agents/p-winston.md agents/p-clove.md \
-  output-styles/scannable.md; do
+  output-styles/scannable.md hooks/architect-enforce.mjs; do
   [ -e "$src/dest-all/$p" ] || green=false
 done
 [ "$rc" -eq 0 ] || green=false
-ok baseline "$green" "unfiltered destination is missing files (rc=$rc)"
+# The hook arrives executable and alone: settings.json runs the hook, and
+# nothing in a profile reads its test file or the README beside it.
+[ -x "$src/dest-all/hooks/architect-enforce.mjs" ] || green=false
+[ ! -e "$src/dest-all/hooks/architect-enforce.test.mjs" ] || green=false
+[ ! -e "$src/dest-all/hooks/README.md" ] || green=false
+ok baseline "$green" "unfiltered destination is missing files, the hook lost its executable bit, or a hook test file or README was copied (rc=$rc)"
 
 # 2. Exclusion: winston is absent from the filtered destination as both a
 # skill and a shim, while clove — the control against an empty sync — is
@@ -106,9 +117,10 @@ green=true
 [ -e "$src/dest-filtered/agents/p-clove.md" ] || green=false
 [ -e "$src/dest-filtered/output-styles/scannable.md" ] || green=false
 [ -e "$src/dest-filtered/output-styles/winston.md" ] || green=false
+[ -e "$src/dest-filtered/hooks/architect-enforce.mjs" ] || green=false
 [ ! -e "$src/dest-filtered/skills/winston" ] || green=false
 [ ! -e "$src/dest-filtered/agents/p-winston.md" ] || green=false
-ok exclusion "$green" "excluded persona leaked, an output style never reached the second destination, or the destination is empty"
+ok exclusion "$green" "excluded persona leaked, an output style or hook never reached the second destination, or the destination is empty"
 
 # 3. The same case with the prefix strip removed must go red — otherwise
 # control 2 was passing for some reason other than the strip.
@@ -137,16 +149,18 @@ fi
 # those is the no-delete property.
 scaffold nodelete
 mkdir -p "$src/dest-all/skills/local-only" "$src/dest-all/agents" \
-  "$src/dest-all/output-styles"
+  "$src/dest-all/output-styles" "$src/dest-all/hooks"
 echo local >"$src/dest-all/skills/local-only/SKILL.md"
 echo local >"$src/dest-all/agents/some-other-agent.md"
 echo local >"$src/dest-all/output-styles/local-only-style.md"
+echo local >"$src/dest-all/hooks/local.sh"
 run "$src"
 green=true
 [ -e "$src/dest-all/skills/local-only/SKILL.md" ] || green=false
 [ -e "$src/dest-all/agents/some-other-agent.md" ] || green=false
 [ -e "$src/dest-all/output-styles/local-only-style.md" ] || green=false
-ok no-delete "$green" "a profile-only skill, agent, or style was removed by the sync"
+[ -e "$src/dest-all/hooks/local.sh" ] || green=false
+ok no-delete "$green" "a profile-only skill, agent, style, or hook was removed by the sync"
 
 # 5. Parallel-array guard: fewer EXCLUDES than DESTS must abort rather than
 # silently leave the trailing destination unfiltered.
@@ -314,8 +328,8 @@ fi
 # under a different scheme) must be replaced with a fresh regular file,
 # never written through — cp follows a destination symlink to its target,
 # so writing through it would silently clobber whatever that target is.
-# All four rm-then-cp loops (skills, agents, output-styles, codex) get a
-# fixture here. Two of them used to be justified away with "the skills and
+# All five rm-then-cp loops (skills, agents, output-styles, hooks, codex) get
+# a fixture here. Two of them used to be justified away with "the skills and
 # agents loops both ride through controls 2/3's exclusion mechanics, which
 # already touch the same rm-before-cp shape" — but controls 2/3 exercise that
 # the loop *runs*, never that it refuses to write through a destination
@@ -325,10 +339,12 @@ fi
 # symlink. Sharing a code shape is not coverage.
 scaffold symlink
 mkdir -p "$src/outside" "$src/outside/skilldir" "$src/dest-all/output-styles" \
-  "$src/dest-all/skills" "$src/dest-all/agents"
+  "$src/dest-all/skills" "$src/dest-all/agents" "$src/dest-all/hooks"
 echo original-precious-content >"$src/outside/precious"
 echo original-precious-agent >"$src/outside/precious-agent"
+echo original-precious-hook >"$src/outside/precious-hook"
 ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
+ln -s "$src/outside/precious-hook" "$src/dest-all/hooks/architect-enforce.mjs"
 # A directory symlink for the skills loop: `rm -rf` on one unlinks rather
 # than descends, so the guard's whole job here is to unlink before `cp -R`
 # copies the source directory *into* whatever it points at.
@@ -343,6 +359,8 @@ green=true
 [ -f "$src/dest-all/skills/clove/SKILL.md" ] || green=false
 [ -L "$src/dest-all/agents/p-clove.md" ] && green=false
 [ "$(cat "$src/outside/precious-agent")" = original-precious-agent ] || green=false
+[ -L "$src/dest-all/hooks/architect-enforce.mjs" ] && green=false
+[ "$(cat "$src/outside/precious-hook")" = original-precious-hook ] || green=false
 # Second row of the same control: the codex loop, whose rm-before-cp had no
 # control behind it at all. Deleting that one line leaves every other control
 # green while a file outside the profile is destroyed through a symlink.
@@ -359,11 +377,11 @@ run "$src"
 [ "$(cat "$src/outside/precious-toml")" = original-precious-toml ] || green=false
 ok symlink-clobber "$green" "destination symlink survived the sync, or the outside file was clobbered"
 
-# 13. The same case with all four rm-before-cp lines stripped must go red
+# 13. The same case with all five rm-before-cp lines stripped must go red
 # — otherwise control 12 passes for some reason other than the guard.
-# python3, not sed, per control 9's own precedent: four distinct lines
-# across four loops is easier to match exactly this way than to keep
-# four sed expressions in sync with the source.
+# python3, not sed, per control 9's own precedent: five distinct lines
+# across five loops is easier to match exactly this way than to keep
+# five sed expressions in sync with the source.
 #
 # `|| true` here and on every other python3 mutator below: a failed assert
 # exits non-zero, and under `set -e` that ends the run before the `cmp -s`
@@ -381,6 +399,7 @@ targets = (
     'rm -rf "${dst:?}/skills/${name:?}"  # removes old symlink or stale copy\n',
     'rm -f "$dst/agents/$name.md"\n',
     'rm -f "$dst/output-styles/$(basename "$f")"  # see the agents loop above\n',
+    'rm -f "$dst/hooks/$(basename "$f")"  # see the agents loop above\n',
     '    rm -f "$CODEX_DEST/$name.toml"\n',
 )
 for old in targets:
@@ -393,11 +412,14 @@ if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
   ok symlink-clobber-red false "the strip did not match — this control tested nothing"
 else
   mkdir -p "$src/outside" "$src/outside/skilldir" "$src/dest-all/output-styles" \
-    "$src/dest-all/skills" "$src/dest-all/agents" "$src/codex-dest"
+    "$src/dest-all/skills" "$src/dest-all/agents" "$src/dest-all/hooks" \
+    "$src/codex-dest"
   echo original-precious-content >"$src/outside/precious"
   echo original-precious-toml >"$src/outside/precious-toml"
   echo original-precious-agent >"$src/outside/precious-agent"
+  echo original-precious-hook >"$src/outside/precious-hook"
   ln -s "$src/outside/precious" "$src/dest-all/output-styles/scannable.md"
+  ln -s "$src/outside/precious-hook" "$src/dest-all/hooks/architect-enforce.mjs"
   ln -s "$src/outside/precious-toml" "$src/codex-dest/clove.toml"
   ln -s "$src/outside/skilldir" "$src/dest-all/skills/clove"
   ln -s "$src/outside/precious-agent" "$src/dest-all/agents/p-clove.md"
@@ -407,11 +429,12 @@ EXCLUDES=("")
 CODEX_DEST="$src/codex-dest"
 EOF
   run "$src"
-  # One arm per stripped line, so the twin reds for all four reasons control
+  # One arm per stripped line, so the twin reds for all five reasons control
   # 12 now covers rather than for the two it used to.
   if [ "$(cat "$src/outside/precious")" != original-precious-content ] &&
     [ "$(cat "$src/outside/precious-toml")" != original-precious-toml ] &&
     [ "$(cat "$src/outside/precious-agent")" != original-precious-agent ] &&
+    [ "$(cat "$src/outside/precious-hook")" != original-precious-hook ] &&
     [ -e "$src/outside/skilldir/SKILL.md" ]; then
     green=true
   else
@@ -643,7 +666,7 @@ ok codex-default-off "$green" "an unset CODEX_DEST still deployed or created a d
 
 # 19. Self-target refusal: a destination resolving to one of this repo's own
 # source directories must abort before any write, with every source file still
-# on disk. Seven rows — four arms, one relation, one list entry, and one
+# on disk. Eight rows — five arms, one relation, one list entry, and one
 # destination index above zero. Rows 5 and 7 each carry a second assertion
 # about *when* the refusal runs rather than that it ran, because "before any
 # write" is half the property and the half no row used to check. Row 5 is
@@ -748,9 +771,20 @@ grep -q "DESTS\[1\]" "$work/err" || { green=false; echo "  self-target row 7: re
 # at every control before this line existed. This is the property the hoist in
 # sync.sh exists for, and it is ordering, not content.
 [ -z "$(ls -A "$src/dest-two")" ] || { green=false; echo "  self-target row 7: the benign first destination was written before the refusal" >&2; }
+
+# Row 8: the hooks arm, through a symlink like rows 2-4. Sits after row 7
+# rather than beside its siblings so the row numbers those comments cite
+# still name what they meant.
+rm -rf "$src/dest-all"; mkdir -p "$src/dest-all"
+ln -s "$src/hooks" "$src/dest-all/hooks"
+cat >"$src/sync.local.sh" <<EOF
+DESTS=("$src/dest-all")
+EXCLUDES=("")
+EOF
+st_row 8 "$src/hooks/architect-enforce.mjs"
 ok self-target "$green" "a destination aliasing the source tree was not refused before writing, or a source file did not survive"
 
-# 20. The same case with the pre-flight's three DESTS calls stripped must go
+# 20. The same case with the pre-flight's four DESTS calls stripped must go
 # red, or control 19 is passing for some reason other than the refusal. The
 # green condition is stated positively — the source file is *gone* — rather
 # than as an absence, because an absence-only assertion passes just as well on
@@ -764,6 +798,7 @@ targets = (
     '  refuse_self_target "DESTS[$i]\'s skills destination" "$dst/skills"\n',
     '  refuse_self_target "DESTS[$i]\'s agents destination" "$dst/agents"\n',
     '  refuse_self_target "DESTS[$i]\'s output-styles destination" "$dst/output-styles"\n',
+    '  refuse_self_target "DESTS[$i]\'s hooks destination" "$dst/hooks"\n',
 )
 for old in targets:
     assert old in s, 'not found: %r' % old
@@ -936,6 +971,7 @@ green=true
 [ -f "$work/fakehome/.claude/skills/clove/SKILL.md" ] || green=false
 [ -f "$work/fakehome/.claude/agents/p-clove.md" ] || green=false
 [ -f "$work/fakehome/.claude/output-styles/scannable.md" ] || green=false
+[ -f "$work/fakehome/.claude/hooks/architect-enforce.mjs" ] || green=false
 # The EXCLUDES default is ("") — no exclusions, so the persona every other
 # fixture filters out has to arrive here.
 [ -f "$work/fakehome/.claude/skills/winston/SKILL.md" ] || green=false
@@ -956,7 +992,7 @@ stray="$(ls -A "$work/fakehome" | grep -vx '.claude' || true)"
 # Fixed-string and whole-line on purpose — a substring match is satisfied by an
 # extra destination appended after the one it matched, which is the shape of
 # the escape. Anything reproducing this must keep its probe path under $TMPDIR.
-grep -Fqx "synced: skills + claude-agents + output-styles -> $work/fakehome/.claude" "$work/out" || green=false
+grep -Fqx "synced: skills + claude-agents + output-styles + hooks -> $work/fakehome/.claude" "$work/out" || green=false
 # The un-configured run says nothing on stderr, and that is the quiet half of
 # every warning in sync.sh. Four of its seven `>&2` sites are followed by
 # `exit`, so an `rc -eq 0` control already covers their silence, and the two
@@ -981,6 +1017,34 @@ run "$src"
 [ -f "$src/codex-dest/clove.toml" ] || green=false
 [ -f "$src/codex-dest/winston.toml" ] || green=false
 ok defaults "$green" "an un-configured run did not deploy to \$HOME/.claude alone, or a default excluded something (rc=$rc)"
+
+# 26. The hooks loop's skip with its `case` stripped must go red — otherwise
+# control 1's two absence assertions pass for some reason other than the
+# skip. Stated positively, per control 20: both files *arrive*, rather than
+# merely not being absent, so a harness that copied nothing cannot pass it.
+scaffold hooks-skip-red
+python3 - "$src/sync.sh" <<'PY_HK' || true
+import sys
+p = sys.argv[1]
+s = open(p).read()
+old = '    case "$(basename "$f")" in\n      *.test.*|README.md) continue ;;\n    esac\n'
+assert old in s, 'not found: %r' % old
+s = s.replace(old, '', 1)
+open(p, 'w').write(s)
+PY_HK
+chmod +x "$src/sync.sh"
+if cmp -s "$REPO/sync.sh" "$src/sync.sh"; then
+  ok hooks-skip-red false "the strip did not match — this control tested nothing"
+else
+  run "$src"
+  if [ -f "$src/dest-all/hooks/architect-enforce.test.mjs" ] &&
+    [ -f "$src/dest-all/hooks/README.md" ]; then
+    green=true
+  else
+    green=false
+  fi
+  ok hooks-skip-red "$green" "skip removed and the test file or README still stayed behind — control 1 proves nothing"
+fi
 
 if [ "$fails" -eq 0 ]; then
   echo "selftest: $controls controls green"
