@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Push this repo's skills, agent shims, and output styles into a Claude
-# profile. Per-file copy on purpose: profile-only skills/agents/styles (no
+# Push this repo's skills, agent shims, output styles, and hooks into a
+# Claude profile. Per-file copy on purpose: profile-only skills/agents/styles (no
 # counterpart in this repo) must survive, so the loops below never use
 # --delete semantics against a destination directory.
 set -euo pipefail
@@ -120,13 +120,13 @@ excluded() {  # excluded <name> <list> — true when name appears in the list
 # both-missing and one-missing — and is correctly allowed: mkdir -p then makes
 # a fresh directory, which cannot be a source. Do not "fix" that case.
 #
-# $SRC leads the list rather than only the four directories the loops read: a
+# $SRC leads the list rather than only the five directories the loops read: a
 # destination subdirectory resolving to the repo root drops untracked copies
 # into the working tree, and the walk is already happening.
-SRC_DIRS=("$SRC" "$SRC/skills" "$SRC/claude-agents" "$SRC/output-styles" "$SRC/codex-agents")
+SRC_DIRS=("$SRC" "$SRC/skills" "$SRC/claude-agents" "$SRC/output-styles" "$SRC/codex-agents" "$SRC/hooks")
 
 # refuse_self_target <label> <dir> — aborts when dir resolves to a source
-# directory. One owner for all four arms: four inline guards is the shape
+# directory. One owner for all five arms: four inline guards is the shape
 # that let three of them ship unguarded.
 refuse_self_target() {
   local label="$1" dir="$2" s
@@ -212,6 +212,7 @@ for i in "${!DESTS[@]}"; do
   refuse_self_target "DESTS[$i]'s skills destination" "$dst/skills"
   refuse_self_target "DESTS[$i]'s agents destination" "$dst/agents"
   refuse_self_target "DESTS[$i]'s output-styles destination" "$dst/output-styles"
+  refuse_self_target "DESTS[$i]'s hooks destination" "$dst/hooks"
 done
 if [ -n "${CODEX_DEST:-}" ]; then
   refuse_self_target "CODEX_DEST" "$CODEX_DEST"
@@ -279,6 +280,27 @@ for i in "${!DESTS[@]}"; do
   done
 done
 
+# Hooks ride along to every destination, unfiltered, like the styles above.
+# A profile's hooks/ is what settings.json executes, so the test files and
+# the README stay behind: nothing in a profile reads either, and a *.test.*
+# file copied next to a hook is one more thing for the user to prune by
+# hand. Copying makes a hook *available*; registering it is a hand edit to
+# settings.json — hooks/README.md carries the block. cp preserves the mode
+# bits, so an executable hook stays executable. Per-file, no --delete, same
+# as every loop above: a profile-only hook survives.
+for i in "${!DESTS[@]}"; do
+  dst="${DESTS[$i]}"
+  mkdir -p "$dst/hooks"
+  for f in "$SRC"/hooks/*; do
+    [ -f "$f" ] || continue
+    case "$(basename "$f")" in
+      *.test.*|README.md) continue ;;
+    esac
+    rm -f "$dst/hooks/$(basename "$f")"  # see the agents loop above
+    cp "$f" "$dst/hooks/$(basename "$f")"
+  done
+done
+
 # Codex agent projections, deployed only when CODEX_DEST is set — a clone on
 # a machine with no Codex install does nothing rather than creating the
 # directory. Rendered by render-agents.py from the same skills/ sources as
@@ -313,4 +335,4 @@ fi
 # ${DESTS[*]:-} rather than ${DESTS[*]}: on bash 3.2 an empty array expands to
 # an unbound variable under set -u, which would abort here after every loop had
 # already correctly done nothing.
-echo "synced: skills + claude-agents + output-styles -> ${DESTS[*]:-(none)}${CODEX_DEST:+; codex-agents -> $CODEX_DEST}"
+echo "synced: skills + claude-agents + output-styles + hooks -> ${DESTS[*]:-(none)}${CODEX_DEST:+; codex-agents -> $CODEX_DEST}"

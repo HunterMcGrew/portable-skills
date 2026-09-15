@@ -61,7 +61,7 @@ Nothing needs configuring for this to work. The per-file, no-`--delete` copy in
 `sync.sh` is what makes it safe — a sync refreshes what this repo owns and
 leaves everything else in the profile untouched. That is why the loops copy
 file-by-file instead of mirroring a directory, and it applies equally to skills,
-subagent files, and output styles.
+subagent files, output styles, and hooks.
 
 The tradeoff is worth naming: a skill this repo doesn't own gets no rubric, no
 audit, and no review. `graphify` is the one to keep an eye on — it loads in
@@ -98,9 +98,9 @@ in **no** repo's tree.
 ### sync.sh
 
 `sync.sh` in the repo root does what the manual `cp -R` above does, plus the
-agent shims and output styles, minus the parts you'd have to remember: run it
-with no setup and it copies `skills/`, `claude-agents/`, and `output-styles/`
-into `~/.claude`. That's the whole story for one profile — no exclusions,
+agent shims, output styles, and hooks, minus the parts you'd have to remember:
+run it with no setup and it copies `skills/`, `claude-agents/`,
+`output-styles/`, and `hooks/` into `~/.claude`. That's the whole story for one profile — no exclusions,
 nothing to configure.
 
 `sync.sh` takes no arguments — there is no `--check`/`--dry-run` mode, only
@@ -109,8 +109,17 @@ written; `sync-selftest.sh` is the read-only counterpart, and it never
 touches a real profile.
 
 Every copy loop is per-file with no `--delete` semantics against the
-destination, so a skill, agent, or style you keep only in your profile (not
-shipped by this repo) survives a re-sync untouched.
+destination, so a skill, agent, style, or hook you keep only in your profile
+(not shipped by this repo) survives a re-sync untouched.
+
+`hooks/` copies per-file to `<dest>/hooks/`, with the `*.test.*` files and
+`hooks/README.md` left behind — a profile's `hooks/` is what `settings.json`
+executes, and nothing there reads either. Copying only makes a hook
+available: registering it is a hand edit to the profile's `settings.json`,
+and `sync.sh` never touches that file. [hooks/README.md](hooks/README.md)
+says what each hook gates, when it stays inert or yields to the repo's own
+hook, and carries the exact `hooks` block to paste, including the timeout
+push-verify needs.
 
 That property has one cost, and it lands on upgrades: **a sync never removes
 anything, so a file this repo renames stays in your profile under its old
@@ -166,9 +175,9 @@ differently-named agents in that directory survive untouched; one sharing a
 basename with a toml this repo ships is overwritten, which is the collision
 above. What is refused is a *write target* resolving to one of this repo's
 own source directories or to the repo root: `CODEX_DEST` itself, since that
-is where tomls land, and a `DESTS` entry whose `skills/`, `agents/` or
-`output-styles/` subdirectory resolves to `skills/`, `claude-agents/`,
-`output-styles/`, `codex-agents/` or the root — directly or through a symlink
+is where tomls land, and a `DESTS` entry whose `skills/`, `agents/`,
+`output-styles/` or `hooks/` subdirectory resolves to `skills/`,
+`claude-agents/`, `output-styles/`, `codex-agents/`, `hooks/` or the root — directly or through a symlink
 an earlier sync left behind. The refusal comes before anything is written,
 because the copy is destination-first and would otherwise delete the sources
 it was asked to deploy, or drop untracked copies into the working tree where
