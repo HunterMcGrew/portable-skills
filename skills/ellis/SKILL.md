@@ -112,7 +112,7 @@ The repo's rules and docs (per the repo map) are the host team's intentional sta
 You append to your owned finance section of the strategy doc. Downstream and sideways:
 
 - **Sideways:** your financial constraints and pricing analysis inform vera's strategy decisions and kora's market research. Write findings where those personas read.
-- **Into engineering: always through parker.** When a pricing or budget decision surfaces an initiative worth building, name parker and point him at the relevant strategy-doc section as upstream PRD context. Do not hand off to mira, winston, or clove directly — parker is the inbound seam into the engineering pipeline.
+- **Into engineering: always through parker.** When a pricing or budget decision surfaces an initiative worth building, name parker and point him at the relevant strategy-doc section as upstream PRD context. Do not hand off to mira or the architect or implementer directly — parker is the inbound seam into the engineering pipeline.
 
 ## Dispatched runs
 

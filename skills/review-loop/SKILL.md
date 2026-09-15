@@ -1,10 +1,10 @@
 ---
 name: review-loop
 description: >
-  Orchestrate the review gauntlet on a PR — self-review loops with
-  fixes until a zero-findings pass, then PR review the same way; cleaner-path
-  findings route by certainty (clear-cut → implement, uncertain → architect,
-  architect-uncertain → pause for user). Pass budget, three-strike survival rule
+  Orchestrate the review gauntlet on a PR — a self-review loop (via
+  `/code-review`) with fixes until a zero-findings pass, then PR review the
+  same way; cleaner-path findings route by certainty (clear-cut → implement,
+  uncertain → pause for user). Pass budget, three-strike survival rule
   with mandatory diagnosis, scoreboard TLDR; PR stays draft. Explicit
   invocation; no persona. Triggers: review loop, gauntlet, full review cycle,
   review until clean.
@@ -13,10 +13,10 @@ argument-hint: "[PR number or branch — e.g. '#76' or 'current branch']"
 
 Orchestrate the full review gauntlet on the target PR. This is a utility, not a
 persona — no greeting, no character; it runs in the current conversation's
-voice. It sequences the roster personas and never reviews, fixes, or writes
-findings itself. The personas keep their own plan hygiene (`## Review Issues`
-entries, `## History` appends, the orientation battery) exactly as if invoked
-by hand.
+voice. It sequences `/code-review` and eric for review passes, and fixes land
+directly in this conversation — it never reviews or writes findings itself.
+The reviewers keep their own plan hygiene (`## Review Issues` entries,
+`## History` appends, the orientation battery) exactly as if invoked by hand.
 
 ## Shared core
 
@@ -28,20 +28,21 @@ belongs to the personas this utility invokes, not to the utility itself.
 ## Lifecycle
 
 1. Resolve the target — PR (or branch), plan file, repo map.
-2. **briar loop** — self-review → clove fixes → re-review, until the phase
-   converges (two consecutive clean passes — see § The review base).
-3. **eric loop** — PR review → clove fixes → re-review, until the phase
-   converges and every fixed thread is resolved.
+2. **Self-review loop (`/code-review`)** — self-review → fix in this
+   conversation → re-review, until the phase converges (two consecutive
+   clean passes — see § The review base).
+3. **eric loop** — PR review → fix in this conversation → re-review, until
+   the phase converges and every fixed thread is resolved.
 4. Scoreboard TLDR. The PR stays draft throughout.
 
 ## Resolve the target
 
 - Identify the PR from `$ARGUMENTS`, the current branch, or `gh pr view`. No
-  PR yet? The briar loop can start on the branch; clove ships the PR before
+  PR yet? The self-review loop can start on the branch; the PR ships before
   the eric loop (authors ship — see the shared core's house rules).
 - Resolve the repo map per the shared core; find or create the plan file at
-  `<plans>/<ticket-id>.md`. The plan is the content bus: briar writes
-  `## Review Issues`, clove reads and fixes there.
+  `<plans>/<ticket-id>.md`. The plan is the content bus: `/code-review` writes
+  `## Review Issues`, and fixes land there directly.
 - Verification commands (type-check, tests, build) come from the repo map's
   `verification` role — the personas run them; the loop just confirms the
   role resolves before starting.
@@ -50,14 +51,14 @@ belongs to the personas this utility invokes, not to the utility itself.
 
 ## The review base
 
-The loop reviews a fixed target. Capture it once, before the first briar pass:
+The loop reviews a fixed target. Capture it once, before the first self-review pass:
 
 ```
 loopBase = git rev-parse HEAD
 ```
 
 `loopBase` does not move again for the rest of the run — not after a fix
-commit, not at the briar → eric boundary, not across a handoff into a fresh
+commit, not at the self-review → eric boundary, not across a handoff into a fresh
 session. Recapturing it is the single thing that stops the loop from
 terminating: when the base advances with `HEAD`, every fix the loop lands
 joins the surface the next pass reviews, so each pass reviews the previous
@@ -75,7 +76,7 @@ un-freezing. `loopBase` travels in `## Gauntlet state` (see Guardrails).
 | **Ledger**  | the plan's `## Review Issues` and `## History`, plus the repo's lessons file (per the repo map; no `lessons` role → just those two plan sections) | Not a review target during the loop. |
 | **Meta**    | prose *about* the work: PR title/body/labels, readiness lines, plan hygiene | One batch after the subject converges — see `## Meta findings`. Never loop fuel. |
 
-The ledger is the loop's own bookkeeping: briar and eric write it as they go,
+The ledger is the loop's own bookkeeping: code-review and eric write it as they go,
 so reviewing it mid-run is the loop grading its own notes, and each grading
 pass writes more ledger for the next pass to grade. It re-enters review
 normally on a future run, once it is part of someone else's subject surface.
@@ -114,15 +115,16 @@ confirms the first was not an accident of timing.
 
 **The coverage gate.** Every angle in the reviewer's angle-sweep
 applicability map must read `swept` or `n/a — <reason>` in that reviewer's
-off-chat Angle Coverage block — briar's, in the plan; eric's, in the summary
-comment — before a pass counts toward the two-clean-pass exit. The block is
-identified by surface, never by heading level: one `### Angle Coverage`
-string named both briar's plan block and her chat section, and eric's summary
-comment carries `## Angle Coverage`, so a gate keyed to the level finds
-nothing on the eric phase and could not tell briar's two apart. briar's chat
-section has since dropped its heading level; the rule does not rest on that,
-because restoring the heading would reintroduce the collision and eric's `##`
-against briar's `###` is live regardless.
+off-chat Angle Coverage block — code-review's, in the plan; eric's, in the
+summary comment — before a pass counts toward the two-clean-pass exit. The
+block is identified by surface, never by heading level: one `### Angle
+Coverage` string named both code-review's plan block and its chat section,
+and eric's summary comment carries `## Angle Coverage`, so a gate keyed to
+the level finds nothing on the eric phase and could not tell code-review's
+two apart. code-review's chat section has since dropped its heading level;
+the rule does not rest on that, because restoring the heading would
+reintroduce the collision and eric's `##` against code-review's `###` is
+live regardless.
 
 A `not reached — <reason>` angle means that pass is not clean — it
 does not reset the consecutive-clean-pass counter the way an admissible
@@ -132,7 +134,7 @@ converge until that angle later reads `swept` or `n/a`.
 **The enumeration refinement.** `swept` on its own is not enough for this
 gate — `_shared/review-angles.md` § Enumeration requires a `swept` angle to
 carry its enumeration. Read it on the off-chat surface named by that
-fragment's § Where it goes — briar's plan block, eric's summary comment.
+fragment's § Where it goes — code-review's plan block, eric's summary comment.
 Never on the chat line, which carries counts in place of the enumeration by
 construction and would therefore read as bounded on every angle at once. A
 `swept` with no enumeration there is read as bounded for this predicate, the
@@ -176,18 +178,18 @@ it travels with `loopBase` (§ Guardrails, Gauntlet state travels).
 
 Anything still open when a phase converges — minors the loop chose not to
 fix, observations that failed admissibility — converts to a `Status:
-follow-up` entry in `## Review Issues`, not to another fix pass; winston's
-closing ceremony carries them out through its loose-thread check. Only
+follow-up` entry in `## Review Issues`, not to another fix pass; the closing
+ceremony carries them out through its loose-thread check. Only
 subject-surface findings count toward, or reset, the two-clean-pass exit.
 
 ## How personas are invoked
 
 A review loop is inherently serial — each pass depends on the last — so
-invoke each persona in-conversation by its lowercase skill name for each
-iteration: briar for a self-review pass, clove for a fix pass, eric for a PR
-review pass, winston for an architecture call. Let the persona run its full
-startup and rules, then resume orchestration when it finishes. Don't spawn
-parallel lanes here; there is nothing to parallelize.
+invoke each reviewer in-conversation for each iteration: `/code-review` for
+a self-review pass, eric for a PR review pass. Fixes are applied directly in
+this conversation between passes. Let each reviewer run its full startup and
+rules, then resume orchestration when it finishes. Don't spawn parallel lanes
+here; there is nothing to parallelize.
 
 If this loop is itself running inside a dispatched lane (no user available),
 the "pause for the user" steps below become typed report-back verdicts
@@ -196,33 +198,36 @@ shared core's dispatch idiom — never a question into the void.
 
 ## The ladder
 
-1. **briar loop (self-review).** Invoke briar on the branch. Every finding,
-   any severity (critical, major, minor, nit, cleanup), goes to clove to fix —
-   review-fix commits stay separate commits, never amends, so the reviewer can
-   diff what changed since her last pass. Re-invoke briar. Repeat until the
-   phase converges per § The review base. Name `loopBase` in every briar
-   invocation — her side of the contract is her § Inside a review loop.
+1. **Self-review loop (`/code-review`).** Run `/code-review` on the branch.
+   Every finding, any severity (critical, major, minor, nit, cleanup), gets
+   fixed directly in this conversation — review-fix commits stay separate
+   commits, never amends, so the reviewer can diff what changed since its
+   last pass. Re-run `/code-review`. Repeat until the phase converges per
+   § The review base. Name `loopBase` in every `/code-review` invocation so
+   it reviews against the frozen base.
 2. **eric loop (PR review).** Same shape on the PR: eric reviews and posts
-   findings, clove fixes, eric re-reviews. Eric gets the same `loopBase` and
-   the same surfaces — the subject range does not advance because the briar
-   phase landed fixes into it. This phase is not done until the phase
-   converges **AND zero fixed-but-unresolved review threads** remain — when a
-   fix lands a finding, the thread that flagged it is only closed by eric's
-   next pass (the reviewer is the sole actor that resolves threads). If fixed
-   threads remain unresolved when the phase converges, run one final eric
-   pass to resolve them before closing the phase.
+   findings, fixes land directly in this conversation, eric re-reviews. Eric
+   gets the same `loopBase` and the same surfaces — the subject range does
+   not advance because the self-review phase landed fixes into it. This
+   phase is not done until the phase converges **AND zero
+   fixed-but-unresolved review threads** remain — when a fix lands a
+   finding, the thread that flagged it is only closed by eric's next pass
+   (the reviewer is the sole actor that resolves threads). If fixed threads
+   remain unresolved when the phase converges, run one final eric pass to
+   resolve them before closing the phase.
 3. **Cleaner paths.** Reviewer suggestions of a better shape — non-blocking by
    design; they never gate the zero-findings exit, but each must reach a
    terminal state before the loop closes: implemented, rejected with a
    one-line reason, or parked by the user. Route by certainty (Procedure C).
-4. **Closing ceremony (winston).** When the eric phase exits clean, run
-   winston's closing ceremony as the loop's final phase — automatic here, no
-   nudge needed: promotion-verdict sub-bullets on every `## Decisions` entry
-   (promotions written into the architect docs on the same branch), lessons
-   check, loose-thread check, History ceremony line. Notes only — the plan is
-   never deleted or archived (archive is zoe's lane), and the ceremony always
-   lands pre-merge as the branch's final commit. The scoreboard TLDR reports
-   it as its last line.
+4. **Closing ceremony.** When the eric phase exits clean, offer the user the
+   closing ceremony as the loop's final step — no persona runs it, so it's
+   the user's call whether to do it now or leave it for later: promotion-verdict
+   sub-bullets on every `## Decisions` entry (promotions written into the
+   architect docs on the same branch), lessons check, loose-thread check,
+   History ceremony line. Notes only — the plan is never deleted or archived
+   (archive is zoe's lane), and if run, the ceremony lands pre-merge as the
+   branch's final commit. The scoreboard TLDR reports its outcome as its
+   last line.
 
 ## Meta findings
 
@@ -231,7 +236,7 @@ work — the PR body, a readiness line, plan hygiene (a stale `## Decisions`
 entry, an unlogged fix). Meta findings never re-arm the loop: they close in
 one batch, after the subject (code or AC) has already converged, not
 interleaved with review/fix passes. Route them the same way as any other
-finding — clove fixes, the reviewer confirms — but track them on their own
+finding — fixed directly in this conversation, the reviewer confirms — but track them on their own
 line in the scoreboard so a prose-only cleanup pass doesn't read as another
 code-review strike.
 
@@ -243,8 +248,8 @@ and routes as a subject finding on the next run.
 ## Guardrails
 
 - **Pass budget: 20 review/fix passes.** Before every pass, run Procedure B.
-  Winston consultations and user pauses don't count — they're escalations,
-  already bounded. Exhaustion triggers Procedure D — stop, report, hand back.
+  User pauses don't count — they're escalations, already bounded. Exhaustion
+  triggers Procedure D — stop, report, hand back.
 - **Three-strike survival rule.** An issue a reviewer re-raises after a fix
   pass has survived a strike. Strike 1: run Procedure A. Strike 2: continue,
   marked in the scoreboard. Strike 3: Procedure E — pause the loop on that
@@ -279,11 +284,11 @@ and routes as a subject finding on the next run.
   behavior — n/a` converges and trips the wire, and both are the intended
   outcome. The fragment states the same rule from the vocabulary side.
 - **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
-  clove believes the finding is wrong — skip the strike counter and run
+  the fix disputes the finding — skip the strike counter and run
   Procedure F immediately. Disagreement ping-pong would measure stubbornness,
   not progress.
-- **Phase boundary.** At the briar → eric handover, a cold context makes eric
-  a more independent second opinion. Offer the user a fresh session for the
+- **Phase boundary.** At the self-review → eric handover, a cold context makes
+  eric a more independent second opinion. Offer the user a fresh session for the
   eric loop (carrying the gauntlet state below) or continue in-conversation;
   default to continuing if the user doesn't care.
 - **Thread-clean exit.** The eric phase never closes with
@@ -304,7 +309,7 @@ and routes as a subject finding on the next run.
 
 ## Procedures
 
-**Procedure A — fix pass after a strike.** Before clove writes any code:
+**Procedure A — fix pass after a strike.** Before writing any fix code:
 write a one-sentence diagnosis naming the failure mode — misread finding,
 partial fix, or disagreement. Disagreement → Procedure F immediately. Misread
 or partial → continue with the fix. Record the diagnosis and strike count in
@@ -319,12 +324,9 @@ most promising next step).
 **Procedure C — route a cleaner path.** Can the correct fix be determined
 from the diff and the existing codebase alone?
 
-- **Yes (clear-cut):** clove implements now.
-- **No (uncertain about the right approach):** invoke winston in-conversation
-  with the finding and the relevant diff context. If his recommendation
-  resolves the uncertainty, clove implements.
-- **winston says it needs user input:** pause the loop. Present the finding,
-  winston's analysis, and the specific question; wait for the answer (or emit
+- **Yes (clear-cut):** implement now, directly in this conversation.
+- **No (uncertain about the right approach):** pause the loop. Present the
+  finding and the specific question; wait for the user's answer (or emit
   `needs-human` in a dispatched lane).
 
 **Procedure D — budget exhausted.** Stop all loops. Produce the scoreboard
@@ -338,11 +340,11 @@ said. Present it with a clear question: accept the finding as-is, reject it
 with a written reason, or direct a new approach. Don't continue on this
 issue until the user responds.
 
-**Procedure F — disagreement fast-path.** Invoke winston with the original
-finding, clove's counter-argument, and the relevant diff. His verdict routes
-it: finding correct → implement; finding incorrect → close with a written
-reason; needs user input → pause and present both positions plus winston's
-assessment. No more fix passes on this issue until the verdict is in.
+**Procedure F — disagreement fast-path.** Pause the loop and present the
+original finding, the counter-argument, and the relevant diff to the user
+(or emit `needs-human` in a dispatched lane). The user's verdict routes it:
+finding correct → implement; finding incorrect → close with a written
+reason. No more fix passes on this issue until the verdict is in.
 
 **Procedure H — thread-clean exit blocked.** If a final eric pass still
 leaves unresolved threads, stop the phase. List the unresolved threads, the

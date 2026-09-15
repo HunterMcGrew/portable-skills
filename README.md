@@ -7,16 +7,14 @@ via a small per-repo map, and leave zero footprint in any repo's git tree.
 ## The roster
 
 The folders under `skills/` are the source of truth — every folder is one
-skill. Call personas by name ("Winston, is this the right approach?") or by
-slash command (`/winston`, `/clove`, ...). Two invocation verbs: bare-name
+skill. Call personas by name ("Eric, can you review this?") or by
+slash command (`/eric`, `/nora`, ...). Two invocation verbs: bare-name
 address hands the conversation over; "send out <persona> to <task>" dispatches
 a background agent (see the persona-dispatch rule in your user-level
 `CLAUDE.md`).
 
-**Dev workflow:** winston (architecture + plans), sasha (debugging, never
-fixes), clove (implementation + shipping), briar (self-review, chat only),
-eric (PR review, never approves/merges), eli (docs), nora (ticket setup),
-mira (user stories), parker (PRDs), pixel (design),
+**Dev workflow:** eric (PR review, never approves/merges), eli (docs),
+nora (ticket setup), mira (user stories), parker (PRDs), pixel (design),
 reese (QA test plans + AC verification), sage (changelog), lilac (standup),
 iris (retros), theo (architect-doc walker), ren (refactor scout),
 zoe (surface audit).
@@ -30,9 +28,10 @@ never sends outreach), tess (data/metrics), remy (customer success),
 penny (recruiting), lex (legal — never legal advice).
 
 **Utilities (no persona):** handoff (compact a session into a resumable
-document), review-loop (the briar → clove → eric gauntlet), devils-advocate
-(red-teams a finished plan, PRD, strategy, model, or diagnosis and hands back
-findings — never edits the artifact).
+document), review-loop (self-review via `/code-review`, then the eric
+gauntlet), devils-advocate (red-teams a finished plan, PRD, strategy, model,
+or diagnosis and hands back findings — never edits the artifact), code-review
+(plain self-review pass, no persona, invoked as `/code-review`).
 
 devils-advocate has no name or voice on purpose: a character with a
 personality is tempted to *perform* skepticism, and performance is the failure
@@ -116,7 +115,7 @@ That property has one cost, and it lands on upgrades: **a sync never removes
 anything, so a file this repo renames stays in your profile under its old
 name.** Both copies then resolve. The `p-` prefix on the agent shims is
 exactly such a rename — if you synced before it, `~/.claude/agents/` now
-holds both `winston.md` and `p-winston.md`, and the unprefixed one is the
+holds both `eric.md` and `p-eric.md`, and the unprefixed one is the
 silent collision the prefix exists to remove. Prune the superseded names by
 hand, once, per destination:
 
@@ -155,7 +154,7 @@ an agent with nothing to be; a codex toml inlines the persona's whole body
 (§ The codex-agents toml surface) and stands alone. Excluding one is a
 preference about the machine, not a consistency requirement.
 
-Codex tomls deploy **unprefixed** — `briar.toml`, not `p-briar.toml` — unlike
+Codex tomls deploy **unprefixed** — `eric.toml`, not `p-eric.toml` — unlike
 the `claude-agents` shims. The prefix exists to stop collisions with a host
 repo's own agents, and on the Codex surface the repos observed so far
 namespace their own (`thrive-*.toml`). That is their convention holding, not
@@ -178,7 +177,7 @@ only ever removes copies this script wrote there itself — on this run or an
 earlier one, never a source file or an untracked one.
 
 `EXCLUDES[i]` is a space-separated list of skill names to skip for `DESTS[i]`,
-written unprefixed — `winston`, never `p-winston`; the agent shim is matched
+written unprefixed — `eric`, never `p-eric`; the agent shim is matched
 on its stripped name, so the prefixed form matches nothing. It's
 parallel-array rather than an associative array because the bash macOS ships
 (3.2) predates them. An excluded name is skipped for both the skill directory
@@ -290,7 +289,7 @@ the same name, which is why these are not unprefixed. Each stub registers as
 frontmatter `name:` and the filename only, never to `skills:`, which still has
 to resolve against `skills/<name>/SKILL.md`. Both rosters are therefore
 reachable side by side, and which one you get is explicit at the call site:
-`subagent_type: "p-winston"` is this repo's Winston, `subagent_type: "winston"`
+`subagent_type: "p-eric"` is this repo's Eric, `subagent_type: "eric"`
 is whatever the host repo ships. Prefixing this side rather than the repo's is
 what keeps it a one-script rename instead of a team PR. One caveat holds
 regardless of how it was checked: this is vendor-owned behavior and can change
@@ -351,7 +350,7 @@ pass, asks you to confirm where each role lives (rules, architect docs, docs,
 lessons, plans, verification, ticket pattern), and writes `.repo-map.md` itself.
 Front-loading this interview beats mid-task questions — make it the first thing
 you do in a new repo. Roles you leave out are opt-outs (no `lessons` line → no
-lesson capture; no `ticket pattern` → Nora and Briar's Spec subagent fall back
+lesson capture; no `ticket pattern` → Nora falls back
 to a generic ticket shape), and skills will offer to append locations they
 discover mid-session back into the map.
 
@@ -366,16 +365,16 @@ the repo.
 
 Some repos ship their own skill set, and those skills may carry the same
 persona names — a repo-level skill with its own id (say `acme-architect`)
-whose routing rules claim "Winston", or a roster that has its own "clove".
+whose routing rules claim "Eric", or a roster that has its own "nora".
 When both layers are installed, the name and the skill stop being the same
 thing. The rules:
 
-- **Bare names are ambiguous.** Saying "Winston, is this the right approach?"
+- **Bare names are ambiguous.** Saying "Eric, can you review this?"
   routes by name, and the repo's own routing rules can claim that name — so
   in such a repo, a bare name may load the repo's version instead of the
   portable one. Neither outcome is wrong; you just can't tell from the name
   alone.
-- **Slash commands are exact.** `/winston`, `/clove`, `/eric` target a skill
+- **Slash commands are exact.** `/eric`, `/nora`, `/reese` target a skill
   by its id, so they always load the portable version. When it matters which
   one you get, use the slash command.
 - **The repo's skills stay reachable the same way** — via their own ids

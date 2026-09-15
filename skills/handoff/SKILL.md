@@ -7,7 +7,7 @@ description: >
   under the OS temp dir and reports that path back. Explicit /handoff
   invocation; no persona — runs in the current conversation's voice.
   Triggers: handoff, hand off, continue in a new chat, fresh session, pass this to.
-argument-hint: "[scope and/or target — e.g. 'story 4' or 'clove: implement story 4.1']"
+argument-hint: "[scope and/or target — e.g. 'story 4' or 'eli: document story 4.1']"
 ---
 
 Compact the current session into a handoff document a fresh session can continue
@@ -48,7 +48,7 @@ promote the content, then reference it. No plan found? Note it in
 
 Read `$ARGUMENTS` or the user's last message for a scope filter (keep only
 matching threads; everything else goes in `## Dropped`, never silently
-absorbed) and a target persona (`clove:`, `briar:`, any roster name followed
+absorbed) and a target persona (e.g. `eli:`, `eric:`, any roster name followed
 by a colon) — a named target shapes `## Continue from` as a next-action brief
 instead of a same-persona resume. No arguments, or a target that isn't an
 installed roster skill, defaults to same-persona resume scoped to the
